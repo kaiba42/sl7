@@ -105,7 +105,16 @@ def main():
     parser.add_argument("--jobs", type=int, default=8)
     parser.add_argument("--baseline-binary", type=Path,
                         help="Also measure an older SL7 binary on the same machine")
+    parser.add_argument("--profiles", nargs="+", choices=["debug", "release"],
+                        default=["debug", "release"])
+    parser.add_argument("--backends", nargs="+", choices=["native", "baseline-sl7", "sl7"],
+                        help="Select a focused comparison; default includes native and SL7")
     args = parser.parse_args()
+    args.backends = args.backends or (["native", "baseline-sl7", "sl7"] if args.baseline_binary else ["native", "sl7"])
+    if "baseline-sl7" in args.backends and not args.baseline_binary:
+        parser.error("baseline-sl7 requires --baseline-binary")
+    if args.rounds < 1 or len(set(args.backends)) != len(args.backends) or len(set(args.profiles)) != len(args.profiles):
+        parser.error("rounds must be positive; profiles and backends must be unique")
     cgroup = process_cgroup()
     args.results.mkdir(parents=True, exist_ok=True)
     binary = Path(os.environ.get("SL7_BINARY", "/sl7/target/release/sl7"))
@@ -141,9 +150,10 @@ def main():
         env.update(CARGO_TARGET_DIR=str(mount / "target"), CARGO_BUILD_BUILD_DIR=str(mount / "build"),
                    SYNKRO_HOME=str(work / "home"), SYNKRO_DIR=str(work / "home"))
         for round_id in range(args.rounds):
-            profiles = ["debug", "release"] if round_id % 2 == 0 else ["release", "debug"]
-            backends = ["native", "baseline-sl7", "sl7"] if args.baseline_binary else ["native", "sl7"]
+            profiles = list(args.profiles)
+            backends = list(args.backends)
             if round_id % 2:
+                profiles.reverse()
                 backends.reverse()
             for profile in profiles:
                 for backend in backends:
@@ -259,14 +269,14 @@ def main():
         report["memory_peak"] = int((cgroup / "memory.peak").read_text())
         report["status"] = "passed"
         save()
-    for profile in ("debug", "release"):
+    for profile in args.profiles:
         for stage in ("clean", "unchanged", "edit", "unchanged-after-remount"):
             times = {}
-            for backend in (["native", "baseline-sl7", "sl7"] if args.baseline_binary else ["native", "sl7"]):
+            for backend in args.backends:
                 samples = [m["wall_seconds"] for c in report["cases"] if c["profile"] == profile and c["backend"] == backend
                            for m in c["measurements"] if m["stage"] == stage or (stage in ("unchanged", "edit") and m["stage"].rsplit("-",1)[-1].isdigit() and m["stage"].startswith(stage+"-"))]
                 times[backend] = statistics.median(samples)
-            print(profile, stage, json.dumps(times), f"SL7/native={times['sl7']/times['native']:.3f}", flush=True)
+            print(profile, stage, json.dumps(times), flush=True)
 
 
 if __name__ == "__main__":

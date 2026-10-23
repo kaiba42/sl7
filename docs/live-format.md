@@ -19,15 +19,20 @@ until hydration commits removal of its binding.
 
 Sealing, with no open handles/mappings:
 
-1. Capture logical metadata and durably assign an xattr identity if needed.
-2. Increment the generation and capture an in-memory mutation epoch. A single
-   background worker chunks native bytes and publishes immutable packs outside
-   the filesystem mutex, using a separate read-only catalog connection. Pack data
-   and directory entries are synced before the manifest commits.
-3. Reacquire the mutex and require the same epoch and zero open handles. Discard
-   stale work; otherwise commit the manifest and binding using SQLite WAL/FULL.
-4. Truncate the native file, restore its logical length as a sparse placeholder,
-   restore atime/mtime, and sync. Permissions and hard links stay native.
+1. Under filesystem state, pin the inode and capture its mutation epoch. Release
+   state before capturing metadata, assigning an xattr identity, or incrementing
+   the durable generation. Those operations use a separate worker catalog connection.
+2. Chunk native bytes and prepare immutable packs outside filesystem state. Pack
+   data and directory entries are synced before the manifest commits.
+3. Acquire the catalog-writer permit, then briefly reacquire filesystem state.
+   Require the same epoch and zero open handles. Discard stale work; otherwise
+   mark this inode as publishing and release filesystem state.
+4. Commit the manifest and binding using SQLite WAL/FULL, then truncate the native
+   file, restore its logical length as a sparse placeholder, restore atime/mtime,
+   and sync. Permissions and hard links stay native. This work holds the catalog
+   permit, but not filesystem state.
+5. Briefly reacquire state to clear the inode's publication gate and wake waiters.
+   Error/unwind cleanup also clears the gate; committed bindings retain authority.
 
 Hydration, before mutable access:
 
@@ -46,12 +51,32 @@ native inode, then atomically removes its manifest and metadata binding. Before
 that commit recovery still restores the old manifest; afterward the durable
 empty native file is authoritative. Nonzero size changes still hydrate first.
 
-Callbacks and publication hold one mutex; expensive packing does not. Mutations
-invalidate pending work. Open readers prevent retirement until their last release.
+Four FUSE request workers share filesystem state. Foreground callbacks still
+serialize their native I/O and reconstruction under that mutex, but background
+candidate setup, packing, database publication, and sparse retirement do not.
+Open readers prevent retirement until their last release. New readers of an inode
+being published wait on its condition variable without holding filesystem state.
+
+Catalog-writing mutations acquire a separate writer permit **before** filesystem
+state. Mutations of already-native inodes without a logical metadata override
+need no catalog permit; their eligibility check and mutation share the state
+lock, so publication cannot start between them. Namespace operations re-resolve
+names after waiting for the permit. Mutations invalidate pending work through
+an atomic epoch. A writer waiting for publication therefore does not hold state
+and prevent unrelated reads or native writes. Multiple requests waiting for
+catalog access can still occupy the finite request-worker pool.
+
+The worker and foreground catalog connections share one exclusive owner lock;
+dropping either connection alone cannot admit another mount or offline GC.
+Attribute reads sample native metadata before the logical catalog override, so
+concurrent retirement cannot expose a transient zero logical length.
 One worker bounds active jobs; a 1,024-entry queue spills pending flags onto pinned
 inodes. Normal unmount drains the worker before releasing store ownership. Canceled
 work can leave orphan packs for offline GC; native bytes remain authoritative.
-`SL7_CACHE_STATS=1` also prints sealing counts and preparation/publication timings.
+`SL7_CACHE_STATS=1` also prints sealing counts and candidate/preparation/publication
+wall times, selection/publication state-lock hold totals and maxima, foreground
+state-lock hold times, catalog-permit waits, and same-inode publication-open waits.
+Wait totals can overlap across request threads; they are not removable wall time.
 Files below 64 KiB, unlinked files, and files lacking owner
 read/write permission stay native. Sealing errors are logged and leave native
 bytes or an already committed manifest authoritative. Failure of the optimization
@@ -125,5 +150,6 @@ the entire unmounted store and xattrs. External mutation is unsupported.
 There is no online control socket, multi-daemon writer protocol, or native macOS
 writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
-permission transitions remain outside qualification. Background packing still serializes catalog publication and sparse retirement
-with filesystem callbacks.
+permission transitions remain outside qualification. Catalog-writing foreground transitions still serialize with publication through
+the writer permit; foreground hydration and reconstruction still hold filesystem
+state. Background lock removal does not eliminate those remaining costs.

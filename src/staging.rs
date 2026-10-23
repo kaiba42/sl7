@@ -18,11 +18,11 @@ use std::{
     },
     path::{Path, PathBuf},
     sync::{
-        Arc, Mutex,
+        Arc, Condvar, Mutex,
         atomic::{AtomicU64, Ordering},
         mpsc::SyncSender,
     },
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 const TTL: Duration = Duration::ZERO;
@@ -34,6 +34,7 @@ struct Inode {
     epoch: Arc<AtomicU64>,
     queued: bool,
     packing: bool,
+    publishing: bool,
 }
 struct DirectoryEntry {
     ino: INodeNo,
@@ -59,9 +60,13 @@ struct State {
     seal_stats: background::Stats,
     #[cfg(test)]
     seal_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
+    #[cfg(test)]
+    publish_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
 }
 pub struct StagingFs {
     state: Arc<Mutex<State>>,
+    catalog_writer: Arc<Mutex<()>>,
+    publication_done: Arc<Condvar>,
     worker: Option<std::thread::JoinHandle<()>>,
     _owner: Owner,
 }
@@ -265,6 +270,7 @@ impl State {
                 epoch: Arc::new(AtomicU64::new(0)),
                 queued: false,
                 packing: false,
+                publishing: false,
             },
         );
         Ok(ino)
@@ -440,10 +446,14 @@ impl StagingFs {
             seal_stats: background::Stats::default(),
             #[cfg(test)]
             seal_pause: None,
+            #[cfg(test)]
+            publish_pause: None,
         };
         assert_eq!(state.register(pin(backing)?)?, INodeNo::ROOT);
         Ok(Self {
             state: Arc::new(Mutex::new(state)),
+            catalog_writer: Arc::new(Mutex::new(())),
+            publication_done: Arc::new(Condvar::new()),
             worker: None,
             _owner: Owner(owner),
         })
@@ -453,19 +463,111 @@ impl StagingFs {
         let mut fs = Self::new(&live.tree())?;
         live.recover()?;
         let packer = crate::store::Packer::new(&live.store.root)?;
+        let publisher = crate::live::Live::open(live.store.publication_connection()?)?;
         fs.state
             .lock()
             .map_err(|_| crate::Error::Invalid("poisoned filesystem state".into()))?
             .live = Some(live);
-        fs.worker = Some(background::start(Arc::clone(&fs.state), packer)?);
+        fs.worker = Some(background::start(
+            Arc::clone(&fs.state),
+            Arc::clone(&fs.catalog_writer),
+            Arc::clone(&fs.publication_done),
+            packer,
+            publisher,
+        )?);
         Ok(fs)
     }
     fn with<T>(
         &self,
         op: impl FnOnce(&mut State) -> io::Result<T>,
     ) -> std::result::Result<T, Errno> {
+        // Never wait for a catalog writer while holding filesystem state.
+        // Publication takes this permit, marks only its inode busy, then drops
+        // filesystem state before any catalog commits or native retirement.
+        let started = Instant::now();
+        let _writer = self.catalog_writer.lock().map_err(|_| Errno::EIO)?;
+        let waited = started.elapsed().as_secs_f64();
+        self.with_read(|s| {
+            s.seal_stats.catalog_wait_seconds += waited;
+            op(s)
+        })
+    }
+    fn with_read<T>(
+        &self,
+        op: impl FnOnce(&mut State) -> io::Result<T>,
+    ) -> std::result::Result<T, Errno> {
         let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
-        op(&mut state).map_err(Errno::from)
+        let started = Instant::now();
+        let result = op(&mut state).map_err(Errno::from);
+        let seconds = started.elapsed().as_secs_f64();
+        state.seal_stats.request_state_seconds += seconds;
+        state.seal_stats.max_request_state_seconds =
+            state.seal_stats.max_request_state_seconds.max(seconds);
+        result
+    }
+    fn with_mutation<T>(
+        &self,
+        select: impl FnOnce(&mut State) -> io::Result<Vec<INodeNo>>,
+        op: impl FnOnce(&mut State) -> io::Result<T>,
+    ) -> std::result::Result<T, Errno> {
+        let mut op = Some(op);
+        let native = self.with_read(|s| {
+            for ino in select(s)? {
+                let node = s.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?;
+                if node.publishing
+                    || s.live
+                        .as_ref()
+                        .map(|live| live.mutation_needs_catalog(&node.pin).map_err(storage))
+                        .transpose()?
+                        .unwrap_or(false)
+                {
+                    return Ok(None);
+                }
+            }
+            op.take().unwrap()(s).map(Some)
+        })?;
+        match native {
+            Some(result) => Ok(result),
+            None => self.with(op.take().unwrap()),
+        }
+    }
+    fn open_handle(&self, ino: INodeNo, flags: i32) -> std::result::Result<FileHandle, Errno> {
+        if flags & libc::O_ACCMODE != libc::O_RDONLY || flags & libc::O_TRUNC != 0 {
+            return self.with_mutation(|_| Ok(vec![ino]), |s| s.open(ino, flags));
+        }
+        let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
+        let waited = Instant::now();
+        let mut blocked = false;
+        while state.nodes.get(&ino).is_some_and(|node| node.publishing) {
+            blocked = true;
+            state = self.publication_done.wait(state).map_err(|_| Errno::EIO)?;
+        }
+        if blocked {
+            state.seal_stats.publication_open_wait_seconds += waited.elapsed().as_secs_f64();
+        }
+        let started = Instant::now();
+        let result = state.open(ino, flags).map_err(Errno::from);
+        let seconds = started.elapsed().as_secs_f64();
+        state.seal_stats.request_state_seconds += seconds;
+        state.seal_stats.max_request_state_seconds =
+            state.seal_stats.max_request_state_seconds.max(seconds);
+        result
+    }
+    fn write_handle(
+        &self,
+        ino: INodeNo,
+        fh: FileHandle,
+        offset: u64,
+        data: &[u8],
+    ) -> std::result::Result<(), Errno> {
+        self.with_mutation(
+            |_| Ok(vec![ino]),
+            |s| {
+                s.hydrate(ino)?;
+                s.mutated(ino)?;
+                s.handle(ino, fh)?.file.write_all_at(data, offset)
+            },
+        )
     }
 }
 
@@ -492,13 +594,13 @@ impl Filesystem for StagingFs {
         );
     }
     fn forget(&self, _req: &Request, ino: INodeNo, nlookup: u64) {
-        let _ = self.with(|s| {
+        let _ = self.with_read(|s| {
             s.forget(ino, nlookup);
             Ok(())
         });
     }
     fn lookup(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEntry) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             let ino = s.lookup(parent, name)?;
             s.entry_attr(ino)
         }) {
@@ -507,7 +609,7 @@ impl Filesystem for StagingFs {
         }
     }
     fn getattr(&self, _req: &Request, ino: INodeNo, _fh: Option<FileHandle>, reply: ReplyAttr) {
-        match self.with(|s| s.attr(ino)) {
+        match self.with_read(|s| s.attr(ino)) {
             Ok(a) => reply.attr(&TTL, &a),
             Err(e) => reply.error(e),
         }
@@ -530,51 +632,54 @@ impl Filesystem for StagingFs {
         flags: Option<BsdFileFlags>,
         reply: ReplyAttr,
     ) {
-        match self.with(|s| {
-            let m = s.inode(ino)?.metadata()?;
-            if uid.is_some_and(|u| u != m.uid())
-                || gid.is_some_and(|g| g != m.gid())
-                || flags.is_some()
-            {
-                return Err(error(libc::EOPNOTSUPP));
-            }
-            if m.file_type().is_symlink() {
-                return Err(error(libc::EOPNOTSUPP));
-            }
-            s.invalidate(ino)?;
-            if m.is_file() && size.is_some() {
-                if size == Some(0) {
-                    s.truncate_zero(ino)?;
-                } else {
-                    s.hydrate(ino)?;
+        match self.with_mutation(
+            |_| Ok(vec![ino]),
+            |s| {
+                let m = s.inode(ino)?.metadata()?;
+                if uid.is_some_and(|u| u != m.uid())
+                    || gid.is_some_and(|g| g != m.gid())
+                    || flags.is_some()
+                {
+                    return Err(error(libc::EOPNOTSUPP));
                 }
-                s.mutated(ino)?;
-            }
-            if let Some(size) = size {
-                if let Some(fh) = fh {
-                    s.handle(ino, fh)?.file.set_len(size)?;
-                } else {
-                    open_native(&s.path(ino)?, libc::O_WRONLY, 0)?.set_len(size)?;
+                if m.file_type().is_symlink() {
+                    return Err(error(libc::EOPNOTSUPP));
                 }
-            }
-            if let Some(mode) = mode {
-                fs::set_permissions(s.path(ino)?, fs::Permissions::from_mode(mode))?;
-            }
-            if atime.is_some() || mtime.is_some() {
-                let path = cpath(&s.path(ino)?)?;
-                let times = [timespec(atime)?, timespec(mtime)?];
-                // SAFETY: path and both timespecs live through the call.
-                native(unsafe {
-                    libc::utimensat(libc::AT_FDCWD, path.as_ptr(), times.as_ptr(), 0)
-                })?;
-            }
-            if let Some(live) = &mut s.live {
-                live.metadata_changed(&s.nodes[&ino].pin, atime.is_some(), mtime.is_some())
-                    .map_err(storage)?;
-            }
-            s.schedule_seal(ino);
-            s.attr(ino)
-        }) {
+                s.invalidate(ino)?;
+                if m.is_file() && size.is_some() {
+                    if size == Some(0) {
+                        s.truncate_zero(ino)?;
+                    } else {
+                        s.hydrate(ino)?;
+                    }
+                    s.mutated(ino)?;
+                }
+                if let Some(size) = size {
+                    if let Some(fh) = fh {
+                        s.handle(ino, fh)?.file.set_len(size)?;
+                    } else {
+                        open_native(&s.path(ino)?, libc::O_WRONLY, 0)?.set_len(size)?;
+                    }
+                }
+                if let Some(mode) = mode {
+                    fs::set_permissions(s.path(ino)?, fs::Permissions::from_mode(mode))?;
+                }
+                if atime.is_some() || mtime.is_some() {
+                    let path = cpath(&s.path(ino)?)?;
+                    let times = [timespec(atime)?, timespec(mtime)?];
+                    // SAFETY: path and both timespecs live through the call.
+                    native(unsafe {
+                        libc::utimensat(libc::AT_FDCWD, path.as_ptr(), times.as_ptr(), 0)
+                    })?;
+                }
+                if let Some(live) = &mut s.live {
+                    live.metadata_changed(&s.nodes[&ino].pin, atime.is_some(), mtime.is_some())
+                        .map_err(storage)?;
+                }
+                s.schedule_seal(ino);
+                s.attr(ino)
+            },
+        ) {
             Ok(a) => reply.attr(&TTL, &a),
             Err(e) => reply.error(e),
         }
@@ -588,7 +693,7 @@ impl Filesystem for StagingFs {
         umask: u32,
         reply: ReplyEntry,
     ) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             let path = s.child(parent, name)?;
             let c = cpath(&path)?;
             // SAFETY: path is a valid C string.
@@ -610,37 +715,44 @@ impl Filesystem for StagingFs {
         flags: i32,
         reply: ReplyCreate,
     ) {
-        match self.with(|s| {
-            let path = s.child(parent, name)?;
-            if flags & libc::O_EXCL == 0 {
-                match s.lookup(parent, name) {
-                    Ok(ino) => {
-                        if flags & libc::O_TRUNC != 0 {
-                            s.truncate_zero(ino)?;
-                            s.mutated(ino)?;
-                        } else {
-                            s.hydrate(ino)?;
+        match self.with_mutation(
+            |s| match s.lookup(parent, name) {
+                Ok(ino) => Ok(vec![ino]),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(vec![]),
+                Err(error) => Err(error),
+            },
+            |s| {
+                let path = s.child(parent, name)?;
+                if flags & libc::O_EXCL == 0 {
+                    match s.lookup(parent, name) {
+                        Ok(ino) => {
+                            if flags & libc::O_TRUNC != 0 {
+                                s.truncate_zero(ino)?;
+                                s.mutated(ino)?;
+                            } else {
+                                s.hydrate(ino)?;
+                            }
                         }
+                        Err(e) if e.kind() == io::ErrorKind::NotFound => (),
+                        Err(e) => return Err(e),
                     }
-                    Err(e) if e.kind() == io::ErrorKind::NotFound => (),
-                    Err(e) => return Err(e),
                 }
-            }
-            let file = open_native(
-                &path,
-                (flags & !libc::O_APPEND) | libc::O_CREAT | libc::O_NOFOLLOW,
-                mode & !umask,
-            )?;
-            let ino = s.register(pin(&path)?)?;
-            let fh = s.add_handle(ino, file, None)?;
-            Ok((s.entry_attr(ino)?, fh))
-        }) {
+                let file = open_native(
+                    &path,
+                    (flags & !libc::O_APPEND) | libc::O_CREAT | libc::O_NOFOLLOW,
+                    mode & !umask,
+                )?;
+                let ino = s.register(pin(&path)?)?;
+                let fh = s.add_handle(ino, file, None)?;
+                Ok((s.entry_attr(ino)?, fh))
+            },
+        ) {
             Ok((a, fh)) => reply.created(&TTL, &a, Generation(0), fh, FopenFlags::empty()),
             Err(e) => reply.error(e),
         }
     }
     fn open(&self, _req: &Request, ino: INodeNo, flags: OpenFlags, reply: ReplyOpen) {
-        match self.with(|s| s.open(ino, flags.0)) {
+        match self.open_handle(ino, flags.0) {
             Ok(fh) => reply.opened(fh, FopenFlags::empty()),
             Err(e) => reply.error(e),
         }
@@ -656,7 +768,7 @@ impl Filesystem for StagingFs {
         _owner: Option<LockOwner>,
         reply: ReplyData,
     ) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             if size > 16 * 1024 * 1024 {
                 return Err(error(libc::EINVAL));
             }
@@ -704,11 +816,7 @@ impl Filesystem for StagingFs {
         _owner: Option<LockOwner>,
         reply: ReplyWrite,
     ) {
-        match self.with(|s| {
-            s.hydrate(ino)?;
-            s.mutated(ino)?;
-            s.handle(ino, fh)?.file.write_all_at(data, offset)
-        }) {
+        match self.write_handle(ino, fh, offset, data) {
             Ok(()) => reply.written(data.len() as u32),
             Err(e) => reply.error(e),
         }
@@ -723,7 +831,7 @@ impl Filesystem for StagingFs {
     ) {
         // No writeback queue or remote locks; each write already reached the
         // backing filesystem. This deliberately does not turn close into fsync.
-        match self.with(|s| s.handle(ino, fh).map(|_| ())) {
+        match self.with_read(|s| s.handle(ino, fh).map(|_| ())) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -738,7 +846,7 @@ impl Filesystem for StagingFs {
         _flush: bool,
         reply: ReplyEmpty,
     ) {
-        match self.with(|s| s.release(ino, fh)) {
+        match self.with_read(|s| s.release(ino, fh)) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -751,7 +859,7 @@ impl Filesystem for StagingFs {
         datasync: bool,
         reply: ReplyEmpty,
     ) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             let file = &s.handle(ino, fh)?.file;
             if datasync {
                 file.sync_data()
@@ -764,19 +872,22 @@ impl Filesystem for StagingFs {
         }
     }
     fn unlink(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEmpty) {
-        match self.with(|s| {
-            let ino = s.lookup(parent, name)?;
-            fs::remove_file(s.child(parent, name)?)?;
-            s.namespace_changed(ino)?;
-            s.reclaim(ino);
-            Ok(())
-        }) {
+        match self.with_mutation(
+            |s| Ok(vec![s.lookup(parent, name)?]),
+            |s| {
+                let ino = s.lookup(parent, name)?;
+                fs::remove_file(s.child(parent, name)?)?;
+                s.namespace_changed(ino)?;
+                s.reclaim(ino);
+                Ok(())
+            },
+        ) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
     }
     fn rmdir(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEmpty) {
-        match self.with(|s| fs::remove_dir(s.child(parent, name)?)) {
+        match self.with_read(|s| fs::remove_dir(s.child(parent, name)?)) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -791,33 +902,44 @@ impl Filesystem for StagingFs {
         flags: RenameFlags,
         reply: ReplyEmpty,
     ) {
-        match self.with(|s| {
-            let source = s.lookup(parent, name)?;
-            let replaced = match s.lookup(newparent, newname) {
-                Ok(ino) => Some(ino),
-                Err(e) if e.kind() == io::ErrorKind::NotFound => None,
-                Err(e) => return Err(e),
-            };
-            let old = cpath(&s.child(parent, name)?)?;
-            let new = cpath(&s.child(newparent, newname)?)?;
-            // SAFETY: both paths are valid C strings anchored at directory fds.
-            native(unsafe {
-                libc::renameat2(
-                    libc::AT_FDCWD,
-                    old.as_ptr(),
-                    libc::AT_FDCWD,
-                    new.as_ptr(),
-                    flags.bits(),
-                )
-            })?;
-            s.namespace_changed(source)?;
-            if let Some(ino) = replaced {
-                s.namespace_changed(ino)?;
-                s.reclaim(ino);
-            }
-            s.reclaim(source);
-            Ok(())
-        }) {
+        match self.with_mutation(
+            |s| {
+                let mut inodes = vec![s.lookup(parent, name)?];
+                match s.lookup(newparent, newname) {
+                    Ok(ino) => inodes.push(ino),
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => (),
+                    Err(error) => return Err(error),
+                }
+                Ok(inodes)
+            },
+            |s| {
+                let source = s.lookup(parent, name)?;
+                let replaced = match s.lookup(newparent, newname) {
+                    Ok(ino) => Some(ino),
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => None,
+                    Err(e) => return Err(e),
+                };
+                let old = cpath(&s.child(parent, name)?)?;
+                let new = cpath(&s.child(newparent, newname)?)?;
+                // SAFETY: both paths are valid C strings anchored at directory fds.
+                native(unsafe {
+                    libc::renameat2(
+                        libc::AT_FDCWD,
+                        old.as_ptr(),
+                        libc::AT_FDCWD,
+                        new.as_ptr(),
+                        flags.bits(),
+                    )
+                })?;
+                s.namespace_changed(source)?;
+                if let Some(ino) = replaced {
+                    s.namespace_changed(ino)?;
+                    s.reclaim(ino);
+                }
+                s.reclaim(source);
+                Ok(())
+            },
+        ) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -830,25 +952,28 @@ impl Filesystem for StagingFs {
         newname: &OsStr,
         reply: ReplyEntry,
     ) {
-        match self.with(|s| {
-            if !s.inode(ino)?.metadata()?.is_file() {
-                return Err(error(libc::EOPNOTSUPP));
-            }
-            let old = cpath(&s.path(ino)?)?;
-            let new = cpath(&s.child(newparent, newname)?)?;
-            // SAFETY: valid paths; follow only the controlled /proc fd alias.
-            native(unsafe {
-                libc::linkat(
-                    libc::AT_FDCWD,
-                    old.as_ptr(),
-                    libc::AT_FDCWD,
-                    new.as_ptr(),
-                    libc::AT_SYMLINK_FOLLOW,
-                )
-            })?;
-            s.namespace_changed(ino)?;
-            s.entry_attr(ino)
-        }) {
+        match self.with_mutation(
+            |_| Ok(vec![ino]),
+            |s| {
+                if !s.inode(ino)?.metadata()?.is_file() {
+                    return Err(error(libc::EOPNOTSUPP));
+                }
+                let old = cpath(&s.path(ino)?)?;
+                let new = cpath(&s.child(newparent, newname)?)?;
+                // SAFETY: valid paths; follow only the controlled /proc fd alias.
+                native(unsafe {
+                    libc::linkat(
+                        libc::AT_FDCWD,
+                        old.as_ptr(),
+                        libc::AT_FDCWD,
+                        new.as_ptr(),
+                        libc::AT_SYMLINK_FOLLOW,
+                    )
+                })?;
+                s.namespace_changed(ino)?;
+                s.entry_attr(ino)
+            },
+        ) {
             Ok(a) => reply.entry(&TTL, &a, Generation(0)),
             Err(e) => reply.error(e),
         }
@@ -861,7 +986,7 @@ impl Filesystem for StagingFs {
         target: &Path,
         reply: ReplyEntry,
     ) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             let path = s.child(parent, name)?;
             std::os::unix::fs::symlink(target, &path)?;
             let ino = s.register(pin(&path)?)?;
@@ -872,7 +997,7 @@ impl Filesystem for StagingFs {
         }
     }
     fn readlink(&self, _req: &Request, ino: INodeNo, reply: ReplyData) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             let mut data = vec![0; 4096];
             // SAFETY: fd is pinned, empty path selects that symlink itself, and
             // the writable buffer has the capacity passed to readlinkat.
@@ -898,7 +1023,7 @@ impl Filesystem for StagingFs {
         }
     }
     fn opendir(&self, _req: &Request, ino: INodeNo, _flags: OpenFlags, reply: ReplyOpen) {
-        match self.with(|s| {
+        match self.with_read(|s| {
             let file = open_native(&s.path(ino)?, libc::O_RDONLY | libc::O_DIRECTORY, 0)?;
             let parent = s.lookup(ino, OsStr::new(".."))?;
             let mut entries = vec![
@@ -939,7 +1064,7 @@ impl Filesystem for StagingFs {
         offset: u64,
         mut reply: ReplyDirectory,
     ) {
-        let result = self.with(|s| {
+        let result = self.with_read(|s| {
             let entries = s
                 .handle(ino, fh)?
                 .entries
@@ -968,7 +1093,7 @@ impl Filesystem for StagingFs {
         _flags: OpenFlags,
         reply: ReplyEmpty,
     ) {
-        match self.with(|s| s.release(ino, fh)) {
+        match self.with_read(|s| s.release(ino, fh)) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -981,7 +1106,7 @@ impl Filesystem for StagingFs {
         _datasync: bool,
         reply: ReplyEmpty,
     ) {
-        match self.with(|s| s.handle(ino, fh)?.file.sync_all()) {
+        match self.with_read(|s| s.handle(ino, fh)?.file.sync_all()) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -1029,6 +1154,9 @@ fn run_mount(fs: StagingFs, mountpoint: &Path) -> crate::Result<()> {
         libc::umask(0);
     }
     let mut config = Config::default();
+    // A request waiting on its inode or the catalog writer must not prevent
+    // another request from reading an unrelated inode.
+    config.n_threads = Some(4);
     config.mount_options = vec![
         MountOption::RW,
         MountOption::DefaultPermissions,

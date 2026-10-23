@@ -60,13 +60,14 @@ pub struct Store {
     pub(crate) root: PathBuf,
     pub(crate) db: Connection,
     pub(crate) cache: RefCell<crate::read_cache::ReadCache>,
+    report_cache_stats: bool,
     // Declared after the catalog so SQLite closes before ownership is released.
-    _lock: OwnerLock,
+    _lock: Arc<OwnerLock>,
 }
 
 impl Drop for Store {
     fn drop(&mut self) {
-        if std::env::var_os("SL7_CACHE_STATS").is_some() {
+        if self.report_cache_stats && std::env::var_os("SL7_CACHE_STATS").is_some() {
             if let Ok(stats) = serde_json::to_string(&self.cache.borrow().stats()) {
                 eprintln!("sl7: cache_stats {stats}");
             }
@@ -155,7 +156,8 @@ impl Store {
             root: root.to_path_buf(),
             db,
             cache: RefCell::default(),
-            _lock: lock,
+            report_cache_stats: true,
+            _lock: Arc::new(lock),
         })
     }
     pub fn open(root: &Path) -> Result<Self> {
@@ -185,7 +187,25 @@ impl Store {
             root: root.to_path_buf(),
             db,
             cache: RefCell::default(),
-            _lock: lock,
+            report_cache_stats: true,
+            _lock: Arc::new(lock),
+        })
+    }
+    /// A second catalog connection for the same exclusive mounted owner. The
+    /// shared lock outlives both connections; dropping one cannot admit GC.
+    #[cfg(all(feature = "fuse", target_os = "linux"))]
+    pub(crate) fn publication_connection(&self) -> Result<Self> {
+        let db = Connection::open_with_flags(
+            self.root.join("catalog.sqlite"),
+            OpenFlags::SQLITE_OPEN_READ_WRITE,
+        )?;
+        configure(&db)?;
+        Ok(Self {
+            root: self.root.clone(),
+            db,
+            cache: RefCell::default(),
+            report_cache_stats: false,
+            _lock: Arc::clone(&self._lock),
         })
     }
     pub fn put(&mut self, view: &str, name: &str, source: &Path) -> Result<ImportReport> {
@@ -795,6 +815,19 @@ fn directory_bytes(path: &Path) -> Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(all(feature = "fuse", target_os = "linux"))]
+    #[test]
+    fn publication_connection_keeps_exclusive_ownership() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path().join("store");
+        let store = Store::init(&root)?;
+        let publisher = store.publication_connection()?;
+        drop(store);
+        assert!(matches!(Store::open(&root), Err(Error::Locked(_))));
+        drop(publisher);
+        Store::open(&root)?.check()?;
+        Ok(())
+    }
     #[test]
     fn warm_ranges_skip_extent_queries_and_dense_windows_fall_back() -> Result<()> {
         let temp = tempfile::tempdir()?;

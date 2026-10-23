@@ -196,6 +196,14 @@ impl Live {
             .map(decode)
             .transpose()
     }
+    /// Mutations of already-native, unoverridden inodes need no catalog write.
+    /// The caller must prevent this inode from entering publication between
+    /// this check and the mutation; the mount does so under filesystem state.
+    pub(crate) fn mutation_needs_catalog(&self, file: &File) -> Result<bool> {
+        Ok(self
+            .record(file)?
+            .is_some_and(|(_, manifest, metadata)| manifest.is_some() || metadata.is_some()))
+    }
     pub fn sealed(&self, file: &File) -> Result<Option<Sealed>> {
         let Some((_, Some(manifest), metadata)) = self.record(file)? else {
             return Ok(None);
