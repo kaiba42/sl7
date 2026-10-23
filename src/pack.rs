@@ -6,7 +6,8 @@ use crate::{
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
-    io::{Read, Seek, SeekFrom, Write},
+    io::{Read, Write},
+    os::unix::fs::FileExt,
     path::Path,
 };
 use tempfile::NamedTempFile;
@@ -136,6 +137,18 @@ fn require_equal(field: &str, expected: u64, actual: u64) -> Result<()> {
     Ok(())
 }
 pub fn read(root: &Path, loc: &Location) -> Result<Vec<u8>> {
+    read_from(&open(root, &loc.pack)?, loc)
+}
+pub(crate) fn open(root: &Path, id: &str) -> Result<File> {
+    let file = File::open(pack_path(root, id)?)?;
+    let mut magic = [0_u8; 8];
+    file.read_exact_at(&mut magic, 0)?;
+    if &magic != MAGIC {
+        return Err(Error::Corrupt(format!("pack magic: {magic:?}")));
+    }
+    Ok(file)
+}
+pub(crate) fn read_from(file: &File, loc: &Location) -> Result<Vec<u8>> {
     if !(1..=chunk::MAX as u64).contains(&loc.raw_len) {
         return Err(Error::Corrupt(format!(
             "decoded length out of bounds: {}",
@@ -154,15 +167,8 @@ pub fn read(root: &Path, loc: &Location) -> Result<Vec<u8>> {
             loc.offset
         )));
     }
-    let mut file = File::open(pack_path(root, &loc.pack)?)?;
-    let mut magic = [0_u8; 8];
-    file.read_exact(&mut magic)?;
-    if &magic != MAGIC {
-        return Err(Error::Corrupt(format!("pack magic: {magic:?}")));
-    }
-    file.seek(SeekFrom::Start(loc.offset))?;
     let mut header = [0_u8; HEADER];
-    file.read_exact(&mut header)?;
+    file.read_exact_at(&mut header, loc.offset)?;
     if header[..32] != loc.hash {
         return Err(Error::Corrupt(format!(
             "record identity: expected {}, got {}",
@@ -182,7 +188,11 @@ pub fn read(root: &Path, loc: &Location) -> Result<Vec<u8>> {
     )?;
     require_equal("record codec", loc.codec as u64, header[48] as u64)?;
     let mut stored = vec![0; loc.stored_len as usize];
-    file.read_exact(&mut stored)?;
+    let data_offset = loc
+        .offset
+        .checked_add(HEADER as u64)
+        .ok_or_else(|| Error::Corrupt("record offset overflow".into()))?;
+    file.read_exact_at(&mut stored, data_offset)?;
     let decoded = match loc.codec {
         0 => stored,
         1 => zstd::bulk::decompress(&stored, loc.raw_len as usize)?,

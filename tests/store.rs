@@ -136,6 +136,24 @@ fn owner_lock_prevents_a_second_writer() -> TestResult {
 }
 
 #[test]
+fn integrity_check_bypasses_warm_chunk_and_descriptor_caches() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let root = temp.path().join("store");
+    let source = temp.path().join("input");
+    let bytes = data(100_000);
+    fs::write(&source, &bytes)?;
+    let mut store = Store::init(&root)?;
+    store.put("a", "b", &source)?;
+    assert_eq!(store.read("a", "b", 0, bytes.len())?, bytes);
+    let pack = fs::read_dir(root.join("packs"))?.next().unwrap()?.path();
+    fs::OpenOptions::new().write(true).open(pack)?.set_len(8)?;
+    assert!(store.check().is_err());
+    // A failed check also invalidates warmed entries; later reads must fail.
+    assert!(store.read("a", "b", 0, bytes.len()).is_err());
+    Ok(())
+}
+
+#[test]
 fn corrupted_payload_never_returns_success() -> TestResult {
     let temp = tempfile::tempdir()?;
     let root = temp.path().join("store");

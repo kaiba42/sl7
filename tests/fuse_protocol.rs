@@ -160,8 +160,21 @@ fn fuse_dispatch_reconstructs_reads_and_resumes_full_directory_replies() {
     for entry in fs::read_dir(root.join("packs")).unwrap() {
         fs::remove_file(entry.unwrap().path()).unwrap();
     }
-    assert_eq!(session.request(15, file, &read_body(0, 1)).0, -libc::EIO);
+    // Warm cached content is still verified, correct data after external damage.
+    assert_eq!(
+        session.request(15, file, &read_body(0, 1)),
+        (0, bytes[..1].to_vec())
+    );
     assert_eq!(session.request(38, 0, &[]).0, 0); // DESTROY
     session.worker.take().unwrap().join().unwrap().unwrap();
-    Store::open(&root).unwrap();
+    // A new session has neither decoded chunks nor pinned descriptors. Its
+    // actual FUSE reply must report missing storage rather than invent bytes.
+    let store = Store::open(&root).unwrap();
+    let mut cold = Session::new(ReadOnlyFs::new(store, 0, 0).unwrap());
+    let main = cold.lookup(1, "main");
+    let nested = cold.lookup(main, "nested");
+    let file = cold.lookup(nested, "artifact");
+    assert_eq!(cold.request(15, file, &read_body(0, 1)).0, -libc::EIO);
+    assert_eq!(cold.request(38, 0, &[]).0, 0);
+    cold.worker.take().unwrap().join().unwrap().unwrap();
 }

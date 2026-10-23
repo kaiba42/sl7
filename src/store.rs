@@ -9,6 +9,7 @@ use rusqlite::{Connection, OpenFlags, OptionalExtension, params};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{
+    cell::RefCell,
     collections::HashSet,
     fs::{self, File, OpenOptions},
     io::{BufReader, Write},
@@ -55,8 +56,19 @@ pub struct Stats {
 pub struct Store {
     pub(crate) root: PathBuf,
     pub(crate) db: Connection,
+    pub(crate) cache: RefCell<crate::read_cache::ReadCache>,
     // Declared after the catalog so SQLite closes before ownership is released.
     _lock: OwnerLock,
+}
+
+impl Drop for Store {
+    fn drop(&mut self) {
+        if std::env::var_os("SL7_CACHE_STATS").is_some() {
+            if let Ok(stats) = serde_json::to_string(&self.cache.borrow().stats()) {
+                eprintln!("sl7: cache_stats {stats}");
+            }
+        }
+    }
 }
 
 struct OwnerLock(File);
@@ -102,6 +114,7 @@ impl Store {
         Ok(Self {
             root: root.to_path_buf(),
             db,
+            cache: RefCell::default(),
             _lock: lock,
         })
     }
@@ -131,6 +144,7 @@ impl Store {
         Ok(Self {
             root: root.to_path_buf(),
             db,
+            cache: RefCell::default(),
             _lock: lock,
         })
     }
@@ -302,6 +316,15 @@ impl Store {
         self.read_file(&info, offset, length)
     }
     pub(crate) fn read_file(&self, info: &FileInfo, offset: u64, length: usize) -> Result<Vec<u8>> {
+        self.read_file_mode(info, offset, length, true)
+    }
+    fn read_file_mode(
+        &self,
+        info: &FileInfo,
+        offset: u64,
+        length: usize,
+        cached: bool,
+    ) -> Result<Vec<u8>> {
         if length > MAX_READ {
             return Err(Error::Invalid(format!(
                 "read length {length} exceeds {MAX_READ}"
@@ -314,6 +337,9 @@ impl Store {
             return Ok(vec![]);
         }
         let end = offset.saturating_add(length as u64).min(info.size);
+        if cached {
+            self.cache.borrow_mut().request(end - offset);
+        }
         let mut output = Vec::with_capacity((end - offset) as usize);
         let mut cursor = offset;
         let mut query = self.db.prepare("SELECT e.offset,c.hash,c.raw_len,c.pack,c.offset,c.stored_len,c.codec FROM extents e JOIN chunks c ON c.hash=e.hash WHERE e.file_id=?1 AND e.offset>=?2 AND e.offset<?3 ORDER BY e.offset")?;
@@ -336,7 +362,11 @@ impl Store {
                     "extent discontinuity at {cursor}, got {left}"
                 )));
             }
-            let bytes = pack::read(&self.root, &loc)?;
+            let bytes = if cached {
+                self.cache.borrow_mut().read(&self.root, &loc)?
+            } else {
+                std::sync::Arc::new(pack::read(&self.root, &loc)?)
+            };
             output.extend_from_slice(&bytes[(left - start) as usize..(right - start) as usize]);
             cursor = right;
         }
@@ -365,10 +395,18 @@ impl Store {
         Ok(())
     }
     pub(crate) fn stream(&self, info: &FileInfo, writer: &mut impl Write) -> Result<String> {
+        self.stream_mode(info, writer, true)
+    }
+    fn stream_mode(
+        &self,
+        info: &FileInfo,
+        writer: &mut impl Write,
+        cached: bool,
+    ) -> Result<String> {
         let mut digest = Sha256::new();
         let mut offset = 0;
         while offset < info.size {
-            let bytes = self.read_file(info, offset, 1024 * 1024)?;
+            let bytes = self.read_file_mode(info, offset, 1024 * 1024, cached)?;
             writer.write_all(&bytes)?;
             digest.update(&bytes);
             offset += bytes.len() as u64;
@@ -376,6 +414,7 @@ impl Store {
         Ok(hex(&digest.finalize()))
     }
     pub fn check(&self) -> Result<Stats> {
+        self.cache.borrow_mut().clear();
         let health: String = self
             .db
             .query_row("PRAGMA integrity_check", [], |r| r.get(0))?;
@@ -438,7 +477,7 @@ impl Store {
                     info.id, info.size
                 )));
             }
-            let actual = self.stream(&info, &mut std::io::sink())?;
+            let actual = self.stream_mode(&info, &mut std::io::sink(), false)?;
             if actual != info.sha256 {
                 return Err(Error::Corrupt(format!(
                     "file {}/{} checksum: expected {}, got {actual}",

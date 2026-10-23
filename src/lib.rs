@@ -6,6 +6,7 @@ pub use gc::GcReport;
 pub mod live;
 mod pack;
 pub mod probe;
+mod read_cache;
 #[cfg(feature = "fuse")]
 pub mod readonly;
 #[cfg(all(feature = "fuse", target_os = "linux"))]

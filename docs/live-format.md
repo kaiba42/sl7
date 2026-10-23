@@ -73,6 +73,13 @@ exercise process failure, not arbitrary power cuts or faulty storage.
 
 ## Collection
 
+Reads use a 128 MiB LRU of checksum-verified decoded chunks and an LRU of at most
+64 open pack descriptors. Pack reads use positioned I/O. Eviction only discards
+reconstructible cache state; it never removes reachable artifacts. Integrity
+checks clear and bypass both caches, and collection starts with that uncached
+check so deleted packs are not pinned by old descriptors. `SL7_CACHE_STATS=1`
+prints cache counters to stderr when a store closes.
+
 GC requires the exclusive store lock and an unmounted tree. It scans xattr
 identities, retains their bound manifests, and removes unreachable live rows and
 reserved manifests. Open-file/mapping roots cannot coexist with offline GC because
@@ -95,8 +102,8 @@ Use the mount for all artifact access. Native reads of sealed `tree/` files retu
 sparse zeros. Copying that directory alone loses the content; backups must preserve
 the entire unmounted store and xattrs. External mutation is unsupported.
 
-There is no online control socket, decoded chunk LRU, background packing,
+There is no online control socket, background packing,
 multi-daemon writer protocol, or native macOS writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
 permission transitions remain outside qualification. This first implementation
-establishes byte sharing and lifecycle behavior before concurrent packing/caching.
+establishes byte sharing and lifecycle behavior before concurrent packing.
