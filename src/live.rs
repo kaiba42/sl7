@@ -352,6 +352,55 @@ impl Live {
         crate::crash_at("live-hydrate-committed");
         Ok(true)
     }
+    /// Discard sealed contents without reconstructing bytes that will be removed.
+    /// Until the catalog commits, recovery can still restore the old manifest.
+    pub fn truncate_zero(&mut self, file: &File) -> Result<bool> {
+        let Some(sealed) = self.sealed(file)? else {
+            return Ok(false);
+        };
+        let identity = id(file)?.unwrap();
+        let native = OpenOptions::new().write(true).open(fd_path(file))?;
+        native.set_len(0)?;
+        #[cfg(test)]
+        crate::crash_at("live-zero-truncated");
+        native.sync_all()?;
+        #[cfg(test)]
+        crate::crash_at("live-zero-synced");
+        let tx = self.store.db.transaction()?;
+        tx.execute(
+            "UPDATE live_files SET manifest=NULL,metadata=NULL WHERE id=?1",
+            [identity],
+        )?;
+        tx.execute("DELETE FROM extents WHERE file_id=?1", [sealed.manifest.id])?;
+        tx.execute("DELETE FROM files WHERE id=?1", [sealed.manifest.id])?;
+        tx.commit()?;
+        #[cfg(test)]
+        crate::crash_at("live-zero-committed");
+        Ok(true)
+    }
+
+    /// Preserve sealed content while reflecting a successful native metadata edit.
+    pub fn metadata_changed(&mut self, file: &File, atime: bool, mtime: bool) -> Result<()> {
+        if let Some((identity, _, Some(value))) = self.record(file)? {
+            let mut metadata = decode(value)?;
+            let now = Metadata::capture(file)?;
+            if atime {
+                metadata.atime = now.atime;
+                metadata.atime_ns = now.atime_ns;
+            }
+            if mtime {
+                metadata.mtime = now.mtime;
+                metadata.mtime_ns = now.mtime_ns;
+            }
+            metadata.ctime = now.ctime;
+            metadata.ctime_ns = now.ctime_ns;
+            self.store.db.execute(
+                "UPDATE live_files SET metadata=?1 WHERE id=?2",
+                params![encode(&metadata)?, identity],
+            )?;
+        }
+        Ok(())
+    }
     /// Native mutation now owns size and timestamps. Invoke before allowing a
     /// write/truncate/chmod/utime while still holding the state mutex.
     pub fn mutated(&mut self, file: &File) -> Result<()> {
@@ -368,17 +417,7 @@ impl Live {
         Ok(())
     }
     pub fn namespace_changed(&mut self, file: &File) -> Result<()> {
-        if let Some((id, _, Some(value))) = self.record(file)? {
-            let mut metadata = decode(value)?;
-            let now = file.metadata()?;
-            metadata.ctime = now.ctime();
-            metadata.ctime_ns = now.ctime_nsec();
-            self.store.db.execute(
-                "UPDATE live_files SET metadata=?1 WHERE id=?2",
-                params![encode(&metadata)?, id],
-            )?;
-        }
-        Ok(())
+        self.metadata_changed(file, false, false)
     }
     fn scan(&self) -> Result<(HashSet<i64>, LiveStats)> {
         let mut roots = HashSet::new();
@@ -503,17 +542,65 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn sealed_metadata_edits_preserve_manifest_and_sparse_backing() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path().join("store");
+        let mut live = Live::open(Store::init(&root)?)?;
+        let path = live.tree().join("artifact");
+        fs::write(&path, bytes())?;
+        let file = File::open(&path)?;
+        live.seal(&file)?;
+        let manifest = live.sealed(&file)?.unwrap().manifest.id;
+        let old = live.metadata(&file)?.unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o444))?;
+        live.metadata_changed(&file, false, false)?;
+        assert_eq!(live.metadata(&file)?.unwrap().mtime_ns, old.mtime_ns);
+        file.set_times(
+            std::fs::FileTimes::new()
+                .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(123456)),
+        )?;
+        live.metadata_changed(&file, false, true)?;
+        assert_eq!(file.metadata()?.blocks(), 0);
+        assert_eq!(live.sealed(&file)?.unwrap().manifest.id, manifest);
+        assert_eq!(live.metadata(&file)?.unwrap().mtime, 123456);
+        drop(live);
+        let mut live = Live::open(Store::open(&root)?)?;
+        live.recover()?;
+        assert_eq!(live.metadata(&file)?.unwrap().mtime, 123456);
+        assert_eq!(live.read(&file, 0, 300_000)?.unwrap(), bytes());
+        assert_eq!(file.metadata()?.blocks(), 0);
+        Ok(())
+    }
+    #[test]
+    fn truncate_zero_discards_manifest_without_reconstructing() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut live = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let path = live.tree().join("artifact");
+        fs::write(&path, bytes())?;
+        let file = File::open(&path)?;
+        live.seal(&file)?;
+        // Make reconstruction impossible: truncation must not read the old packs.
+        for pack in fs::read_dir(live.store.root.join("packs"))? {
+            fs::remove_file(pack?.path())?;
+        }
+        assert!(live.truncate_zero(&file)?);
+        assert_eq!(file.metadata()?.len(), 0);
+        assert!(live.sealed(&file)?.is_none());
+        assert!(live.metadata(&file)?.is_none());
+        Ok(())
+    }
+    #[test]
     fn crash_transition_child() -> Result<()> {
         let Some(root) = std::env::var_os("SL7_LIVE_TEST_ROOT") else {
             return Ok(());
         };
         let mut live = Live::open(Store::open(Path::new(&root))?)?;
         let file = File::open(live.tree().join("artifact"))?;
-        if std::env::var("SL7_TEST_CRASH_STAGE")
-            .unwrap()
-            .starts_with("live-hydrate")
-        {
+        let stage = std::env::var("SL7_TEST_CRASH_STAGE").unwrap();
+        if stage.starts_with("live-hydrate") {
             live.hydrate(&file)?;
+        } else if stage.starts_with("live-zero") {
+            live.truncate_zero(&file)?;
         } else {
             live.seal(&file)?;
         }
@@ -527,13 +614,16 @@ mod tests {
             "live-hydrate-truncated",
             "live-hydrate-synced",
             "live-hydrate-committed",
+            "live-zero-truncated",
+            "live-zero-synced",
+            "live-zero-committed",
         ] {
             let temp = tempfile::tempdir()?;
             let root = temp.path().join("store");
             let mut live = Live::open(Store::init(&root)?)?;
             let path = live.tree().join("artifact");
             fs::write(&path, bytes())?;
-            if stage.starts_with("live-hydrate") {
+            if stage.starts_with("live-hydrate") || stage.starts_with("live-zero") {
                 live.seal(&File::open(&path)?)?;
             }
             drop(live);
@@ -551,9 +641,14 @@ mod tests {
                 Some(bytes) => bytes,
                 None => fs::read(&path)?,
             };
-            assert_eq!(actual, bytes(), "{stage}");
+            let expected = if stage == "live-zero-committed" {
+                vec![]
+            } else {
+                bytes()
+            };
+            assert_eq!(actual, expected, "{stage}");
             live.hydrate(&file)?;
-            assert_eq!(fs::read(&path)?, bytes());
+            assert_eq!(fs::read(&path)?, expected);
             live.gc()?;
         }
         Ok(())

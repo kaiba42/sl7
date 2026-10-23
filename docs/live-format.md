@@ -36,6 +36,13 @@ Hydration, before mutable access:
 4. Preserve the timestamp snapshot across the internal transition, then invalidate
    it before allowing a user mutation.
 
+Metadata-only changes retain the manifest: permissions remain on the native
+inode, while changed timestamps and ctime update the logical snapshot. They do
+not reconstruct file contents. Truncation to zero first truncates and syncs the
+native inode, then atomically removes its manifest and metadata binding. Before
+that commit recovery still restores the old manifest; afterward the durable
+empty native file is authoritative. Nonzero size changes still hydrate first.
+
 Callbacks and transitions hold one mutex. This excludes competing writers during
 packing instead of speculatively packing in the background and validating a
 generation afterward. Files below 64 KiB, unlinked files, and files lacking owner
@@ -59,7 +66,8 @@ synced native bytes are authoritative. Synced data from a killed daemon can be
 read after remount. The store and native tree remain exclusively owned.
 
 Unit subprocesses terminate at seal commit, retirement truncate, hydration
-truncate, hydration fsync, and hydration commit. Mounted tests also kill the real
+truncate, hydration fsync, hydration commit, and zero-truncate publication
+boundaries. Mounted tests also kill the real
 daemon after acknowledged file/directory fsync, remount, and verify bytes. These
 exercise process failure, not arbitrary power cuts or faulty storage.
 

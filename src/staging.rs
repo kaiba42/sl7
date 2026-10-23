@@ -152,6 +152,13 @@ fn timespec(time: Option<TimeOrNow>) -> io::Result<libc::timespec> {
 }
 
 impl State {
+    fn truncate_zero(&mut self, ino: INodeNo) -> io::Result<()> {
+        if let Some(live) = &mut self.live {
+            live.truncate_zero(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
+                .map_err(storage)?;
+        }
+        Ok(())
+    }
     fn hydrate(&mut self, ino: INodeNo) -> io::Result<()> {
         if let Some(live) = &mut self.live {
             live.hydrate(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
@@ -308,7 +315,9 @@ impl State {
         if !self.inode(ino)?.metadata()?.is_file() {
             return Err(error(libc::EINVAL));
         }
-        if flags & (libc::O_ACCMODE | libc::O_TRUNC) != libc::O_RDONLY {
+        if flags & libc::O_TRUNC != 0 {
+            self.truncate_zero(ino)?;
+        } else if flags & libc::O_ACCMODE != libc::O_RDONLY {
             self.hydrate(ino)?;
         }
         if flags & libc::O_TRUNC != 0 {
@@ -489,8 +498,12 @@ impl Filesystem for StagingFs {
             if m.file_type().is_symlink() {
                 return Err(error(libc::EOPNOTSUPP));
             }
-            if m.is_file() {
-                s.hydrate(ino)?;
+            if m.is_file() && size.is_some() {
+                if size == Some(0) {
+                    s.truncate_zero(ino)?;
+                } else {
+                    s.hydrate(ino)?;
+                }
                 s.mutated(ino)?;
             }
             if let Some(size) = size {
@@ -510,6 +523,10 @@ impl Filesystem for StagingFs {
                 native(unsafe {
                     libc::utimensat(libc::AT_FDCWD, path.as_ptr(), times.as_ptr(), 0)
                 })?;
+            }
+            if let Some(live) = &mut s.live {
+                live.metadata_changed(&s.nodes[&ino].pin, atime.is_some(), mtime.is_some())
+                    .map_err(storage)?;
             }
             s.attr(ino)
         }) {
@@ -553,9 +570,11 @@ impl Filesystem for StagingFs {
             if flags & libc::O_EXCL == 0 {
                 match s.lookup(parent, name) {
                     Ok(ino) => {
-                        s.hydrate(ino)?;
                         if flags & libc::O_TRUNC != 0 {
+                            s.truncate_zero(ino)?;
                             s.mutated(ino)?;
+                        } else {
+                            s.hydrate(ino)?;
                         }
                     }
                     Err(e) if e.kind() == io::ErrorKind::NotFound => (),

@@ -108,6 +108,12 @@ def run(work):
         h.sealed("main/shared")
         assert a.stat().st_mtime_ns == before.st_mtime_ns
         assert a.stat().st_ctime_ns == before.st_ctime_ns
+        a.chmod(0o444)
+        stamp = 1234567890000000000
+        os.utime(a, ns=(stamp, stamp))
+        assert a.stat().st_mtime_ns == stamp
+        assert (h.store / "tree/main/shared").stat().st_blocks == 0
+        a.chmod(0o644)
         b.write_bytes(payload)
         h.sealed("other/shared")
         assert a.read_bytes() == b.read_bytes() == payload
