@@ -3,6 +3,8 @@
 The full Synkro workspace has a separate
 [native-versus-SL7 build performance report](synkro-build-performance.md),
 including clean builds, one-line rebuilds, and storage before GC.
+The follow-up [profiling report](profiling.md) identifies CPU hotspots and
+filesystem request delays in the unchanged baseline implementation.
 
 The current machine-readable report is [end-to-end.json](end-to-end.json).
 Run `bash scripts/docker-test.sh` to reproduce all four mounted suites. Run

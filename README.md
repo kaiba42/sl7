@@ -6,7 +6,8 @@ reconstructs them on reads. Worktrees keep independent output directories.
 
 **Prototype:** native macOS mounting is unsupported. The current implementation
 saved 72–74% of storage in our benchmark, but made debug builds/rebuilds
-2.3–3.1× slower. See the [measured results](docs/validation/synkro-build-performance.md).
+2.3–3.1× slower. See the [measured results](docs/validation/synkro-build-performance.md)
+and [profiling findings](docs/validation/profiling.md).
 
 ## Try it with Docker
 

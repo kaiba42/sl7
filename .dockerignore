@@ -7,3 +7,6 @@
 !tests/**
 !scripts/
 !scripts/**
+**/target
+**/__pycache__
+**/*.pyc
