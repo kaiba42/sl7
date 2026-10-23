@@ -1,6 +1,9 @@
 # Initial implementation validation
 
-For current whole-workspace timings, see the
+For the latest focused debug comparison, see the
+[publication-lock results](publication-lock.md) or [HTML table](publication-lock.html).
+
+For the broader native/debug/release baseline, see the
 [Oaktown native/original/current comparison](oaktown-build-performance.md)
 or its [HTML table](oaktown-build-performance.html).
 

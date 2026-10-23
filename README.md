@@ -6,8 +6,8 @@ reconstructs them on reads. Worktrees keep independent output directories.
 
 **Prototype:** native macOS mounting is unsupported. SL7 trades build time for
 storage savings. See the [full build comparison](docs/validation/oaktown-build-performance.md)
-of native storage, original SL7, and current SL7, and the
-[read-cache measurements](docs/validation/extent-cache.md).
+of native storage, original SL7, and the earlier optimized version, plus the
+[new publication-lock measurements](docs/validation/publication-lock.md).
 
 ## Try it with Docker
 
