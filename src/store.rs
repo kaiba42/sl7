@@ -2,7 +2,9 @@
 use crate::{
     Error, Result,
     chunk::{self, Hash},
-    hex, pack, sync_directory,
+    hex, pack,
+    read_cache::{Extent, MAP_WINDOW, MAX_MAP_ROWS, MapKey},
+    sync_directory,
 };
 use fs2::FileExt;
 use rusqlite::{Connection, OpenFlags, OptionalExtension, params};
@@ -14,6 +16,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{BufReader, Write},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 const APP_ID: i64 = 0x534c3701;
 const MAX_READ: usize = 16 * 1024 * 1024;
@@ -277,11 +280,8 @@ impl Store {
     fn find(&self, view: &str, name: &str) -> Result<Option<FileInfo>> {
         Ok(self
             .db
-            .query_row(
-                "SELECT id,view,name,size,digest FROM files WHERE view=?1 AND name=?2",
-                params![view, name],
-                file_row,
-            )
+            .prepare_cached("SELECT id,view,name,size,digest FROM files WHERE view=?1 AND name=?2")?
+            .query_row(params![view, name], file_row)
             .optional()?)
     }
     pub fn info(&self, view: &str, name: &str) -> Result<FileInfo> {
@@ -328,40 +328,122 @@ impl Store {
         }
         let mut output = Vec::with_capacity((end - offset) as usize);
         let mut cursor = offset;
-        let mut query = self.db.prepare("SELECT e.offset,c.hash,c.raw_len,c.pack,c.offset,c.stored_len,c.codec FROM extents e JOIN chunks c ON c.hash=e.hash WHERE e.file_id=?1 AND e.offset>=?2 AND e.offset<?3 ORDER BY e.offset")?;
-        let rows = query.query_map(
-            params![info.id, offset.saturating_sub(chunk::MAX as u64), end],
-            |row| Ok((row.get::<_, u64>(0)?, location_row(row, 1)?)),
-        )?;
-        for row in rows {
-            let (start, loc) = row?;
-            let chunk_end = start
-                .checked_add(loc.raw_len)
-                .ok_or_else(|| Error::Corrupt("extent end overflow".into()))?;
-            if chunk_end <= offset {
-                continue;
+        while cursor < end {
+            let window_start = cursor / MAP_WINDOW * MAP_WINDOW;
+            let window_end = window_start.saturating_add(MAP_WINDOW).min(info.size);
+            let stop = end.min(window_end);
+            let segment_start = cursor;
+            let key = MapKey {
+                file: info.id,
+                size: info.size,
+                digest: info.sha256.clone(),
+                start: window_start,
+            };
+            let hit = if cached {
+                self.cache.borrow_mut().map(&key)
+            } else {
+                None
+            };
+            let extents = if let Some(extents) = hit {
+                Some(extents)
+            } else if cached {
+                self.cache.borrow_mut().map_query();
+                let mut query = self.db.prepare_cached(RANGE_SQL_LIMITED)?;
+                let rows = query
+                    .query_map(
+                        params![
+                            info.id,
+                            window_start.saturating_sub(chunk::MAX as u64),
+                            window_end,
+                            (MAX_MAP_ROWS + 1) as u64
+                        ],
+                        extent_row,
+                    )?
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                if rows.len() > MAX_MAP_ROWS {
+                    // Dense imported catalogs remain readable without an
+                    // unbounded metadata allocation or a new format restriction.
+                    self.cache.borrow_mut().map_fallback();
+                    None
+                } else {
+                    validate_window(&rows, window_start, window_end)?;
+                    let rows: Arc<[Extent]> = rows.into();
+                    self.cache.borrow_mut().remember_map(key, Arc::clone(&rows));
+                    Some(rows)
+                }
+            } else {
+                None
+            };
+            if let Some(extents) = extents {
+                let first = extents.partition_point(|e| e.start + e.location.raw_len <= cursor);
+                for extent in extents[first..].iter().take_while(|e| e.start < stop) {
+                    self.append_extent(
+                        extent,
+                        &mut cursor,
+                        segment_start,
+                        stop,
+                        cached,
+                        &mut output,
+                    )?;
+                }
+            } else {
+                // Integrity checking bypasses mapping and payload caches alike.
+                if cached {
+                    self.cache.borrow_mut().map_query();
+                }
+                let mut query = self.db.prepare_cached(RANGE_SQL)?;
+                for row in query.query_map(
+                    params![info.id, cursor.saturating_sub(chunk::MAX as u64), stop],
+                    extent_row,
+                )? {
+                    self.append_extent(
+                        &row?,
+                        &mut cursor,
+                        segment_start,
+                        stop,
+                        cached,
+                        &mut output,
+                    )?;
+                }
             }
-            let left = start.max(offset);
-            let right = chunk_end.min(end);
-            if left != cursor {
+            if cursor != stop {
                 return Err(Error::Corrupt(format!(
-                    "extent discontinuity at {cursor}, got {left}"
+                    "manifest ends at {cursor}, requested through {stop}"
                 )));
             }
-            let bytes = if cached {
-                self.cache.borrow_mut().read(&self.root, &loc)?
-            } else {
-                std::sync::Arc::new(pack::read(&self.root, &loc)?)
-            };
-            output.extend_from_slice(&bytes[(left - start) as usize..(right - start) as usize]);
-            cursor = right;
-        }
-        if cursor != end {
-            return Err(Error::Corrupt(format!(
-                "manifest ends at {cursor}, requested through {end}"
-            )));
         }
         Ok(output)
+    }
+    fn append_extent(
+        &self,
+        extent: &Extent,
+        cursor: &mut u64,
+        range_start: u64,
+        end: u64,
+        cached: bool,
+        output: &mut Vec<u8>,
+    ) -> Result<()> {
+        let start = extent.start;
+        let loc = &extent.location;
+        let chunk_end = extent_end(extent)?;
+        if chunk_end <= range_start {
+            return Ok(());
+        }
+        let left = start.max(range_start);
+        let right = chunk_end.min(end);
+        if left != *cursor {
+            return Err(Error::Corrupt(format!(
+                "extent discontinuity at {cursor}, got {left}"
+            )));
+        }
+        let bytes = if cached {
+            self.cache.borrow_mut().read(&self.root, loc)?
+        } else {
+            Arc::new(pack::read(&self.root, loc)?)
+        };
+        output.extend_from_slice(&bytes[(left - start) as usize..(right - start) as usize]);
+        *cursor = right;
+        Ok(())
     }
     pub fn export(&self, view: &str, name: &str, destination: &Path) -> Result<()> {
         let info = self.info(view, name)?;
@@ -546,17 +628,15 @@ fn prepare_import(
     // No pack is needed until the first novel chunk.
     let mut writer: Option<pack::Writer> = None;
     let mut offset = 0_u64;
+    let mut exists_query =
+        db.prepare_cached("SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)")?;
     while let Some(bytes) = chunker.next_chunk()? {
         if canceled() {
             return Err(Error::SourceChanged("sealing candidate canceled".into()));
         }
         digest.update(&bytes);
         let hash = chunk::identity(&bytes);
-        let exists: bool = db.query_row(
-            "SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)",
-            [hash.as_slice()],
-            |r| r.get(0),
-        )?;
+        let exists: bool = exists_query.query_row([hash.as_slice()], |r| r.get(0))?;
         if !exists && seen.insert(hash) {
             if let Some(w) = writer.take() {
                 if w.size + bytes.len() as u64 + 49 > pack_limit {
@@ -613,6 +693,43 @@ fn prepare_import(
         locations,
         packs,
     })
+}
+
+const RANGE_SQL: &str = "SELECT e.offset,c.hash,c.raw_len,c.pack,c.offset,c.stored_len,c.codec FROM extents e JOIN chunks c ON c.hash=e.hash WHERE e.file_id=?1 AND e.offset>=?2 AND e.offset<?3 ORDER BY e.offset";
+const RANGE_SQL_LIMITED: &str = "SELECT e.offset,c.hash,c.raw_len,c.pack,c.offset,c.stored_len,c.codec FROM extents e JOIN chunks c ON c.hash=e.hash WHERE e.file_id=?1 AND e.offset>=?2 AND e.offset<?3 ORDER BY e.offset LIMIT ?4";
+fn extent_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Extent> {
+    Ok(Extent {
+        start: row.get(0)?,
+        location: location_row(row, 1)?,
+    })
+}
+fn extent_end(extent: &Extent) -> Result<u64> {
+    if extent.location.raw_len == 0 || extent.location.raw_len > chunk::MAX as u64 {
+        return Err(Error::Corrupt("invalid extent length".into()));
+    }
+    extent
+        .start
+        .checked_add(extent.location.raw_len)
+        .ok_or_else(|| Error::Corrupt("extent end overflow".into()))
+}
+fn validate_window(extents: &[Extent], start: u64, end: u64) -> Result<()> {
+    let mut cursor = start;
+    for extent in extents {
+        let stop = extent_end(extent)?;
+        if stop <= start {
+            continue;
+        }
+        if extent.start.max(start) != cursor {
+            return Err(Error::Corrupt(format!("extent discontinuity at {cursor}")));
+        }
+        cursor = stop.min(end);
+    }
+    if cursor != end {
+        return Err(Error::Corrupt(format!(
+            "manifest ends at {cursor}, expected {end}"
+        )));
+    }
+    Ok(())
 }
 
 fn acquire(file: File) -> Result<OwnerLock> {
@@ -678,6 +795,46 @@ fn directory_bytes(path: &Path) -> Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn warm_ranges_skip_extent_queries_and_dense_windows_fall_back() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let source = temp.path().join("input");
+        fs::write(&source, vec![19; 700_000])?;
+        let mut store = Store::init(&temp.path().join("store"))?;
+        store.put("a", "b", &source)?;
+        store.read("a", "b", 0, 4096)?;
+        let queries = store.cache.borrow().stats().map_queries;
+        store.read("a", "b", 4096, 4096)?;
+        assert_eq!(store.cache.borrow().stats().map_queries, queries);
+        assert_eq!(store.cache.borrow().stats().map_hits, 1);
+
+        // A valid, densely partitioned catalog may exceed the cache loader's
+        // row cap. Preserve format compatibility via the bounded streaming path.
+        fs::write(&source, [37])?;
+        let info = store.put("a", "dense", &source)?.file;
+        let hash: Vec<u8> = store.db.query_row(
+            "SELECT hash FROM extents WHERE file_id=?1",
+            [info.id],
+            |r| r.get(0),
+        )?;
+        let tx = store.db.transaction()?;
+        tx.execute(
+            "UPDATE files SET size=2000,digest=?2 WHERE id=?1",
+            params![info.id, Sha256::digest(vec![37; 2000]).as_slice()],
+        )?;
+        for offset in 1..2000 {
+            tx.execute(
+                "INSERT INTO extents VALUES(?1,?2,?3)",
+                params![info.id, offset, &hash],
+            )?;
+        }
+        tx.commit()?;
+        assert_eq!(store.read("a", "dense", 999, 1000)?, vec![37; 1000]);
+        assert_eq!(store.cache.borrow().stats().map_fallbacks, 1);
+        store.check()?;
+        Ok(())
+    }
+
     #[test]
     fn dropping_owner_releases_lock_even_with_inherited_descriptor() -> Result<()> {
         let temp = tempfile::tempdir()?;

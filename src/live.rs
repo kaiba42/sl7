@@ -184,11 +184,8 @@ impl Live {
         let row = self
             .store
             .db
-            .query_row(
-                "SELECT manifest,metadata FROM live_files WHERE id=?1",
-                [id],
-                |r| Ok((id, r.get(0)?, r.get(1)?)),
-            )
+            .prepare_cached("SELECT manifest,metadata FROM live_files WHERE id=?1")?
+            .query_row([id], |r| Ok((id, r.get(0)?, r.get(1)?)))
             .optional()?;
         row.ok_or_else(|| Error::Corrupt(format!("live inode references missing identity {id}")))
             .map(Some)
@@ -203,11 +200,11 @@ impl Live {
         let Some((_, Some(manifest), metadata)) = self.record(file)? else {
             return Ok(None);
         };
-        let name: String = self.store.db.query_row(
-            "SELECT name FROM files WHERE id=?1 AND view=?2",
-            params![manifest, VIEW],
-            |r| r.get(0),
-        )?;
+        let name: String = self
+            .store
+            .db
+            .prepare_cached("SELECT name FROM files WHERE id=?1 AND view=?2")?
+            .query_row(params![manifest, VIEW], |r| r.get(0))?;
         let manifest = self.store.info(VIEW, &name)?;
         let metadata = decode(
             metadata.ok_or_else(|| Error::Corrupt("sealed inode missing metadata".into()))?,

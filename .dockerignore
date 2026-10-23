@@ -5,6 +5,8 @@
 !src/**
 !tests/
 !tests/**
+!benches/
+!benches/**
 !scripts/
 !scripts/**
 **/target

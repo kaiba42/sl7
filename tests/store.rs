@@ -325,3 +325,60 @@ fn collection_rewrites_partially_live_packs_and_reclaims_cleaned_data() {
     assert_eq!(report.stats.referenced_pack_bytes, 0);
     assert_eq!(report.stats.orphan_pack_bytes, 0);
 }
+
+#[test]
+fn cached_maps_cross_windows_survive_id_reuse_and_gc() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let source = temp.path().join("input");
+    let root = temp.path().join("store");
+    let bytes = data(2 * 1024 * 1024 + 17);
+    fs::write(&source, &bytes)?;
+    let mut store = Store::init(&root)?;
+    let old = store.put("view", "file", &source)?.file;
+    for offset in [0, 262143, 262144, 524280, 1048569, bytes.len() - 3] {
+        for _ in 0..2 {
+            assert_eq!(
+                store.read("view", "file", offset as u64, 600_000)?,
+                bytes[offset..(offset + 600_000).min(bytes.len())]
+            );
+        }
+    }
+    store.remove("view", "file")?;
+    let mut replacement = bytes.clone();
+    replacement[262143..262150].copy_from_slice(b"changed");
+    fs::write(&source, &replacement)?;
+    let new = store.put("view", "file", &source)?.file;
+    assert_eq!(old.id, new.id, "test must exercise SQLite row ID reuse");
+    assert_eq!(
+        store.read("view", "file", 0, replacement.len())?,
+        replacement
+    );
+    // The old file contributes dead chunks to shared packs. Warm maps must not
+    // retain locations into packs removed or rewritten during compaction.
+    store.compact()?;
+    assert_eq!(
+        store.read("view", "file", 0, replacement.len())?,
+        replacement
+    );
+    Ok(())
+}
+
+#[test]
+fn integrity_check_cannot_be_satisfied_by_a_cached_extent_map() -> TestResult {
+    let temp = tempfile::tempdir()?;
+    let root = temp.path().join("store");
+    let source = temp.path().join("input");
+    let bytes = data(700_000);
+    fs::write(&source, &bytes)?;
+    let mut store = Store::init(&root)?;
+    let info = store.put("a", "b", &source)?.file;
+    assert_eq!(store.read("a", "b", 0, bytes.len())?, bytes);
+    let db = rusqlite::Connection::open(root.join("catalog.sqlite"))?;
+    db.execute(
+        "DELETE FROM extents WHERE file_id=?1 AND offset=0",
+        [info.id],
+    )?;
+    assert!(store.check().is_err());
+    assert!(store.read("a", "b", 0, 4096).is_err());
+    Ok(())
+}

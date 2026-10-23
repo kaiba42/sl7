@@ -16,7 +16,7 @@ def run(work):
     source.mkdir()
     for name in ("Cargo.toml", "Cargo.lock"):
         shutil.copy2(Path("/sl7") / name, source / name)
-    for name in ("src", "tests"):
+    for name in ("src", "tests", "benches"):
         shutil.copytree(Path("/sl7") / name, source / name)
 
     def cargo(*args, fresh=False):

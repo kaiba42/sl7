@@ -1,5 +1,7 @@
 # Four optimizations: measured results
 
+Follow-up: [cached extent mappings and prepared statements](extent-cache.md).
+
 All four changes were committed and pushed separately:
 
 1. [`cc1c5ef`](https://github.com/kaiba42/sl7/commit/cc1c5ef): ARM64 SHA-256 acceleration.

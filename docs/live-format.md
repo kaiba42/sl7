@@ -87,6 +87,19 @@ checks clear and bypass both caches, and collection starts with that uncached
 check so deleted packs are not pinned by old descriptors. `SL7_CACHE_STATS=1`
 prints cache counters to stderr when a store closes.
 
+File-to-chunk mappings are cached as sorted 256 KiB logical windows with binary
+search for the requested range. The mapping cache has a 32 MiB accounting budget
+and a 4,096-window limit, separate from the decoded-byte budget. Accounting covers
+extent allocations, pack strings, keys, and estimated entry overhead; it is not
+an exact RSS limit. Windows are keyed by file ID, logical size, whole-file digest,
+and window offset, so SQLite row-ID reuse cannot alias different file contents.
+GC clears mappings before relocating packs, and integrity checks clear/bypass
+them along with the other caches. Loading is capped at 1,025 rows; unusually dense
+catalog windows use the original streaming query instead of an unbounded allocation.
+Metadata, range, and per-chunk existence queries reuse prepared statements.
+`cache_stats` includes mapping hits, misses, SQL queries, fallback counts, accounted
+bytes, and retained windows.
+
 GC requires the exclusive store lock and an unmounted tree. It scans xattr
 identities, retains their bound manifests, and removes unreachable live rows and
 reserved manifests. Open-file/mapping roots cannot coexist with offline GC because

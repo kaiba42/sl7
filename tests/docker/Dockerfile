@@ -6,6 +6,7 @@ WORKDIR /sl7
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
 COPY tests/ tests/
+COPY benches/ benches/
 COPY scripts/ scripts/
 RUN cargo test --locked --features fuse && cargo build --locked --features fuse \
     && cargo clippy --locked --all-targets --features fuse -- -D warnings \

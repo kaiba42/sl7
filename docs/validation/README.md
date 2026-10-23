@@ -3,6 +3,8 @@
 This page preserves the original measurements. The subsequent
 [optimization report](optimizations.md) covers the current implementation,
 with [per-change validation](optimizations-validation.json) and fresh profiles.
+The newer [extent mapping cache report](extent-cache.md) measures the subsequent
+read-path improvement.
 
 The full Synkro workspace has a separate
 [native-versus-SL7 build performance report](synkro-build-performance.md),

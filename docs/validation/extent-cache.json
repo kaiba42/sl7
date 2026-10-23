@@ -1,0 +1,495 @@
+{
+  "baseline_commit": "a6b41601b31610f8ed485791f57db6e63815f90b",
+  "environment": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+    "kernel": "7.2.12-orbstack-00394-gbecdd6130068",
+    "cpu_max": "800000 100000",
+    "memory_max": "12884901888",
+    "binary_sha256": {
+      "before": "70c4c820babc0aa1c0877e2d5e85b9a5d20daa7d6e849ed5dcb7efd6c26e582a",
+      "after": "6b6b91bbb8dee6635292c189e6acde7f0477a070c96ecc96e3c7c6581429d8b4"
+    },
+    "source_sha256": {
+      "before": {
+        "src/store.rs": "5e958523dc7c9b2a4b204e6e64aa52a48ce039eef81fc57139503ca82be97d8e",
+        "src/live.rs": "814a6bb83f259b1fe25e2261cee46d1316e63eccf58cc338ee7680a159511546",
+        "src/read_cache.rs": "2df01862ddc3adec7cd1b83e88ace8cd532f7059394e09a356cbf4f4c0ce4825",
+        "benches/range_reads.rs": "ea5b4d0633af63d480c64be615d5c1ab1e52797265b5739872249bad2b982f92"
+      },
+      "after": {
+        "src/store.rs": "d8b53f852e4c49edd94e1813a7f398f677f733a517bafed3d89a196604065485",
+        "src/live.rs": "52b13ebaea1c4ada33a59afe0ecb5c35d4d69ba6373b4e156e06ba0b1e76de6f",
+        "src/read_cache.rs": "a83ccb08be080446fd2e42616e52053c852370843d529845a13e452cf0cbf712",
+        "benches/range_reads.rs": "ea5b4d0633af63d480c64be615d5c1ab1e52797265b5739872249bad2b982f92"
+      }
+    }
+  },
+  "method": "Deterministic 32 MiB synthetic artifact; serial ABBA executions; seven samples per group per pass; identical harness, read counts and byte assertions. Warm groups prime decoded and mapping caches; cold groups reopen Store each round with OS caches warm. Setup and open/close excluded. Separate target dirs; distinct binary hashes and exact original/optimized source hashes verified. No Criterion significance test.",
+  "comparison": [
+    {
+      "group": "warm_sequential_4k",
+      "reads_per_sample": 65536,
+      "bytes_per_read": 4096,
+      "before": {
+        "pooled_median_us_per_read": 11.066844772338866,
+        "pass_median_us_per_read": [
+          9.59593278503418,
+          11.188040954589844
+        ]
+      },
+      "after": {
+        "pooled_median_us_per_read": 2.4504548339843746,
+        "pass_median_us_per_read": [
+          2.391146286010742,
+          2.4606017608642574
+        ]
+      },
+      "pooled_speedup": 4.5162410744557455
+    },
+    {
+      "group": "warm_random_4k",
+      "reads_per_sample": 65536,
+      "bytes_per_read": 4096,
+      "before": {
+        "pooled_median_us_per_read": 10.799033409118653,
+        "pass_median_us_per_read": [
+          10.579840133666993,
+          10.890018585205079
+        ]
+      },
+      "after": {
+        "pooled_median_us_per_read": 3.487141304016113,
+        "pass_median_us_per_read": [
+          3.4122555541992186,
+          3.54775146484375
+        ]
+      },
+      "pooled_speedup": 3.0968155482203983
+    },
+    {
+      "group": "warm_cross_window_8k",
+      "reads_per_sample": 65536,
+      "bytes_per_read": 8192,
+      "before": {
+        "pooled_median_us_per_read": 10.97912397003174,
+        "pass_median_us_per_read": [
+          10.566016540527343,
+          11.185099502563476
+        ]
+      },
+      "after": {
+        "pooled_median_us_per_read": 3.1280300750732426,
+        "pass_median_us_per_read": [
+          3.0056794433593748,
+          3.3413856201171876
+        ]
+      },
+      "pooled_speedup": 3.509916371176407
+    },
+    {
+      "group": "cold_sparse_4k",
+      "reads_per_sample": 4096,
+      "bytes_per_read": 4096,
+      "before": {
+        "pooled_median_us_per_read": 31.153411254882812,
+        "pass_median_us_per_read": [
+          54.96145751953125,
+          24.440172363281253
+        ]
+      },
+      "after": {
+        "pooled_median_us_per_read": 28.97423205566406,
+        "pass_median_us_per_read": [
+          28.280603271484374,
+          29.24084423828126
+        ]
+      },
+      "pooled_speedup": 1.0752109389830318
+    },
+    {
+      "group": "cold_sequential_1m",
+      "reads_per_sample": 256,
+      "bytes_per_read": 1048576,
+      "before": {
+        "pooled_median_us_per_read": 734.30561328125,
+        "pass_median_us_per_read": [
+          912.48107421875,
+          651.62309765625
+        ]
+      },
+      "after": {
+        "pooled_median_us_per_read": 703.566708984375,
+        "pass_median_us_per_read": [
+          697.6774609375001,
+          709.4559570312499
+        ]
+      },
+      "pooled_speedup": 1.0436901062889228
+    }
+  ],
+  "runs": [
+    {
+      "order": 1,
+      "implementation": "before",
+      "groups": [
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_sequential_4k",
+          "median_seconds": 0.628879051,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            1.155891014,
+            0.628879051,
+            0.677783235,
+            0.730387846,
+            0.62513617,
+            0.626035529,
+            0.624792249
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_random_4k",
+          "median_seconds": 0.693360403,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.698022517,
+            0.693360403,
+            0.680644005,
+            0.68598646,
+            0.684389594,
+            0.707372742,
+            0.702792411
+          ]
+        },
+        {
+          "bytes_per_read": 8192,
+          "group": "warm_cross_window_8k",
+          "median_seconds": 0.69245446,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.671948415,
+            0.672859565,
+            0.67547582,
+            0.69245446,
+            0.701384357,
+            0.724146279,
+            0.839246626
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "cold_sparse_4k",
+          "median_seconds": 0.22512213,
+          "reads_per_sample": 4096,
+          "samples_seconds": [
+            0.144950201,
+            0.302898895,
+            0.24652203099999997,
+            0.255053176,
+            0.22512213,
+            0.20425691,
+            0.209698774
+          ]
+        },
+        {
+          "bytes_per_read": 1048576,
+          "group": "cold_sequential_1m",
+          "median_seconds": 0.233595155,
+          "reads_per_sample": 256,
+          "samples_seconds": [
+            0.34475101799999996,
+            0.26543920800000004,
+            0.256114396,
+            0.233595155,
+            0.20247014999999996,
+            0.19746198899999998,
+            0.18680295000000002
+          ]
+        }
+      ],
+      "warm_mapping_queries_per_store": [
+        -1
+      ],
+      "max_map_bytes": 0,
+      "max_map_windows": 0
+    },
+    {
+      "order": 2,
+      "implementation": "after",
+      "groups": [
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_sequential_4k",
+          "median_seconds": 0.156706163,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.164183219,
+            0.160605568,
+            0.156579635,
+            0.154414747,
+            0.156706163,
+            0.152493875,
+            0.159128106
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_random_4k",
+          "median_seconds": 0.22362558,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.235125237,
+            0.230081539,
+            0.221772992,
+            0.205740331,
+            0.244904873,
+            0.22362558,
+            0.214305601
+          ]
+        },
+        {
+          "bytes_per_read": 8192,
+          "group": "warm_cross_window_8k",
+          "median_seconds": 0.196980208,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.198370097,
+            0.196980208,
+            0.391594343,
+            0.19216207,
+            0.189794412,
+            0.192087411,
+            0.211627061
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "cold_sparse_4k",
+          "median_seconds": 0.11583735099999999,
+          "reads_per_sample": 4096,
+          "samples_seconds": [
+            0.136175664,
+            0.130081829,
+            0.11547276299999999,
+            0.11763506900000001,
+            0.11456678099999998,
+            0.11540339799999999,
+            0.11583735099999999
+          ]
+        },
+        {
+          "bytes_per_read": 1048576,
+          "group": "cold_sequential_1m",
+          "median_seconds": 0.17860543,
+          "reads_per_sample": 256,
+          "samples_seconds": [
+            0.186772412,
+            0.18405112599999998,
+            0.192938194,
+            0.17860543,
+            0.16904755999999999,
+            0.160898328,
+            0.16628086400000003
+          ]
+        }
+      ],
+      "warm_mapping_queries_per_store": [
+        128
+      ],
+      "max_map_bytes": 457472,
+      "max_map_windows": 128
+    },
+    {
+      "order": 3,
+      "implementation": "after",
+      "groups": [
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_sequential_4k",
+          "median_seconds": 0.161257997,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.190761598,
+            0.165539737,
+            0.163710479,
+            0.160596237,
+            0.160589779,
+            0.155977368,
+            0.161257997
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_random_4k",
+          "median_seconds": 0.23250544,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.218876851,
+            0.257378048,
+            0.240014409,
+            0.234945799,
+            0.23250544,
+            0.226985046,
+            0.207450561
+          ]
+        },
+        {
+          "bytes_per_read": 8192,
+          "group": "warm_cross_window_8k",
+          "median_seconds": 0.218981048,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.198052175,
+            0.220311361,
+            0.215042896,
+            0.221957055,
+            0.218981048,
+            0.222337638,
+            0.197126526
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "cold_sparse_4k",
+          "median_seconds": 0.11977049800000003,
+          "reads_per_sample": 4096,
+          "samples_seconds": [
+            0.127824951,
+            0.12157430300000002,
+            0.11977049800000003,
+            0.120436725,
+            0.119423831,
+            0.11793307799999998,
+            0.11624201
+          ]
+        },
+        {
+          "bytes_per_read": 1048576,
+          "group": "cold_sequential_1m",
+          "median_seconds": 0.18162072499999998,
+          "reads_per_sample": 256,
+          "samples_seconds": [
+            0.168155867,
+            0.17271228500000002,
+            0.185103634,
+            0.170339086,
+            0.18748712299999998,
+            0.18162072499999998,
+            0.188824726
+          ]
+        }
+      ],
+      "warm_mapping_queries_per_store": [
+        128
+      ],
+      "max_map_bytes": 457472,
+      "max_map_windows": 128
+    },
+    {
+      "order": 4,
+      "implementation": "before",
+      "groups": [
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_sequential_4k",
+          "median_seconds": 0.733219452,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.733219452,
+            0.731474226,
+            0.754825292,
+            0.744580582,
+            0.666633331,
+            0.77222447,
+            0.720165632
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "warm_random_4k",
+          "median_seconds": 0.713688258,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.708857704,
+            0.708078165,
+            0.838282356,
+            0.78131814,
+            0.711793299,
+            0.718364079,
+            0.713688258
+          ]
+        },
+        {
+          "bytes_per_read": 8192,
+          "group": "warm_cross_window_8k",
+          "median_seconds": 0.733026681,
+          "reads_per_sample": 65536,
+          "samples_seconds": [
+            0.784132165,
+            0.714909458,
+            0.869895309,
+            0.733026681,
+            0.713721588,
+            0.819473375,
+            0.728982082
+          ]
+        },
+        {
+          "bytes_per_read": 4096,
+          "group": "cold_sparse_4k",
+          "median_seconds": 0.10010694600000002,
+          "reads_per_sample": 4096,
+          "samples_seconds": [
+            0.09406219300000002,
+            0.09238774900000002,
+            0.102435279,
+            0.110258544,
+            0.09168157700000001,
+            0.10010694600000002,
+            0.10971747900000002
+          ]
+        },
+        {
+          "bytes_per_read": 1048576,
+          "group": "cold_sequential_1m",
+          "median_seconds": 0.166815513,
+          "reads_per_sample": 256,
+          "samples_seconds": [
+            0.168967363,
+            0.16807625199999998,
+            0.166815513,
+            0.18916152399999997,
+            0.15908582,
+            0.158374562,
+            0.158400185
+          ]
+        }
+      ],
+      "warm_mapping_queries_per_store": [
+        -1
+      ],
+      "max_map_bytes": 0,
+      "max_map_windows": 0
+    }
+  ],
+  "validation": {
+    "host_rust_tests_passed": 34,
+    "linux_rust_tests_passed": 45,
+    "strict_clippy": "passed",
+    "mounted_suites": "all four passed",
+    "regressions": [
+      "window and chunk boundaries",
+      "SQLite row-ID reuse",
+      "GC relocation after warming",
+      "integrity checking bypasses cached maps",
+      "mapping byte and entry eviction",
+      "dense-catalog streaming fallback passes integrity check"
+    ]
+  },
+  "notes": [
+    "Warm-read gains repeated, but baseline cold timing variation is large. Cold-read results are inconclusive.",
+    "Microbenchmark only: no new whole-Cargo-build speedup is claimed.",
+    "Initial comparisons with shared target outputs or mismatched harnesses were discarded. Only the final verified ABBA sequence is included."
+  ]
+}

@@ -6,7 +6,7 @@ reconstructs them on reads. Worktrees keep independent output directories.
 
 **Prototype:** native macOS mounting is unsupported. The initial benchmark saved
 72–74% of storage at a build-time cost. See the
-[latest optimization measurements](docs/validation/optimizations.md) and the
+[latest read-cache measurements](docs/validation/extent-cache.md) and the
 [original native-versus-SL7 comparison](docs/validation/synkro-build-performance.md).
 
 ## Try it with Docker
