@@ -36,9 +36,42 @@ def allocated(path):
     return dict(files=files, logical_bytes=logical, allocated_regular_bytes=blocks)
 
 
+def incremental_inventory(path):
+    """Count actual incremental outputs without reading or publishing their names."""
+    files = logical = 0
+    for parent, _, names in os.walk(path):
+        if "incremental" not in Path(parent).relative_to(path).parts:
+            continue
+        for name in names:
+            file = Path(parent) / name
+            if file.is_file() and not file.is_symlink():
+                files += 1
+                logical += file.stat().st_size
+    return dict(files=files, logical_bytes=logical)
+
+
 def daemon_cpu(pid):
     fields = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
     return (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")
+
+
+def process_cgroup():
+    """Resolve the process's v2 cgroup in namespaced and privileged containers."""
+    root = Path("/sys/fs/cgroup")
+    for line in Path("/proc/self/cgroup").read_text().splitlines():
+        if line.startswith("0::"):
+            candidate = root / line[3:].lstrip("/")
+            if (candidate / "cpu.max").exists():
+                return candidate
+    if (root / "cpu.max").exists():
+        return root
+    raise RuntimeError("Cannot locate this process's cgroup v2 resource limits")
+
+
+def resource_counters(cgroup):
+    return {name: (cgroup / name).read_text().strip()
+            for name in ["cpu.stat", "cpu.pressure", "io.pressure", "memory.events"]
+            if (cgroup / name).exists()}
 
 
 def settle(daemon, mount):
@@ -70,7 +103,10 @@ def main():
     parser.add_argument("--revision", required=True)
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--jobs", type=int, default=8)
+    parser.add_argument("--baseline-binary", type=Path,
+                        help="Also measure an older SL7 binary on the same machine")
     args = parser.parse_args()
+    cgroup = process_cgroup()
     args.results.mkdir(parents=True, exist_ok=True)
     binary = Path(os.environ.get("SL7_BINARY", "/sl7/target/release/sl7"))
     edited_file = args.source / "crates/synkro-cli/src/lib.rs"
@@ -88,7 +124,13 @@ def main():
                   sl7_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
                   lock_sha256=hashlib.sha256((args.source / "Cargo.lock").read_bytes()).hexdigest(),
                   jobs=args.jobs, rounds=args.rounds, cases=[],
+                  cpu_max=(cgroup / "cpu.max").read_text().strip(),
+                  memory_max=(cgroup / "memory.max").read_text().strip(),
+                  nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
+                  incremental_environment={key:env.get(key) for key in ["CARGO_INCREMENTAL", "CARGO_BUILD_INCREMENTAL", "CARGO_PROFILE_DEV_INCREMENTAL", "CARGO_PROFILE_RELEASE_INCREMENTAL"]},
                   method="Empty Cargo outputs; pre-fetched dependencies; warm OS caches; serial, counterbalanced cases; unchanged workspace profiles/default features")
+    if args.baseline_binary:
+        report["baseline_sl7_sha256"] = hashlib.sha256(args.baseline_binary.read_bytes()).hexdigest()
 
     def save():
         (args.results / "results.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -100,23 +142,28 @@ def main():
                    SYNKRO_HOME=str(work / "home"), SYNKRO_DIR=str(work / "home"))
         for round_id in range(args.rounds):
             profiles = ["debug", "release"] if round_id % 2 == 0 else ["release", "debug"]
-            backends = ["native", "sl7"] if round_id % 2 == 0 else ["sl7", "native"]
+            backends = ["native", "baseline-sl7", "sl7"] if args.baseline_binary else ["native", "sl7"]
+            if round_id % 2:
+                backends.reverse()
             for profile in profiles:
                 for backend in backends:
+                    case_binary = args.baseline_binary if backend == "baseline-sl7" else binary
                     label = f"round-{round_id + 1}-{profile}-{backend}"
                     edited_file.write_text(original)
                     mount.mkdir()
                     daemon = None
                     case = dict(round=round_id + 1, profile=profile, backend=backend, measurements=[])
+                    case["resources_before"] = resource_counters(cgroup)
                     report["cases"].append(case)
                     log_path = args.results / f"{label}-daemon.log"
                     daemon_log = log_path.open("w")
 
                     def sl7(*command):
-                        return json.loads(subprocess.check_output([str(binary), "--store", str(store), *command], text=True))
+                        return json.loads(subprocess.check_output([str(case_binary), "--store", str(store), *command], text=True))
 
                     def start_mount():
-                        process = subprocess.Popen([str(binary), "--store", str(store), "mount", str(mount)], stdout=daemon_log, stderr=daemon_log)
+                        process = subprocess.Popen([str(case_binary), "--store", str(store), "mount", str(mount)], stdout=daemon_log, stderr=daemon_log,
+                                                   env=dict(os.environ, SL7_CACHE_STATS="1"))
                         deadline = time.monotonic() + 30
                         while not is_mounted(mount):
                             if process.poll() is not None or time.monotonic() > deadline:
@@ -167,7 +214,7 @@ def main():
                         print(f"{label} {stage}: {elapsed:.3f}s; daemon CPU {measurement['daemon_cpu_seconds']:.2f}s", flush=True)
 
                     try:
-                        if backend == "sl7":
+                        if backend != "native":
                             sl7("init")
                             daemon = start_mount()
                         build("clean", "Synkro AI rule and control enforcement CLI")
@@ -187,24 +234,35 @@ def main():
                         daemon_log.close()
                         edited_file.write_text(original)
                     assert not is_mounted(mount)
-                    if backend == "sl7":
+                    if backend != "native":
                         assert "sealing inode" not in log_path.read_text(), log_path.read_text()
                         check_start = time.monotonic()
                         case["integrity"] = sl7("check")
                         case["integrity_check_seconds"] = time.monotonic() - check_start
                         case["storage"] = sl7("live-stats")
+                        case["incremental_artifacts"] = incremental_inventory(store / "tree")
+                        case["daemon_counters"] = []
+                        for line in log_path.read_text().splitlines():
+                            for kind in ["cache_stats", "sealing_stats"]:
+                                prefix = f"sl7: {kind} "
+                                if line.startswith(prefix):
+                                    case["daemon_counters"].append({"kind":kind, "values":json.loads(line[len(prefix):])})
                         shutil.rmtree(store)
                     else:
                         case["storage"] = allocated(mount)
+                        case["incremental_artifacts"] = incremental_inventory(mount)
                     case["status"] = "passed"
+                    case["resources_after"] = resource_counters(cgroup)
                     save()
                     shutil.rmtree(mount)
+        report["memory_events"] = (cgroup / "memory.events").read_text()
+        report["memory_peak"] = int((cgroup / "memory.peak").read_text())
         report["status"] = "passed"
         save()
     for profile in ("debug", "release"):
         for stage in ("clean", "unchanged", "edit", "unchanged-after-remount"):
             times = {}
-            for backend in ("native", "sl7"):
+            for backend in (["native", "baseline-sl7", "sl7"] if args.baseline_binary else ["native", "sl7"]):
                 samples = [m["wall_seconds"] for c in report["cases"] if c["profile"] == profile and c["backend"] == backend
                            for m in c["measurements"] if m["stage"] == stage or (stage in ("unchanged", "edit") and m["stage"].rsplit("-",1)[-1].isdigit() and m["stage"].startswith(stage+"-"))]
                 times[backend] = statistics.median(samples)

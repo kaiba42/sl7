@@ -41,7 +41,7 @@ See [the end-to-end result](validation/end-to-end.json) and
 measurements, not controlled performance benchmarks or power-loss certification.
 
 For a separate native-versus-SL7 comparison using the full Synkro workspace, see
-[build performance measurements](validation/synkro-build-performance.md).
+[current build performance measurements](validation/oaktown-build-performance.md).
 The reproducible harness covers clean builds, unchanged builds, and one-line
 edits in both debug and release profiles.
 
@@ -50,6 +50,12 @@ edits in both debug and release profiles.
 Requires Rust, a C compiler, `/dev/fuse`, `fusermount3`, and a backing filesystem
 supporting sparse files, user xattrs, locks, and directory fsync. The checked
 toolchain is Rust 1.97.1; `Cargo.lock` pins dependencies.
+
+Large output trees need a generous open-file limit for the daemon, which keeps
+backing inodes open. A soft limit of 1,024 failed the full-workspace benchmark;
+524,288 passed. Before starting the mount, raise the shell's soft limit up to its
+configured hard limit with `ulimit -Sn "$(ulimit -Hn)"`. If the hard limit is also
+low, increase it in your service or container configuration.
 
 ```sh
 cargo build --locked --release --features fuse
@@ -151,8 +157,9 @@ bash scripts/verify.sh    # fmt, check, tests, strict Clippy
 On macOS, `fuse-check` compiles/tests the read-only adapter without a runtime and
 refuses real mounts. Do not use `--all-features` to mount. Local checks use the installed Rust toolchain.
 
-This is an owned-build-tree prototype. It serializes callbacks, has no decoded
-chunk LRU/background packing, and needs temporary native space for hydration.
+This is an owned-build-tree prototype. It serializes callbacks and needs temporary
+native space for hydration. Decoded chunks and extent mappings are cached within
+fixed budgets, and one background worker packs closed files.
 GC is offline and can be expensive. Arbitrary multi-user ownership, restrictive
 permission transitions, ACL/xattr passthrough, special files, direct I/O, online
 GC, remote storage, and native macOS semantics are not qualified. Current mounted

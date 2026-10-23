@@ -4,10 +4,10 @@ SL7 is an experimental Linux filesystem that deduplicates and compresses Rust
 build artifacts. Cargo writes ordinary files; SL7 shares repeated chunks and
 reconstructs them on reads. Worktrees keep independent output directories.
 
-**Prototype:** native macOS mounting is unsupported. The initial benchmark saved
-72–74% of storage at a build-time cost. See the
-[latest read-cache measurements](docs/validation/extent-cache.md) and the
-[original native-versus-SL7 comparison](docs/validation/synkro-build-performance.md).
+**Prototype:** native macOS mounting is unsupported. SL7 trades build time for
+storage savings. See the [full build comparison](docs/validation/oaktown-build-performance.md)
+of native storage, original SL7, and current SL7, and the
+[read-cache measurements](docs/validation/extent-cache.md).
 
 ## Try it with Docker
 
@@ -32,6 +32,7 @@ From the SL7 checkout, create a fresh store and empty mountpoint:
 cargo build --locked --release --features fuse
 mkdir -p /tmp/sl7-mount
 target/release/sl7 --store .sl7 init
+ulimit -Sn "$(ulimit -Hn)"
 target/release/sl7 --store .sl7 mount /tmp/sl7-mount
 ```
 

@@ -11,7 +11,7 @@ jobs="${SL7_BENCH_JOBS:-8}"
 container="sl7-synkro-benchmark-$$"
 mkdir -p "$results"
 results="$(cd "$results" && pwd)"
-revision="$(git -C "$checkout" rev-parse HEAD)"
+revision="$(git -C "$checkout" rev-parse "${SL7_BENCH_REVISION:-HEAD}")"
 docker --context "$context" image inspect "$image" >/dev/null
 archive="$(mktemp "$results/source.XXXXXX")"
 git -C "$checkout" archive --format=tar -o "$archive" "$revision"
@@ -35,6 +35,14 @@ docker --context "$context" cp "$archive" "$container:/bench/source.tar"
 docker --context "$context" cp scripts/benchmark-synkro.py "$container:/sl7/scripts/benchmark-synkro.py"
 docker --context "$context" cp scripts/mount_helpers.py "$container:/sl7/scripts/mount_helpers.py"
 docker --context "$context" exec "$container" tar xf /bench/source.tar -C /bench/source
+# Measure the checked-out implementation even when the dependency image is older.
+for source in Cargo.toml Cargo.lock; do
+    docker --context "$context" cp "$source" "$container:/sl7/$source"
+done
+docker --context "$context" cp src/. "$container:/sl7/src/"
+docker --context "$context" cp benches/. "$container:/sl7/benches/"
+docker --context "$context" exec "$container" cargo build --locked --release --features fuse \
+    >"$results/sl7-build.log" 2>&1
 # Dependency installation/downloads are excluded from every measurement.
 docker --context "$context" exec -w /bench/source "$container" sh -c \
     'apt-get update && apt-get install -y --no-install-recommends cmake pkg-config && cargo fetch --locked --target "$(rustc -vV | sed -n "s/^host: //p")"' \

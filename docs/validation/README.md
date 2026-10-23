@@ -1,7 +1,11 @@
 # Initial implementation validation
 
+For current whole-workspace timings, see the
+[Oaktown native/original/current comparison](oaktown-build-performance.md)
+or its [HTML table](oaktown-build-performance.html).
+
 This page preserves the original measurements. The subsequent
-[optimization report](optimizations.md) covers the current implementation,
+[optimization report](optimizations.md) covers the first four performance changes,
 with [per-change validation](optimizations-validation.json) and fresh profiles.
 The newer [extent mapping cache report](extent-cache.md) measures the subsequent
 read-path improvement.
