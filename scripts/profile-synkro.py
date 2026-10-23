@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Profile the baseline Synkro debug build in a disposable Linux container.
+"""Profile the matched Synkro debug build in a disposable Linux container.
 
 Requires perf, FUSE/SYS_ADMIN, PERFMON, and the prepared /bench/source snapshot.
 Uses only the SL7 mount's connection for system-wide FUSE tracepoint collection.
-No source instrumentation or filesystem optimizations are applied.
+The source workload is fixed; the SL7 binary hash identifies the implementation.
 """
 import hashlib
 import importlib.util
@@ -22,9 +22,9 @@ benchmark = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(benchmark)
 daemon_cpu, settle = benchmark.daemon_cpu, benchmark.settle
 
-ROOT = Path('/bench/results')
+ROOT = Path(os.environ.get('SL7_PROFILE_RESULTS', '/bench/results'))
 SOURCE = Path('/bench/source')
-BINARY = Path('/sl7/target/release/sl7')
+BINARY = Path(os.environ.get('SL7_PROFILE_BINARY', '/sl7/target/release/sl7'))
 REVISION = 'ec6d4c53b8fdf4321de220a922f7efce67788d40'
 SYSCALLS = ['openat', 'close', 'read', 'pread64', 'write', 'pwrite64',
             'lseek', 'fsync', 'fdatasync', 'getxattr', 'ftruncate', 'futex']
@@ -58,7 +58,8 @@ def main():
                    SYNKRO_HOME=str(work/'home'), SYNKRO_DIR=str(work/'home'))
         subprocess.check_call([str(BINARY), '--store', str(store), 'init'], stdout=subprocess.DEVNULL)
         log = (ROOT/'daemon.log').open('w')
-        daemon = subprocess.Popen([str(BINARY), '--store', str(store), 'mount', str(mount)], stdout=log, stderr=log)
+        daemon = subprocess.Popen([str(BINARY), '--store', str(store), 'mount', str(mount)], stdout=log, stderr=log,
+                                  env=dict(os.environ, SL7_CACHE_STATS="1"))
         try:
             deadline = time.monotonic()+30
             while not is_mounted(mount):
@@ -143,12 +144,20 @@ def main():
             build('unchanged-final', fresh=True)
         finally:
             edited.write_text(original)
+            drain_started = time.monotonic()
             if is_mounted(mount):
                 subprocess.check_call(['fusermount3', '-u', str(mount)])
             daemon.wait(timeout=180)
+            report["unmount_drain_seconds"] = time.monotonic()-drain_started
             log.close()
         assert daemon.returncode == 0
-        assert 'sealing inode' not in (ROOT/'daemon.log').read_text()
+        daemon_log = (ROOT/'daemon.log').read_text()
+        assert 'sealing inode' not in daemon_log
+        for line in daemon_log.splitlines():
+            for kind in ['cache_stats', 'sealing_stats']:
+                prefix = f'sl7: {kind} '
+                if line.startswith(prefix):
+                    report[kind] = json.loads(line[len(prefix):])
         start = time.monotonic()
         report['integrity'] = json.loads(subprocess.check_output([str(BINARY), '--store', str(store), 'check'], text=True))
         report['integrity_seconds'] = time.monotonic()-start

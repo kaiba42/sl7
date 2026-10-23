@@ -1,0 +1,2975 @@
+{
+  "workload": {
+    "revision": "ec6d4c53b8fdf4321de220a922f7efce67788d40",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+    "kernel": "7.2.12-orbstack-00394-gbecdd6130068",
+    "perf": "perf version 6.1.190",
+    "sl7_sha256": "f33341b7477cb564cf8f8fd64a1cf2c51abcffe3cda56f1401c689b154cabc10",
+    "lock_sha256": "e755d04b657a714d18ea5211763e950bf8c6d68b2b9a7807b4123cb7b2c60c50",
+    "cpu_quota": 8,
+    "memory_limit_gib": 12,
+    "stages": [
+      {
+        "stage": "clean",
+        "wall_seconds": 431.1777412829997,
+        "daemon_cpu_seconds": 256.54,
+        "cargo_cpu_seconds": 1027.3109390000002,
+        "idle_seconds": 0.3137417450002431,
+        "artifacts": 602,
+        "fresh_artifacts": 0,
+        "cpu_sampling": true,
+        "fuse_tracing": false
+      },
+      {
+        "stage": "unchanged",
+        "wall_seconds": 0.8636065169998801,
+        "daemon_cpu_seconds": 0.18999999999999773,
+        "cargo_cpu_seconds": 0.567655000000137,
+        "idle_seconds": 0.31254218799995215,
+        "artifacts": 602,
+        "fresh_artifacts": 602,
+        "cpu_sampling": false,
+        "fuse_tracing": false
+      },
+      {
+        "stage": "edit-1-control",
+        "wall_seconds": 70.20752502700043,
+        "daemon_cpu_seconds": 48.120000000000005,
+        "cargo_cpu_seconds": 19.543063999999795,
+        "idle_seconds": 0.315141044999109,
+        "artifacts": 602,
+        "fresh_artifacts": 600,
+        "cpu_sampling": false,
+        "fuse_tracing": false
+      },
+      {
+        "stage": "edit-2-profile",
+        "wall_seconds": 79.01523619599993,
+        "daemon_cpu_seconds": 53.0,
+        "cargo_cpu_seconds": 23.427295999999856,
+        "idle_seconds": 0.3063333810005133,
+        "artifacts": 602,
+        "fresh_artifacts": 600,
+        "cpu_sampling": true,
+        "fuse_tracing": true
+      },
+      {
+        "stage": "edit-3-profile",
+        "wall_seconds": 97.72068360200046,
+        "daemon_cpu_seconds": 63.93000000000001,
+        "cargo_cpu_seconds": 30.969512999999978,
+        "idle_seconds": 0.31350709900016227,
+        "artifacts": 602,
+        "fresh_artifacts": 600,
+        "cpu_sampling": true,
+        "fuse_tracing": true
+      },
+      {
+        "stage": "unchanged-final",
+        "wall_seconds": 1.2615232589996594,
+        "daemon_cpu_seconds": 0.2400000000000091,
+        "cargo_cpu_seconds": 0.9470339999999027,
+        "idle_seconds": 0.3074283039995862,
+        "artifacts": 602,
+        "fresh_artifacts": 602,
+        "cpu_sampling": false,
+        "fuse_tracing": false
+      }
+    ],
+    "fuse_connection": 270,
+    "daemon_threads": 2,
+    "unmount_drain_seconds": 0.12819752500035975,
+    "integrity": {
+      "files": 4560,
+      "logical_bytes": 12827952210,
+      "unique_chunks": 362175,
+      "unique_raw_bytes": 5805559374,
+      "compressed_payload_bytes": 1711014859,
+      "referenced_pack_bytes": 1728797818,
+      "catalog_bytes": 112123904,
+      "orphan_pack_bytes": 0,
+      "temporary_bytes": 0,
+      "total_file_bytes": 1840921722
+    },
+    "integrity_seconds": 96.79546188599943,
+    "storage": {
+      "files": 7732,
+      "sealed_files": 2320,
+      "logical_bytes": 7280268040,
+      "native_allocated_bytes": 48795648,
+      "content": {
+        "files": 4560,
+        "logical_bytes": 12827952210,
+        "unique_chunks": 362175,
+        "unique_raw_bytes": 5805559374,
+        "compressed_payload_bytes": 1711014859,
+        "referenced_pack_bytes": 1728797818,
+        "catalog_bytes": 112123904,
+        "orphan_pack_bytes": 0,
+        "temporary_bytes": 0,
+        "total_file_bytes": 1840921722
+      }
+    },
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "status": "passed"
+  },
+  "profiles": {
+    "edit-2-profile-fuse": {
+      "events": {
+        "send": 661636,
+        "sent": 661636,
+        "end": 661636
+      },
+      "exact_duplicate_events": {},
+      "connections": [
+        "270"
+      ],
+      "complete_requests": 661636,
+      "incomplete_requests": {},
+      "error_counts": {
+        "-2": 2052
+      },
+      "operations": {
+        "FUSE_GETATTR": {
+          "total": {
+            "count": 123270,
+            "sum_seconds": 15.473672293898744,
+            "median_seconds": 2.208000296377577e-06,
+            "p95_seconds": 1.8042000192508567e-05,
+            "p99_seconds": 8.945900026446907e-05,
+            "max_seconds": 6.327532516999781
+          },
+          "dispatch": {
+            "count": 123270,
+            "sum_seconds": 15.217479532064317,
+            "median_seconds": 8.750002962187864e-07,
+            "p95_seconds": 1.3416999536275398e-05,
+            "p99_seconds": 5.8415999774297234e-05,
+            "max_seconds": 6.327473184000155
+          },
+          "response": {
+            "count": 123270,
+            "sum_seconds": 0.2561927618344271,
+            "median_seconds": 9.1600031737471e-07,
+            "p95_seconds": 5.750000127591193e-06,
+            "p99_seconds": 1.2332999176578596e-05,
+            "max_seconds": 0.0025517499998386484
+          }
+        },
+        "FUSE_LOOKUP": {
+          "total": {
+            "count": 101009,
+            "sum_seconds": 1.9451506839568538,
+            "median_seconds": 5.290999979479238e-06,
+            "p95_seconds": 2.6250000701111276e-05,
+            "p99_seconds": 8.916600017983001e-05,
+            "max_seconds": 0.029218374000265612
+          },
+          "dispatch": {
+            "count": 101009,
+            "sum_seconds": 1.3826097669589217,
+            "median_seconds": 8.329998308909126e-07,
+            "p95_seconds": 1.237499964190647e-05,
+            "p99_seconds": 3.937500059691956e-05,
+            "max_seconds": 0.029213833000540035
+          },
+          "response": {
+            "count": 101009,
+            "sum_seconds": 0.5625409169979321,
+            "median_seconds": 3.166000169585459e-06,
+            "p95_seconds": 1.5333000192185864e-05,
+            "p99_seconds": 3.979200027970364e-05,
+            "max_seconds": 0.002502917000128946
+          }
+        },
+        "FUSE_OPEN": {
+          "total": {
+            "count": 4442,
+            "sum_seconds": 0.026942365007016633,
+            "median_seconds": 3.3749993235687725e-06,
+            "p95_seconds": 1.6291999600070994e-05,
+            "p99_seconds": 3.029200070159277e-05,
+            "max_seconds": 0.00013345800016395515
+          },
+          "dispatch": {
+            "count": 4442,
+            "sum_seconds": 0.010861284051316034,
+            "median_seconds": 7.500002539018169e-07,
+            "p95_seconds": 8.79199978953693e-06,
+            "p99_seconds": 1.6541000150027685e-05,
+            "max_seconds": 3.974999981437577e-05
+          },
+          "response": {
+            "count": 4442,
+            "sum_seconds": 0.0160810809557006,
+            "median_seconds": 2.415999915683642e-06,
+            "p95_seconds": 7.917000402812846e-06,
+            "p99_seconds": 1.700000029813964e-05,
+            "max_seconds": 0.00013266600035422016
+          }
+        },
+        "FUSE_READ": {
+          "total": {
+            "count": 108895,
+            "sum_seconds": 45.093527337772684,
+            "median_seconds": 0.00017654099974606652,
+            "p95_seconds": 0.0013247919996501878,
+            "p99_seconds": 0.003018791000613419,
+            "max_seconds": 0.15801216599993495
+          },
+          "dispatch": {
+            "count": 108895,
+            "sum_seconds": 16.73711806299525,
+            "median_seconds": 7.0000005507608876e-06,
+            "p95_seconds": 0.0006952500007173512,
+            "p99_seconds": 0.0017779999998310814,
+            "max_seconds": 0.15427675000046293
+          },
+          "response": {
+            "count": 108895,
+            "sum_seconds": 28.356409274777434,
+            "median_seconds": 0.00013099999978294363,
+            "p95_seconds": 0.0007754999996905099,
+            "p99_seconds": 0.0016561669999646256,
+            "max_seconds": 0.15447916599987366
+          }
+        },
+        "FUSE_FLUSH": {
+          "total": {
+            "count": 7143,
+            "sum_seconds": 0.22645225798987667,
+            "median_seconds": 2.208000296377577e-06,
+            "p95_seconds": 5.0999999984924216e-05,
+            "p99_seconds": 0.0006978329993216903,
+            "max_seconds": 0.022804958000051556
+          },
+          "dispatch": {
+            "count": 7143,
+            "sum_seconds": 0.21948130293912982,
+            "median_seconds": 1.45800004247576e-06,
+            "p95_seconds": 4.641699979401892e-05,
+            "p99_seconds": 0.0006971249995331164,
+            "max_seconds": 0.02280145800068567
+          },
+          "response": {
+            "count": 7143,
+            "sum_seconds": 0.006970955050746852,
+            "median_seconds": 6.249993020901456e-07,
+            "p95_seconds": 2.207999386882875e-06,
+            "p99_seconds": 5.45900002180133e-06,
+            "max_seconds": 0.00015095900016603991
+          }
+        },
+        "FUSE_RELEASE": {
+          "total": {
+            "count": 4459,
+            "sum_seconds": 57.22283152194814,
+            "median_seconds": 3.2500000088475645e-05,
+            "p95_seconds": 0.000568916000702302,
+            "p99_seconds": 0.11624354099967604,
+            "max_seconds": 6.327792559000045
+          },
+          "dispatch": {
+            "count": 4459,
+            "sum_seconds": 42.777161775967215,
+            "median_seconds": 1.833300029829843e-05,
+            "p95_seconds": 0.0005292920004649204,
+            "p99_seconds": 0.11605704099929426,
+            "max_seconds": 1.582393993999176
+          },
+          "response": {
+            "count": 4459,
+            "sum_seconds": 14.445669745980922,
+            "median_seconds": 4.084000465809368e-06,
+            "p95_seconds": 5.062499985797331e-05,
+            "p99_seconds": 0.00013533400033338694,
+            "max_seconds": 6.327412725000613
+          }
+        },
+        "FUSE_STATFS": {
+          "total": {
+            "count": 6,
+            "sum_seconds": 9.374998626299202e-06,
+            "median_seconds": 1.3749995559919626e-06,
+            "p95_seconds": 2.499999936844688e-06,
+            "p99_seconds": 2.499999936844688e-06,
+            "max_seconds": 2.499999936844688e-06
+          },
+          "dispatch": {
+            "count": 6,
+            "sum_seconds": 4.749999789055437e-06,
+            "median_seconds": 7.91999809734989e-07,
+            "p95_seconds": 8.329998308909126e-07,
+            "p99_seconds": 8.329998308909126e-07,
+            "max_seconds": 8.329998308909126e-07
+          },
+          "response": {
+            "count": 6,
+            "sum_seconds": 4.624998837243766e-06,
+            "median_seconds": 6.039999789209105e-07,
+            "p95_seconds": 1.7089996617869474e-06,
+            "p99_seconds": 1.7089996617869474e-06,
+            "max_seconds": 1.7089996617869474e-06
+          }
+        },
+        "FUSE_SETATTR": {
+          "total": {
+            "count": 24,
+            "sum_seconds": 6.510205393002252,
+            "median_seconds": 3.518799985613441e-05,
+            "p95_seconds": 0.00013791600031254347,
+            "p99_seconds": 6.5092108510007165,
+            "max_seconds": 6.5092108510007165
+          },
+          "dispatch": {
+            "count": 24,
+            "sum_seconds": 0.00019962700298492564,
+            "median_seconds": 2.0625006982299965e-06,
+            "p95_seconds": 2.6833999982045498e-05,
+            "p99_seconds": 7.604199981869897e-05,
+            "max_seconds": 7.604199981869897e-05
+          },
+          "response": {
+            "count": 24,
+            "sum_seconds": 6.510005765999267,
+            "median_seconds": 2.7020999823434977e-05,
+            "p95_seconds": 0.000135790999593155,
+            "p99_seconds": 6.509210017000441,
+            "max_seconds": 6.509210017000441
+          }
+        },
+        "FUSE_UNLINK": {
+          "total": {
+            "count": 615,
+            "sum_seconds": 0.8185504120147016,
+            "median_seconds": 0.0008435830004600575,
+            "p95_seconds": 0.002809083000101964,
+            "p99_seconds": 0.0065147490004164865,
+            "max_seconds": 0.11419416599983379
+          },
+          "dispatch": {
+            "count": 615,
+            "sum_seconds": 0.0010941259988612728,
+            "median_seconds": 7.500002539018169e-07,
+            "p95_seconds": 5.750000127591193e-06,
+            "p99_seconds": 1.1332999747537542e-05,
+            "max_seconds": 0.00023837500066292705
+          },
+          "response": {
+            "count": 615,
+            "sum_seconds": 0.8174562860158403,
+            "median_seconds": 0.0008429160006926395,
+            "p95_seconds": 0.002807750000101805,
+            "p99_seconds": 0.006513958000141429,
+            "max_seconds": 0.11419337500046822
+          }
+        },
+        "FUSE_WRITE": {
+          "total": {
+            "count": 311034,
+            "sum_seconds": 7.307702512684045,
+            "median_seconds": 4.249999619787559e-06,
+            "p95_seconds": 3.4374999813735485e-05,
+            "p99_seconds": 0.0004709169998022844,
+            "max_seconds": 0.561194331000479
+          },
+          "dispatch": {
+            "count": 311034,
+            "sum_seconds": 4.979204500337801,
+            "median_seconds": 8.750002962187864e-07,
+            "p95_seconds": 6.999999641266186e-06,
+            "p99_seconds": 0.0004502499996306142,
+            "max_seconds": 0.5611697479998838
+          },
+          "response": {
+            "count": 311034,
+            "sum_seconds": 2.3284980123462446,
+            "median_seconds": 3.291999746579677e-06,
+            "p95_seconds": 1.9084000086877495e-05,
+            "p99_seconds": 6.500000017695129e-05,
+            "max_seconds": 0.028263000000151806
+          }
+        },
+        "FUSE_OPENDIR": {
+          "total": {
+            "count": 24,
+            "sum_seconds": 0.05024512200088793,
+            "median_seconds": 0.00027060399997935747,
+            "p95_seconds": 0.012139375000515429,
+            "p99_seconds": 0.014331667000078596,
+            "max_seconds": 0.014331667000078596
+          },
+          "dispatch": {
+            "count": 24,
+            "sum_seconds": 7.462499797838973e-05,
+            "median_seconds": 1.0415001270303037e-06,
+            "p95_seconds": 7.749999895168003e-06,
+            "p99_seconds": 8.209000043279957e-06,
+            "max_seconds": 8.209000043279957e-06
+          },
+          "response": {
+            "count": 24,
+            "sum_seconds": 0.05017049700290954,
+            "median_seconds": 0.0002645415002007212,
+            "p95_seconds": 0.01213162500062026,
+            "p99_seconds": 0.014330958000755345,
+            "max_seconds": 0.014330958000755345
+          }
+        },
+        "FUSE_READDIR": {
+          "total": {
+            "count": 52,
+            "sum_seconds": 0.0005622879980364814,
+            "median_seconds": 8.520500159647781e-06,
+            "p95_seconds": 2.7249999220657628e-05,
+            "p99_seconds": 5.558299926633481e-05,
+            "max_seconds": 5.558299926633481e-05
+          },
+          "dispatch": {
+            "count": 52,
+            "sum_seconds": 0.00023749400043016067,
+            "median_seconds": 2.6249999791616574e-06,
+            "p95_seconds": 1.0707999535952695e-05,
+            "p99_seconds": 1.3249999938125256e-05,
+            "max_seconds": 1.3249999938125256e-05
+          },
+          "response": {
+            "count": 52,
+            "sum_seconds": 0.00032479399760632077,
+            "median_seconds": 2.5625004127505235e-06,
+            "p95_seconds": 2.595799924165476e-05,
+            "p99_seconds": 4.69169999632868e-05,
+            "max_seconds": 4.69169999632868e-05
+          }
+        },
+        "FUSE_RELEASEDIR": {
+          "total": {
+            "count": 24,
+            "sum_seconds": 0.001096625002901419,
+            "median_seconds": 2.091650003421819e-05,
+            "p95_seconds": 0.00020679099998233141,
+            "p99_seconds": 0.0002430419999654987,
+            "max_seconds": 0.0002430419999654987
+          },
+          "dispatch": {
+            "count": 24,
+            "sum_seconds": 0.0004185840016361908,
+            "median_seconds": 1.0686999758036109e-05,
+            "p95_seconds": 1.7249999473278876e-05,
+            "p99_seconds": 0.00020158299957984127,
+            "max_seconds": 0.00020158299957984127
+          },
+          "response": {
+            "count": 24,
+            "sum_seconds": 0.0006780410012652283,
+            "median_seconds": 7.2705001912254374e-06,
+            "p95_seconds": 8.808300026430516e-05,
+            "p99_seconds": 0.00024149999990186188,
+            "max_seconds": 0.00024149999990186188
+          }
+        },
+        "FUSE_CREATE": {
+          "total": {
+            "count": 17,
+            "sum_seconds": 0.0016667939989929437,
+            "median_seconds": 4.799999987881165e-05,
+            "p95_seconds": 0.000622375000602915,
+            "p99_seconds": 0.000622375000602915,
+            "max_seconds": 0.000622375000602915
+          },
+          "dispatch": {
+            "count": 17,
+            "sum_seconds": 0.00010200199722021352,
+            "median_seconds": 1.333999534836039e-06,
+            "p95_seconds": 4.9125000259664375e-05,
+            "p99_seconds": 4.9125000259664375e-05,
+            "max_seconds": 4.9125000259664375e-05
+          },
+          "response": {
+            "count": 17,
+            "sum_seconds": 0.0015647920017727301,
+            "median_seconds": 4.666600034397561e-05,
+            "p95_seconds": 0.000613458000771061,
+            "p99_seconds": 0.000613458000771061,
+            "max_seconds": 0.000613458000771061
+          }
+        },
+        "FUSE_MKDIR": {
+          "total": {
+            "count": 8,
+            "sum_seconds": 0.0003723759991771658,
+            "median_seconds": 4.418749949763878e-05,
+            "p95_seconds": 7.154200011427747e-05,
+            "p99_seconds": 7.154200011427747e-05,
+            "max_seconds": 7.154200011427747e-05
+          },
+          "dispatch": {
+            "count": 8,
+            "sum_seconds": 2.191600106016267e-05,
+            "median_seconds": 7.500002539018169e-07,
+            "p95_seconds": 9.000000318337698e-06,
+            "p99_seconds": 9.000000318337698e-06,
+            "max_seconds": 9.000000318337698e-06
+          },
+          "response": {
+            "count": 8,
+            "sum_seconds": 0.0003504599981170031,
+            "median_seconds": 4.3437499698484316e-05,
+            "p95_seconds": 6.254199979593977e-05,
+            "p99_seconds": 6.254199979593977e-05,
+            "max_seconds": 6.254199979593977e-05
+          }
+        },
+        "FUSE_LINK": {
+          "total": {
+            "count": 600,
+            "sum_seconds": 1.0327017499921567,
+            "median_seconds": 0.0011650830001599388,
+            "p95_seconds": 0.0035265409997009556,
+            "p99_seconds": 0.013229209000201081,
+            "max_seconds": 0.045932248999633885
+          },
+          "dispatch": {
+            "count": 600,
+            "sum_seconds": 0.006671293987892568,
+            "median_seconds": 7.957999969221419e-06,
+            "p95_seconds": 2.8875000680272933e-05,
+            "p99_seconds": 6.495800062111812e-05,
+            "max_seconds": 0.0007107080000423593
+          },
+          "response": {
+            "count": 600,
+            "sum_seconds": 1.0260304560042641,
+            "median_seconds": 0.0011531244999787305,
+            "p95_seconds": 0.0035105830002066796,
+            "p99_seconds": 0.013221250000242435,
+            "max_seconds": 0.04592341599982319
+          }
+        },
+        "FUSE_RMDIR": {
+          "total": {
+            "count": 8,
+            "sum_seconds": 0.0009858339999482268,
+            "median_seconds": 7.368799970208784e-05,
+            "p95_seconds": 0.0003512920002322062,
+            "p99_seconds": 0.0003512920002322062,
+            "max_seconds": 0.0003512920002322062
+          },
+          "dispatch": {
+            "count": 8,
+            "sum_seconds": 1.8668001757760067e-05,
+            "median_seconds": 9.79500327957794e-07,
+            "p95_seconds": 7.04200010659406e-06,
+            "p99_seconds": 7.04200010659406e-06,
+            "max_seconds": 7.04200010659406e-06
+          },
+          "response": {
+            "count": 8,
+            "sum_seconds": 0.0009671659981904668,
+            "median_seconds": 7.000049981797929e-05,
+            "p95_seconds": 0.00034425000012561213,
+            "p99_seconds": 0.00034425000012561213,
+            "max_seconds": 0.00034425000012561213
+          }
+        },
+        "FUSE_RENAME": {
+          "total": {
+            "count": 6,
+            "sum_seconds": 0.04337525099799677,
+            "median_seconds": 0.0016000834998521896,
+            "p95_seconds": 0.03242812499956926,
+            "p99_seconds": 0.03242812499956926,
+            "max_seconds": 0.03242812499956926
+          },
+          "dispatch": {
+            "count": 6,
+            "sum_seconds": 1.679199885984417e-05,
+            "median_seconds": 9.374998626299202e-07,
+            "p95_seconds": 1.2124999557272531e-05,
+            "p99_seconds": 1.2124999557272531e-05,
+            "max_seconds": 1.2124999557272531e-05
+          },
+          "response": {
+            "count": 6,
+            "sum_seconds": 0.04335845899913693,
+            "median_seconds": 0.0015992499997992127,
+            "p95_seconds": 0.03241600000001199,
+            "p99_seconds": 0.03241600000001199,
+            "max_seconds": 0.03241600000001199
+          }
+        }
+      },
+      "all_requests": {
+        "total": {
+          "count": 661636,
+          "sum_seconds": 135.75605019326304,
+          "median_seconds": 4.791999344888609e-06,
+          "p95_seconds": 0.0005268750001050648,
+          "p99_seconds": 0.001328291000390891,
+          "max_seconds": 6.5092108510007165
+        },
+        "dispatch": {
+          "count": 661636,
+          "sum_seconds": 81.33277610330242,
+          "median_seconds": 9.57999873207882e-07,
+          "p95_seconds": 0.0001528330003566225,
+          "p99_seconds": 0.0008077080001385184,
+          "max_seconds": 6.327473184000155
+        },
+        "response": {
+          "count": 661636,
+          "sum_seconds": 54.423274089960614,
+          "median_seconds": 3.250000190746505e-06,
+          "p95_seconds": 0.00030804200014245,
+          "p99_seconds": 0.0007630829995832755,
+          "max_seconds": 6.509210017000441
+        }
+      },
+      "dispatch_wait_overlapping_release_response_seconds": 57.201848501898894,
+      "longest_requests": [
+        {
+          "operation": "FUSE_SETATTR",
+          "total_seconds": 6.5092108510007165,
+          "dispatch_seconds": 8.340002750628628e-07,
+          "response_seconds": 6.509210017000441
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 6.327792559000045,
+          "dispatch_seconds": 0.0003798339994318667,
+          "response_seconds": 6.327412725000613
+        },
+        {
+          "operation": "FUSE_GETATTR",
+          "total_seconds": 6.327532516999781,
+          "dispatch_seconds": 6.327473184000155,
+          "response_seconds": 5.933299962634919e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 4.484385525000107,
+          "dispatch_seconds": 2.1249998098937795e-06,
+          "response_seconds": 4.484383400000297
+        },
+        {
+          "operation": "FUSE_GETATTR",
+          "total_seconds": 4.484262232000219,
+          "dispatch_seconds": 4.484130857000309,
+          "response_seconds": 0.00013137499990989454
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5824073689991565,
+          "dispatch_seconds": 1.582393993999176,
+          "response_seconds": 1.3374999980442226e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5824024100002134,
+          "dispatch_seconds": 1.5823829099999784,
+          "response_seconds": 1.9500000234984327e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5824014520003402,
+          "dispatch_seconds": 1.5823886190000849,
+          "response_seconds": 1.2833000255341176e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.58238886899926,
+          "dispatch_seconds": 1.5823652439994476,
+          "response_seconds": 2.3624999812454917e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.582374161000189,
+          "dispatch_seconds": 1.5823538690001442,
+          "response_seconds": 2.0292000044719316e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5823674110006323,
+          "dispatch_seconds": 1.5823466609999741,
+          "response_seconds": 2.0750000658154022e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5823552020001443,
+          "dispatch_seconds": 1.582319744000415,
+          "response_seconds": 3.5457999729260337e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5823339110002053,
+          "dispatch_seconds": 1.5822802860002412,
+          "response_seconds": 5.362499996408587e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5823281189996123,
+          "dispatch_seconds": 1.5822898689993963,
+          "response_seconds": 3.825000021606684e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.582317743999738,
+          "dispatch_seconds": 1.582280659999924,
+          "response_seconds": 3.708399981405819e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.582290744000602,
+          "dispatch_seconds": 1.5822584110001117,
+          "response_seconds": 3.23330004903255e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5822886599999038,
+          "dispatch_seconds": 1.5822452439997505,
+          "response_seconds": 4.3416000153229106e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5822378689999823,
+          "dispatch_seconds": 1.5821907019999344,
+          "response_seconds": 4.716700004792074e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5822034940001686,
+          "dispatch_seconds": 1.5821949940000195,
+          "response_seconds": 8.50000014906982e-06
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.5821871609996379,
+          "dispatch_seconds": 1.5820105359998706,
+          "response_seconds": 0.00017662499976722756
+        }
+      ]
+    },
+    "edit-3-profile-fuse": {
+      "events": {
+        "send": 662003,
+        "sent": 662003,
+        "end": 662003
+      },
+      "exact_duplicate_events": {},
+      "connections": [
+        "270"
+      ],
+      "complete_requests": 662003,
+      "incomplete_requests": {},
+      "error_counts": {
+        "-2": 2052
+      },
+      "operations": {
+        "FUSE_GETATTR": {
+          "total": {
+            "count": 123270,
+            "sum_seconds": 17.62984643877826,
+            "median_seconds": 2.91700052912347e-06,
+            "p95_seconds": 2.4915999347285833e-05,
+            "p99_seconds": 0.000141375000566768,
+            "max_seconds": 8.281471427000724
+          },
+          "dispatch": {
+            "count": 123270,
+            "sum_seconds": 17.33182605704951,
+            "median_seconds": 9.99999429041054e-07,
+            "p95_seconds": 1.8959000044560526e-05,
+            "p99_seconds": 0.00010924999969574856,
+            "max_seconds": 8.281268594000721
+          },
+          "response": {
+            "count": 123270,
+            "sum_seconds": 0.29802038172874745,
+            "median_seconds": 8.750002962187864e-07,
+            "p95_seconds": 6.750000466126949e-06,
+            "p99_seconds": 1.8375000763626304e-05,
+            "max_seconds": 0.009682915999292163
+          }
+        },
+        "FUSE_LOOKUP": {
+          "total": {
+            "count": 101009,
+            "sum_seconds": 2.642318860915111,
+            "median_seconds": 6.37500033917604e-06,
+            "p95_seconds": 3.8207999750738963e-05,
+            "p99_seconds": 0.0001369580004393356,
+            "max_seconds": 0.2789189159993839
+          },
+          "dispatch": {
+            "count": 101009,
+            "sum_seconds": 1.9628480029887214,
+            "median_seconds": 8.750002962187864e-07,
+            "p95_seconds": 1.8375000763626304e-05,
+            "p99_seconds": 7.341600030486006e-05,
+            "max_seconds": 0.27887874899988674
+          },
+          "response": {
+            "count": 101009,
+            "sum_seconds": 0.6794708579263897,
+            "median_seconds": 2.8330005079624243e-06,
+            "p95_seconds": 1.9625000277301297e-05,
+            "p99_seconds": 6.049999956303509e-05,
+            "max_seconds": 0.0045781250000800355
+          }
+        },
+        "FUSE_OPEN": {
+          "total": {
+            "count": 4442,
+            "sum_seconds": 0.05197177199897851,
+            "median_seconds": 5.541000064113177e-06,
+            "p95_seconds": 1.95419997908175e-05,
+            "p99_seconds": 4.891700064035831e-05,
+            "max_seconds": 0.014812624999649415
+          },
+          "dispatch": {
+            "count": 4442,
+            "sum_seconds": 0.03127269398737553,
+            "median_seconds": 8.340002750628628e-07,
+            "p95_seconds": 1.2083000001439359e-05,
+            "p99_seconds": 2.7207999664824456e-05,
+            "max_seconds": 0.014795499999308959
+          },
+          "response": {
+            "count": 4442,
+            "sum_seconds": 0.020699078011602978,
+            "median_seconds": 2.750000021478627e-06,
+            "p95_seconds": 9.458000022277702e-06,
+            "p99_seconds": 2.391700036241673e-05,
+            "max_seconds": 0.0015201669993984979
+          }
+        },
+        "FUSE_READ": {
+          "total": {
+            "count": 109276,
+            "sum_seconds": 54.22256817377456,
+            "median_seconds": 0.00020924999989802018,
+            "p95_seconds": 0.0016747919999033911,
+            "p99_seconds": 0.0037204170002951287,
+            "max_seconds": 0.10993849999977101
+          },
+          "dispatch": {
+            "count": 109276,
+            "sum_seconds": 20.48710273409324,
+            "median_seconds": 7.999999979801942e-06,
+            "p95_seconds": 0.0008753340007388033,
+            "p99_seconds": 0.0022435410000980482,
+            "max_seconds": 0.10123979199943278
+          },
+          "response": {
+            "count": 109276,
+            "sum_seconds": 33.73546543968132,
+            "median_seconds": 0.00015433299995493144,
+            "p95_seconds": 0.0009582499997122795,
+            "p99_seconds": 0.0020452090002436307,
+            "max_seconds": 0.1012851250006861
+          }
+        },
+        "FUSE_FLUSH": {
+          "total": {
+            "count": 7143,
+            "sum_seconds": 0.1919586039675778,
+            "median_seconds": 2.9590000849566422e-06,
+            "p95_seconds": 4.9000000217347406e-05,
+            "p99_seconds": 0.000708082999153703,
+            "max_seconds": 0.0033564999994268874
+          },
+          "dispatch": {
+            "count": 7143,
+            "sum_seconds": 0.18366064797737636,
+            "median_seconds": 1.9170001905877143e-06,
+            "p95_seconds": 4.225000066071516e-05,
+            "p99_seconds": 0.0007073329998092959,
+            "max_seconds": 0.0033557919996383134
+          },
+          "response": {
+            "count": 7143,
+            "sum_seconds": 0.008297955990201444,
+            "median_seconds": 6.250002115848474e-07,
+            "p95_seconds": 2.666000000317581e-06,
+            "p99_seconds": 8.707999768375885e-06,
+            "max_seconds": 0.00029145799999241717
+          }
+        },
+        "FUSE_RELEASE": {
+          "total": {
+            "count": 4459,
+            "sum_seconds": 54.34006565899654,
+            "median_seconds": 3.337500038469443e-05,
+            "p95_seconds": 0.0007690829997955007,
+            "p99_seconds": 0.05328287500014994,
+            "max_seconds": 8.281235467999977
+          },
+          "dispatch": {
+            "count": 4459,
+            "sum_seconds": 37.887956224019945,
+            "median_seconds": 1.941700065799523e-05,
+            "p95_seconds": 0.0007057079992591753,
+            "p99_seconds": 0.0530867080005919,
+            "max_seconds": 1.3563280359994678
+          },
+          "response": {
+            "count": 4459,
+            "sum_seconds": 16.45210943497659,
+            "median_seconds": 7.167000148911029e-06,
+            "p95_seconds": 5.7499999456922524e-05,
+            "p99_seconds": 0.00016791699999885168,
+            "max_seconds": 8.281112593000216
+          }
+        },
+        "FUSE_STATFS": {
+          "total": {
+            "count": 6,
+            "sum_seconds": 1.583299945195904e-05,
+            "median_seconds": 1.6464996406284627e-06,
+            "p95_seconds": 7.95800042396877e-06,
+            "p99_seconds": 7.95800042396877e-06,
+            "max_seconds": 7.95800042396877e-06
+          },
+          "dispatch": {
+            "count": 6,
+            "sum_seconds": 4.998999429517426e-06,
+            "median_seconds": 7.499993444071151e-07,
+            "p95_seconds": 1.1249994713580236e-06,
+            "p99_seconds": 1.1249994713580236e-06,
+            "max_seconds": 1.1249994713580236e-06
+          },
+          "response": {
+            "count": 6,
+            "sum_seconds": 1.0834000022441614e-05,
+            "median_seconds": 7.704998097324278e-07,
+            "p95_seconds": 6.999999641266186e-06,
+            "p99_seconds": 6.999999641266186e-06,
+            "max_seconds": 6.999999641266186e-06
+          }
+        },
+        "FUSE_SETATTR": {
+          "total": {
+            "count": 24,
+            "sum_seconds": 9.257171880998612,
+            "median_seconds": 5.595799984803307e-05,
+            "p95_seconds": 0.0001981249997697887,
+            "p99_seconds": 9.25566975699985,
+            "max_seconds": 9.25566975699985
+          },
+          "dispatch": {
+            "count": 24,
+            "sum_seconds": 0.00023133199829317164,
+            "median_seconds": 6.7915002546214964e-06,
+            "p95_seconds": 2.779199985525338e-05,
+            "p99_seconds": 4.5959000090078916e-05,
+            "max_seconds": 4.5959000090078916e-05
+          },
+          "response": {
+            "count": 24,
+            "sum_seconds": 9.25694054900032,
+            "median_seconds": 4.756249973070226e-05,
+            "p95_seconds": 0.00019625000004452886,
+            "p99_seconds": 9.255663923000611,
+            "max_seconds": 9.255663923000611
+          }
+        },
+        "FUSE_UNLINK": {
+          "total": {
+            "count": 615,
+            "sum_seconds": 0.786263594997763,
+            "median_seconds": 0.0010475419994691038,
+            "p95_seconds": 0.002804457999445731,
+            "p99_seconds": 0.004266165999979421,
+            "max_seconds": 0.014771374999327236
+          },
+          "dispatch": {
+            "count": 615,
+            "sum_seconds": 0.0018897100062531536,
+            "median_seconds": 7.920007192296907e-07,
+            "p95_seconds": 8.25000006443588e-06,
+            "p99_seconds": 1.8665999959921464e-05,
+            "max_seconds": 0.00017908300014823908
+          },
+          "response": {
+            "count": 615,
+            "sum_seconds": 0.7843738849915098,
+            "median_seconds": 0.0010433750003358,
+            "p95_seconds": 0.0027973329997621477,
+            "p99_seconds": 0.004250082999533333,
+            "max_seconds": 0.014764957999432227
+          }
+        },
+        "FUSE_WRITE": {
+          "total": {
+            "count": 311020,
+            "sum_seconds": 8.521357782659834,
+            "median_seconds": 4.209000508126337e-06,
+            "p95_seconds": 5.074999990029028e-05,
+            "p99_seconds": 0.0005082500001662993,
+            "max_seconds": 0.7676154969994968
+          },
+          "dispatch": {
+            "count": 311020,
+            "sum_seconds": 5.657963160979307,
+            "median_seconds": 8.750002962187864e-07,
+            "p95_seconds": 1.2083000001439359e-05,
+            "p99_seconds": 0.00048387500009994255,
+            "max_seconds": 0.7675682469998719
+          },
+          "response": {
+            "count": 311020,
+            "sum_seconds": 2.863394621680527,
+            "median_seconds": 3.2910002119024284e-06,
+            "p95_seconds": 2.608299928397173e-05,
+            "p99_seconds": 9.058399973582709e-05,
+            "max_seconds": 0.04437308300020959
+          }
+        },
+        "FUSE_OPENDIR": {
+          "total": {
+            "count": 24,
+            "sum_seconds": 0.06540720900193264,
+            "median_seconds": 0.0002914795004471671,
+            "p95_seconds": 0.018645166999704088,
+            "p99_seconds": 0.02184004099945014,
+            "max_seconds": 0.02184004099945014
+          },
+          "dispatch": {
+            "count": 24,
+            "sum_seconds": 0.00010679500064725289,
+            "median_seconds": 2.250500074296724e-06,
+            "p95_seconds": 1.4291999832494184e-05,
+            "p99_seconds": 1.5584000720991753e-05,
+            "max_seconds": 1.5584000720991753e-05
+          },
+          "response": {
+            "count": 24,
+            "sum_seconds": 0.06530041400128539,
+            "median_seconds": 0.0002862500000446744,
+            "p95_seconds": 0.018644374999894353,
+            "p99_seconds": 0.0218336249999993,
+            "max_seconds": 0.0218336249999993
+          }
+        },
+        "FUSE_READDIR": {
+          "total": {
+            "count": 52,
+            "sum_seconds": 0.0007585010007460369,
+            "median_seconds": 9.687499641586328e-06,
+            "p95_seconds": 4.641600025934167e-05,
+            "p99_seconds": 0.00013270800081954803,
+            "max_seconds": 0.00013270800081954803
+          },
+          "dispatch": {
+            "count": 52,
+            "sum_seconds": 0.00028204000227560755,
+            "median_seconds": 3.5835000744555146e-06,
+            "p95_seconds": 1.0959000064758584e-05,
+            "p99_seconds": 3.0250000236264896e-05,
+            "max_seconds": 3.0250000236264896e-05
+          },
+          "response": {
+            "count": 52,
+            "sum_seconds": 0.00047646099847042933,
+            "median_seconds": 2.729500010900665e-06,
+            "p95_seconds": 3.2750000173109584e-05,
+            "p99_seconds": 0.0001311250007347553,
+            "max_seconds": 0.0001311250007347553
+          }
+        },
+        "FUSE_RELEASEDIR": {
+          "total": {
+            "count": 24,
+            "sum_seconds": 0.0011173780021636048,
+            "median_seconds": 2.1250500140013173e-05,
+            "p95_seconds": 0.000172709000253235,
+            "p99_seconds": 0.00022600000011152588,
+            "max_seconds": 0.00022600000011152588
+          },
+          "dispatch": {
+            "count": 24,
+            "sum_seconds": 0.00043079400074930163,
+            "median_seconds": 1.1354500202287454e-05,
+            "p95_seconds": 1.9916999917768408e-05,
+            "p99_seconds": 0.00022195800011104438,
+            "max_seconds": 0.00022195800011104438
+          },
+          "response": {
+            "count": 24,
+            "sum_seconds": 0.0006865840014143032,
+            "median_seconds": 7.145999461499741e-06,
+            "p95_seconds": 0.0001116660005209269,
+            "p99_seconds": 0.00017133399978774833,
+            "max_seconds": 0.00017133399978774833
+          }
+        },
+        "FUSE_CREATE": {
+          "total": {
+            "count": 17,
+            "sum_seconds": 0.005731582997213991,
+            "median_seconds": 8.04170003902982e-05,
+            "p95_seconds": 0.00266766699951404,
+            "p99_seconds": 0.00266766699951404,
+            "max_seconds": 0.00266766699951404
+          },
+          "dispatch": {
+            "count": 17,
+            "sum_seconds": 0.00023912599954201141,
+            "median_seconds": 8.50000014906982e-06,
+            "p95_seconds": 0.00010350000047765207,
+            "p99_seconds": 0.00010350000047765207,
+            "max_seconds": 0.00010350000047765207
+          },
+          "response": {
+            "count": 17,
+            "sum_seconds": 0.0054924569976719795,
+            "median_seconds": 6.929199935257202e-05,
+            "p95_seconds": 0.002653083999575756,
+            "p99_seconds": 0.002653083999575756,
+            "max_seconds": 0.002653083999575756
+          }
+        },
+        "FUSE_MKDIR": {
+          "total": {
+            "count": 8,
+            "sum_seconds": 0.0014820420001342427,
+            "median_seconds": 7.089600012477604e-05,
+            "p95_seconds": 0.0008112080004138988,
+            "p99_seconds": 0.0008112080004138988,
+            "max_seconds": 0.0008112080004138988
+          },
+          "dispatch": {
+            "count": 8,
+            "sum_seconds": 5.679100013367133e-05,
+            "median_seconds": 7.041500339255435e-06,
+            "p95_seconds": 1.6125000001920853e-05,
+            "p99_seconds": 1.6125000001920853e-05,
+            "max_seconds": 1.6125000001920853e-05
+          },
+          "response": {
+            "count": 8,
+            "sum_seconds": 0.0014252510000005714,
+            "median_seconds": 6.643799997618771e-05,
+            "p95_seconds": 0.0008050830001593567,
+            "p99_seconds": 0.0008050830001593567,
+            "max_seconds": 0.0008050830001593567
+          }
+        },
+        "FUSE_LINK": {
+          "total": {
+            "count": 600,
+            "sum_seconds": 1.035727938005948,
+            "median_seconds": 0.0011577709997254715,
+            "p95_seconds": 0.0029992079998919507,
+            "p99_seconds": 0.022173874999680265,
+            "max_seconds": 0.05160454100041534
+          },
+          "dispatch": {
+            "count": 600,
+            "sum_seconds": 0.0060269470031926176,
+            "median_seconds": 5.416500243882183e-06,
+            "p95_seconds": 2.9040999834251124e-05,
+            "p99_seconds": 6.495900015579537e-05,
+            "max_seconds": 0.00046437500077445293
+          },
+          "response": {
+            "count": 600,
+            "sum_seconds": 1.0297009910027555,
+            "median_seconds": 0.00115033299971401,
+            "p95_seconds": 0.0029886659995099762,
+            "p99_seconds": 0.02217316699989169,
+            "max_seconds": 0.05160291599986522
+          }
+        },
+        "FUSE_RMDIR": {
+          "total": {
+            "count": 8,
+            "sum_seconds": 0.0007746240016786032,
+            "median_seconds": 5.22710001860105e-05,
+            "p95_seconds": 0.00025350000032631215,
+            "p99_seconds": 0.00025350000032631215,
+            "max_seconds": 0.00025350000032631215
+          },
+          "dispatch": {
+            "count": 8,
+            "sum_seconds": 1.9332001102156937e-05,
+            "median_seconds": 1.0625003596942406e-06,
+            "p95_seconds": 6.5409994931542315e-06,
+            "p99_seconds": 6.5409994931542315e-06,
+            "max_seconds": 6.5409994931542315e-06
+          },
+          "response": {
+            "count": 8,
+            "sum_seconds": 0.0007552920005764463,
+            "median_seconds": 4.879200014329399e-05,
+            "p95_seconds": 0.00025141700007225154,
+            "p99_seconds": 0.00025141700007225154,
+            "max_seconds": 0.00025141700007225154
+          }
+        },
+        "FUSE_RENAME": {
+          "total": {
+            "count": 6,
+            "sum_seconds": 0.29351041699919733,
+            "median_seconds": 0.001521521000086068,
+            "p95_seconds": 0.2817702909997024,
+            "p99_seconds": 0.2817702909997024,
+            "max_seconds": 0.2817702909997024
+          },
+          "dispatch": {
+            "count": 6,
+            "sum_seconds": 0.0028462499985835166,
+            "median_seconds": 3.458500032138545e-06,
+            "p95_seconds": 0.0028312919994277763,
+            "p99_seconds": 0.0028312919994277763,
+            "max_seconds": 0.0028312919994277763
+          },
+          "response": {
+            "count": 6,
+            "sum_seconds": 0.2906641670006138,
+            "median_seconds": 0.0015207084998110076,
+            "p95_seconds": 0.27893899900027463,
+            "p99_seconds": 0.27893899900027463,
+            "max_seconds": 0.27893899900027463
+          }
+        }
+      },
+      "all_requests": {
+        "total": {
+          "count": 662003,
+          "sum_seconds": 149.0480482920957,
+          "median_seconds": 5.416999556473456e-06,
+          "p95_seconds": 0.0005976669999654405,
+          "p99_seconds": 0.001661749999584572,
+          "max_seconds": 9.25566975699985
+        },
+        "dispatch": {
+          "count": 662003,
+          "sum_seconds": 83.55476363710568,
+          "median_seconds": 1.0000003385357559e-06,
+          "p95_seconds": 0.00017866700000013225,
+          "p99_seconds": 0.0009674160000940901,
+          "max_seconds": 8.281268594000721
+        },
+        "response": {
+          "count": 662003,
+          "sum_seconds": 65.49328465499002,
+          "median_seconds": 3.249999281251803e-06,
+          "p95_seconds": 0.0003699589997268049,
+          "p99_seconds": 0.0009467090003454359,
+          "max_seconds": 9.255663923000611
+        }
+      },
+      "dispatch_wait_overlapping_release_response_seconds": 54.54323192389529,
+      "longest_requests": [
+        {
+          "operation": "FUSE_SETATTR",
+          "total_seconds": 9.25566975699985,
+          "dispatch_seconds": 5.833999239257537e-06,
+          "response_seconds": 9.255663923000611
+        },
+        {
+          "operation": "FUSE_GETATTR",
+          "total_seconds": 8.281471427000724,
+          "dispatch_seconds": 8.281268594000721,
+          "response_seconds": 0.00020283300000301097
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 8.281235467999977,
+          "dispatch_seconds": 0.00012287499976082472,
+          "response_seconds": 8.281112593000216
+        },
+        {
+          "operation": "FUSE_GETATTR",
+          "total_seconds": 4.60308327400071,
+          "dispatch_seconds": 4.602715149000687,
+          "response_seconds": 0.000368125000022701
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 4.6028188989994305,
+          "dispatch_seconds": 1.791999238776043e-06,
+          "response_seconds": 4.602817107000192
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3563755359991774,
+          "dispatch_seconds": 1.3563280359994678,
+          "response_seconds": 4.749999970954377e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3563522029999149,
+          "dispatch_seconds": 1.3562814110000545,
+          "response_seconds": 7.079199986037565e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562889949998862,
+          "dispatch_seconds": 1.3561301199997615,
+          "response_seconds": 0.0001588750001246808
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562824949995047,
+          "dispatch_seconds": 1.3562438700000712,
+          "response_seconds": 3.8624999433523044e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562619949998407,
+          "dispatch_seconds": 1.3562342870000066,
+          "response_seconds": 2.7707999834092334e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562541609999244,
+          "dispatch_seconds": 1.3562137030003214,
+          "response_seconds": 4.045799960294971e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562268279993077,
+          "dispatch_seconds": 1.3561909949994515,
+          "response_seconds": 3.5832999856211245e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562252040001113,
+          "dispatch_seconds": 1.3561841199998526,
+          "response_seconds": 4.108400025870651e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562205369998992,
+          "dispatch_seconds": 1.3561974119993465,
+          "response_seconds": 2.312500055268174e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3562155370000255,
+          "dispatch_seconds": 1.3561852869997892,
+          "response_seconds": 3.0250000236264896e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.356188079000276,
+          "dispatch_seconds": 1.3561620370001037,
+          "response_seconds": 2.604200017231051e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.356172869999682,
+          "dispatch_seconds": 1.3561290779998671,
+          "response_seconds": 4.379199981485726e-05
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3561507869999332,
+          "dispatch_seconds": 1.3560317869996652,
+          "response_seconds": 0.00011900000026798807
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.3560668280006212,
+          "dispatch_seconds": 5.316600072546862e-05,
+          "response_seconds": 1.3560136619998957
+        },
+        {
+          "operation": "FUSE_RELEASE",
+          "total_seconds": 1.356035119999433,
+          "dispatch_seconds": 1.3558289119991969,
+          "response_seconds": 0.00020620800023607444
+        }
+      ]
+    },
+    "clean-cpu": {
+      "samples": 17243,
+      "top_leaf": [
+        {
+          "symbol": "sha2::sha256::compress256",
+          "samples": 10690,
+          "sample_percent": 61.99617235979818
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_default.constprop.0",
+          "samples": 942,
+          "sample_percent": 5.463086469871832
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 584,
+          "sample_percent": 3.386881633126486
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 470,
+          "sample_percent": 2.725743780084672
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 356,
+          "sample_percent": 2.064605927042858
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast_c_loop",
+          "samples": 308,
+          "sample_percent": 1.7862320941831469
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 193,
+          "sample_percent": 1.1192947862900888
+        },
+        {
+          "symbol": "statx",
+          "samples": 142,
+          "sample_percent": 0.8235225888766456
+        },
+        {
+          "symbol": "ZSTD_buildFSETable_body_default.constprop.0",
+          "samples": 139,
+          "sample_percent": 0.8061242243229136
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 136,
+          "sample_percent": 0.7887258597691817
+        },
+        {
+          "symbol": "ZSTD_encodeSequences",
+          "samples": 118,
+          "sample_percent": 0.68433567244679
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 118,
+          "sample_percent": 0.68433567244679
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 79,
+          "sample_percent": 0.45815693324827467
+        },
+        {
+          "symbol": "read",
+          "samples": 73,
+          "sample_percent": 0.42336020414081077
+        },
+        {
+          "symbol": "HUF_buildCTable_wksp",
+          "samples": 68,
+          "sample_percent": 0.3943629298845909
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 67,
+          "sample_percent": 0.3885634750333469
+        },
+        {
+          "symbol": "FSE_readNCount_body_default",
+          "samples": 66,
+          "sample_percent": 0.38276402018210287
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 66,
+          "sample_percent": 0.38276402018210287
+        },
+        {
+          "symbol": "HUF_readDTableX1_wksp",
+          "samples": 64,
+          "sample_percent": 0.3711651104796149
+        },
+        {
+          "symbol": "HUF_compress1X_usingCTable_internal.constprop.0",
+          "samples": 56,
+          "sample_percent": 0.3247694716696631
+        },
+        {
+          "symbol": "sqlite3GetToken",
+          "samples": 54,
+          "sample_percent": 0.3131705619671751
+        },
+        {
+          "symbol": "__open64",
+          "samples": 53,
+          "sample_percent": 0.3073711071159311
+        },
+        {
+          "symbol": "sqlite3VdbeRecordCompareWithSkip",
+          "samples": 53,
+          "sample_percent": 0.3073711071159311
+        },
+        {
+          "symbol": "__close",
+          "samples": 48,
+          "sample_percent": 0.2783738328597112
+        },
+        {
+          "symbol": "HIST_countFast_wksp",
+          "samples": 47,
+          "sample_percent": 0.2725743780084672
+        },
+        {
+          "symbol": "FSE_decompress_wksp_bmi2",
+          "samples": 47,
+          "sample_percent": 0.2725743780084672
+        },
+        {
+          "symbol": "resolveExprStep",
+          "samples": 46,
+          "sample_percent": 0.26677492315722323
+        },
+        {
+          "symbol": "pthread_mutex_lock",
+          "samples": 44,
+          "sample_percent": 0.25517601345473523
+        },
+        {
+          "symbol": "HIST_count_parallel_wksp",
+          "samples": 42,
+          "sample_percent": 0.24357710375224728
+        },
+        {
+          "symbol": "sqlite3BtreeTableMoveto",
+          "samples": 42,
+          "sample_percent": 0.24357710375224728
+        },
+        {
+          "symbol": "ZSTD_seqToCodes",
+          "samples": 40,
+          "sample_percent": 0.23197819404975933
+        },
+        {
+          "symbol": "FSE_buildCTable_wksp",
+          "samples": 37,
+          "sample_percent": 0.21457982949602739
+        },
+        {
+          "symbol": "HUF_decompress4X2_usingDTable_internal_fast_c_loop",
+          "samples": 33,
+          "sample_percent": 0.19138201009105144
+        },
+        {
+          "symbol": "writev",
+          "samples": 31,
+          "sample_percent": 0.1797831003885635
+        },
+        {
+          "symbol": "HUF_readStats_wksp",
+          "samples": 31,
+          "sample_percent": 0.1797831003885635
+        },
+        {
+          "symbol": "getxattr",
+          "samples": 29,
+          "sample_percent": 0.1681841906860755
+        },
+        {
+          "symbol": "sqlite3WhereBegin",
+          "samples": 27,
+          "sample_percent": 0.15658528098358754
+        },
+        {
+          "symbol": "keywordCode.constprop.0",
+          "samples": 26,
+          "sample_percent": 0.15078582613234356
+        },
+        {
+          "symbol": "malloc",
+          "samples": 23,
+          "sample_percent": 0.13338746157861162
+        },
+        {
+          "symbol": "pread64",
+          "samples": 22,
+          "sample_percent": 0.12758800672736761
+        },
+        {
+          "symbol": "sqlite3WhereCodeOneLoopStart",
+          "samples": 21,
+          "sample_percent": 0.12178855187612364
+        },
+        {
+          "symbol": "sqlite3Select",
+          "samples": 21,
+          "sample_percent": 0.12178855187612364
+        },
+        {
+          "symbol": "pwrite",
+          "samples": 20,
+          "sample_percent": 0.11598909702487967
+        },
+        {
+          "symbol": "releaseMemArray.part.0",
+          "samples": 20,
+          "sample_percent": 0.11598909702487967
+        },
+        {
+          "symbol": "ZSTD_safecopy",
+          "samples": 20,
+          "sample_percent": 0.11598909702487967
+        },
+        {
+          "symbol": "findElementWithHash.constprop.0",
+          "samples": 20,
+          "sample_percent": 0.11598909702487967
+        },
+        {
+          "symbol": "sqlite3ExprCodeTarget",
+          "samples": 19,
+          "sample_percent": 0.11018964217363568
+        },
+        {
+          "symbol": "sqlite3VdbeMemSetStr",
+          "samples": 18,
+          "sample_percent": 0.10439018732239169
+        },
+        {
+          "symbol": "sqlite3WalkExprNN",
+          "samples": 18,
+          "sample_percent": 0.10439018732239169
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 17,
+          "sample_percent": 0.09859073247114772
+        }
+      ],
+      "top_inclusive": [
+        {
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "samples": 17009,
+          "sample_percent": 98.64292756480891
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
+          "samples": 17007,
+          "sample_percent": 98.63132865510642
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 17003,
+          "sample_percent": 98.60813083570144
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 16986,
+          "sample_percent": 98.5095401032303
+        },
+        {
+          "symbol": "<std::sys::thread::unix::Thread>::new::thread_start",
+          "samples": 16984,
+          "sample_percent": 98.49794119352781
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 16954,
+          "sample_percent": 98.32395754799049
+        },
+        {
+          "symbol": "sha2::sha256::compress256",
+          "samples": 10690,
+          "sample_percent": 61.99617235979818
+        },
+        {
+          "symbol": "<sl7::store::Store>::read_file",
+          "samples": 7721,
+          "sample_percent": 44.77759090645479
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+          "samples": 7549,
+          "sample_percent": 43.78008467204083
+        },
+        {
+          "symbol": "<sl7::live::Live>::read",
+          "samples": 7520,
+          "sample_percent": 43.61190048135475
+        },
+        {
+          "symbol": "sl7::chunk::identity",
+          "samples": 7491,
+          "sample_percent": 43.443716290668675
+        },
+        {
+          "symbol": "<sl7::store::Store>::put",
+          "samples": 7481,
+          "sample_percent": 43.385721742156235
+        },
+        {
+          "symbol": "<sl7::live::Live>::seal",
+          "samples": 7473,
+          "sample_percent": 43.33932610334629
+        },
+        {
+          "symbol": "<sl7::staging::State>::release",
+          "samples": 7426,
+          "sample_percent": 43.06675172533782
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+          "samples": 7396,
+          "sample_percent": 42.8927680798005
+        },
+        {
+          "symbol": "sl7::pack::read",
+          "samples": 7065,
+          "sample_percent": 40.97314852403874
+        },
+        {
+          "symbol": "zstd::bulk::decompress",
+          "samples": 1760,
+          "sample_percent": 10.20704053818941
+        },
+        {
+          "symbol": "<zstd::bulk::decompressor::Decompressor>::decompress",
+          "samples": 1732,
+          "sample_percent": 10.044655802354578
+        },
+        {
+          "symbol": "ZSTD_decompressMultiFrame",
+          "samples": 1721,
+          "sample_percent": 9.980861798990896
+        },
+        {
+          "symbol": "<sl7::pack::Writer>::add",
+          "samples": 1383,
+          "sample_percent": 8.020646059270428
+        },
+        {
+          "symbol": "<sl7::staging::State>::hydrate",
+          "samples": 1287,
+          "sample_percent": 7.463898393551006
+        },
+        {
+          "symbol": "<sl7::live::Live>::hydrate",
+          "samples": 1278,
+          "sample_percent": 7.41170329988981
+        },
+        {
+          "symbol": "<sl7::store::Store>::stream::<std::fs::File>",
+          "samples": 1205,
+          "sample_percent": 6.988343095748999
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::setattr",
+          "samples": 1090,
+          "sample_percent": 6.321405787855942
+        },
+        {
+          "symbol": "zstd::bulk::compress",
+          "samples": 1070,
+          "sample_percent": 6.205416690831062
+        },
+        {
+          "symbol": "<zstd::bulk::compressor::Compressor>::compress",
+          "samples": 1055,
+          "sample_percent": 6.1184248680624025
+        },
+        {
+          "symbol": "ZSTD_compress2",
+          "samples": 1053,
+          "sample_percent": 6.106825958359914
+        },
+        {
+          "symbol": "ZSTD_compressStream_generic",
+          "samples": 1021,
+          "sample_percent": 5.921243403120107
+        },
+        {
+          "symbol": "ZSTD_compressEnd_public",
+          "samples": 1020,
+          "sample_percent": 5.915443948268862
+        },
+        {
+          "symbol": "ZSTD_compressBlock_internal",
+          "samples": 1019,
+          "sample_percent": 5.909644493417619
+        },
+        {
+          "symbol": "ZSTD_compress_frameChunk",
+          "samples": 1019,
+          "sample_percent": 5.909644493417619
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_default.constprop.0",
+          "samples": 965,
+          "sample_percent": 5.5964739314504435
+        },
+        {
+          "symbol": "<rusqlite::inner_connection::InnerConnection>::prepare",
+          "samples": 891,
+          "sample_percent": 5.1673142724583885
+        },
+        {
+          "symbol": "sqlite3LockAndPrepare.part.0",
+          "samples": 889,
+          "sample_percent": 5.155715362755901
+        },
+        {
+          "symbol": "sqlite3Prepare",
+          "samples": 874,
+          "sample_percent": 5.068723539987241
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 859,
+          "sample_percent": 4.981731717218581
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 810,
+          "sample_percent": 4.697558429507627
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 782,
+          "sample_percent": 4.535173693672795
+        },
+        {
+          "symbol": "ZSTD_decompressBlock_internal",
+          "samples": 744,
+          "sample_percent": 4.314794409325524
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 700,
+          "sample_percent": 4.059618395870788
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 648,
+          "sample_percent": 3.758046743606101
+        },
+        {
+          "symbol": "<sl7::live::Live>::sealed",
+          "samples": 609,
+          "sample_percent": 3.5318680044075856
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 585,
+          "sample_percent": 3.39268108797773
+        },
+        {
+          "symbol": "ZSTD_buildSeqStore",
+          "samples": 551,
+          "sample_percent": 3.1954996230354347
+        },
+        {
+          "symbol": "ZSTD_decodeLiteralsBlock",
+          "samples": 548,
+          "sample_percent": 3.1781012584817026
+        },
+        {
+          "symbol": "HUF_decompress4X_hufOnly_wksp",
+          "samples": 541,
+          "sample_percent": 3.137505074522995
+        },
+        {
+          "symbol": "sqlite3Select",
+          "samples": 480,
+          "sample_percent": 2.783738328597112
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 356,
+          "sample_percent": 2.064605927042858
+        },
+        {
+          "symbol": "<rusqlite::row::Rows as fallible_streaming_iterator::FallibleStreamingIterator>::advance",
+          "samples": 332,
+          "sample_percent": 1.9254190106130025
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 325,
+          "sample_percent": 1.8848228266542946
+        }
+      ],
+      "sample_categories": {
+        "other": 943,
+        "sealing": 7473,
+        "mounted_read": 7549,
+        "hydration": 1278
+      },
+      "sha256_leaf_by_category": {
+        "sealing": 5095,
+        "mounted_read": 4631,
+        "hydration": 964
+      },
+      "note": "Unweighted sample counts at requested 99 Hz; inclusive percentages overlap."
+    },
+    "edit-2-profile-cpu": {
+      "samples": 3345,
+      "top_leaf": [
+        {
+          "symbol": "sha2::sha256::compress256",
+          "samples": 2274,
+          "sample_percent": 67.98206278026906
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_default.constprop.0",
+          "samples": 231,
+          "sample_percent": 6.9058295964125564
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 101,
+          "sample_percent": 3.0194319880418536
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 73,
+          "sample_percent": 2.1823617339312404
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast_c_loop",
+          "samples": 66,
+          "sample_percent": 1.9730941704035874
+        },
+        {
+          "symbol": "ZSTD_buildFSETable_body_default.constprop.0",
+          "samples": 31,
+          "sample_percent": 0.9267563527653214
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 22,
+          "sample_percent": 0.6576980568011959
+        },
+        {
+          "symbol": "HUF_readDTableX1_wksp",
+          "samples": 22,
+          "sample_percent": 0.6576980568011959
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 19,
+          "sample_percent": 0.5680119581464873
+        },
+        {
+          "symbol": "statx",
+          "samples": 17,
+          "sample_percent": 0.5082212257100149
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 17,
+          "sample_percent": 0.5082212257100149
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 16,
+          "sample_percent": 0.47832585949177875
+        },
+        {
+          "symbol": "FSE_decompress_wksp_bmi2",
+          "samples": 15,
+          "sample_percent": 0.4484304932735426
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 13,
+          "sample_percent": 0.38863976083707025
+        },
+        {
+          "symbol": "sqlite3BtreeTableMoveto",
+          "samples": 12,
+          "sample_percent": 0.35874439461883406
+        },
+        {
+          "symbol": "read",
+          "samples": 12,
+          "sample_percent": 0.35874439461883406
+        },
+        {
+          "symbol": "pread64",
+          "samples": 11,
+          "sample_percent": 0.32884902840059793
+        },
+        {
+          "symbol": "FSE_readNCount_body_default",
+          "samples": 10,
+          "sample_percent": 0.29895366218236175
+        },
+        {
+          "symbol": "HUF_readStats_wksp",
+          "samples": 9,
+          "sample_percent": 0.26905829596412556
+        },
+        {
+          "symbol": "sqlite3GetToken",
+          "samples": 9,
+          "sample_percent": 0.26905829596412556
+        },
+        {
+          "symbol": "getxattr",
+          "samples": 9,
+          "sample_percent": 0.26905829596412556
+        },
+        {
+          "symbol": "__close",
+          "samples": 8,
+          "sample_percent": 0.23916292974588937
+        },
+        {
+          "symbol": "sqlite3VdbeRecordCompareWithSkip",
+          "samples": 8,
+          "sample_percent": 0.23916292974588937
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 8,
+          "sample_percent": 0.23916292974588937
+        },
+        {
+          "symbol": "sqlite3WhereCodeOneLoopStart",
+          "samples": 8,
+          "sample_percent": 0.23916292974588937
+        },
+        {
+          "symbol": "resolveExprStep",
+          "samples": 7,
+          "sample_percent": 0.20926756352765322
+        },
+        {
+          "symbol": "malloc",
+          "samples": 7,
+          "sample_percent": 0.20926756352765322
+        },
+        {
+          "symbol": "whereScanNext",
+          "samples": 6,
+          "sample_percent": 0.17937219730941703
+        },
+        {
+          "symbol": "pthread_mutex_lock",
+          "samples": 6,
+          "sample_percent": 0.17937219730941703
+        },
+        {
+          "symbol": "sqlite3WhereBegin",
+          "samples": 5,
+          "sample_percent": 0.14947683109118087
+        },
+        {
+          "symbol": "getCellInfo",
+          "samples": 5,
+          "sample_percent": 0.14947683109118087
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 5,
+          "sample_percent": 0.14947683109118087
+        },
+        {
+          "symbol": "pwrite",
+          "samples": 5,
+          "sample_percent": 0.14947683109118087
+        },
+        {
+          "symbol": "selectExpander",
+          "samples": 5,
+          "sample_percent": 0.14947683109118087
+        },
+        {
+          "symbol": "sqlite3WhereEnd",
+          "samples": 4,
+          "sample_percent": 0.11958146487294469
+        },
+        {
+          "symbol": "__open64",
+          "samples": 4,
+          "sample_percent": 0.11958146487294469
+        },
+        {
+          "symbol": "unixShmLock",
+          "samples": 4,
+          "sample_percent": 0.11958146487294469
+        },
+        {
+          "symbol": "core::fmt::write",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "wherePathSatisfiesOrderBy",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast.constprop.0",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "sl7::pack::pack_path",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "FSE_buildDTable_internal",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "releaseMemArray.part.0",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "sqlite3DbMallocRawNN",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "HUF_decompress4X2_usingDTable_internal_fast_c_loop",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "sqlite3_mutex_enter",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "sqlite3VdbeDelete",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "HUF_compress1X_usingCTable_internal.constprop.0",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        },
+        {
+          "symbol": "sqlite3ExprDeleteNN",
+          "samples": 3,
+          "sample_percent": 0.08968609865470852
+        }
+      ],
+      "top_inclusive": [
+        {
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "samples": 3314,
+          "sample_percent": 99.07324364723468
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 3313,
+          "sample_percent": 99.04334828101645
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
+          "samples": 3313,
+          "sample_percent": 99.04334828101645
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 3312,
+          "sample_percent": 99.01345291479821
+        },
+        {
+          "symbol": "<std::sys::thread::unix::Thread>::new::thread_start",
+          "samples": 3310,
+          "sample_percent": 98.95366218236174
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 3305,
+          "sample_percent": 98.80418535127055
+        },
+        {
+          "symbol": "sha2::sha256::compress256",
+          "samples": 2274,
+          "sample_percent": 67.98206278026906
+        },
+        {
+          "symbol": "<sl7::store::Store>::read_file",
+          "samples": 1926,
+          "sample_percent": 57.57847533632287
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+          "samples": 1810,
+          "sample_percent": 54.110612855007474
+        },
+        {
+          "symbol": "<sl7::live::Live>::read",
+          "samples": 1804,
+          "sample_percent": 53.931240657698055
+        },
+        {
+          "symbol": "sl7::pack::read",
+          "samples": 1766,
+          "sample_percent": 52.795216741405085
+        },
+        {
+          "symbol": "sl7::chunk::identity",
+          "samples": 1715,
+          "sample_percent": 51.270553064275035
+        },
+        {
+          "symbol": "<sl7::store::Store>::put",
+          "samples": 1021,
+          "sample_percent": 30.523168908819134
+        },
+        {
+          "symbol": "<sl7::live::Live>::seal",
+          "samples": 1010,
+          "sample_percent": 30.194319880418536
+        },
+        {
+          "symbol": "<sl7::staging::State>::release",
+          "samples": 1005,
+          "sample_percent": 30.044843049327355
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+          "samples": 996,
+          "sample_percent": 29.77578475336323
+        },
+        {
+          "symbol": "<sl7::staging::State>::hydrate",
+          "samples": 433,
+          "sample_percent": 12.944693572496263
+        },
+        {
+          "symbol": "<sl7::live::Live>::hydrate",
+          "samples": 432,
+          "sample_percent": 12.914798206278027
+        },
+        {
+          "symbol": "zstd::bulk::decompress",
+          "samples": 411,
+          "sample_percent": 12.286995515695068
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::setattr",
+          "samples": 407,
+          "sample_percent": 12.167414050822122
+        },
+        {
+          "symbol": "<zstd::bulk::decompressor::Decompressor>::decompress",
+          "samples": 406,
+          "sample_percent": 12.137518684603886
+        },
+        {
+          "symbol": "<sl7::store::Store>::stream::<std::fs::File>",
+          "samples": 406,
+          "sample_percent": 12.137518684603886
+        },
+        {
+          "symbol": "ZSTD_decompressMultiFrame",
+          "samples": 405,
+          "sample_percent": 12.10762331838565
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_default.constprop.0",
+          "samples": 233,
+          "sample_percent": 6.965620328849028
+        },
+        {
+          "symbol": "ZSTD_decompressBlock_internal",
+          "samples": 169,
+          "sample_percent": 5.052316890881913
+        },
+        {
+          "symbol": "<rusqlite::inner_connection::InnerConnection>::prepare",
+          "samples": 164,
+          "sample_percent": 4.902840059790733
+        },
+        {
+          "symbol": "sqlite3LockAndPrepare.part.0",
+          "samples": 163,
+          "sample_percent": 4.872944693572496
+        },
+        {
+          "symbol": "sqlite3Prepare",
+          "samples": 160,
+          "sample_percent": 4.783258594917788
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 160,
+          "sample_percent": 4.783258594917788
+        },
+        {
+          "symbol": "<sl7::live::Live>::sealed",
+          "samples": 156,
+          "sample_percent": 4.663677130044843
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 137,
+          "sample_percent": 4.095665171898355
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 135,
+          "sample_percent": 4.0358744394618835
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 132,
+          "sample_percent": 3.9461883408071747
+        },
+        {
+          "symbol": "ZSTD_decodeLiteralsBlock",
+          "samples": 125,
+          "sample_percent": 3.7369207772795217
+        },
+        {
+          "symbol": "HUF_decompress4X_hufOnly_wksp",
+          "samples": 124,
+          "sample_percent": 3.7070254110612857
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 115,
+          "sample_percent": 3.43796711509716
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 111,
+          "sample_percent": 3.318385650224215
+        },
+        {
+          "symbol": "sqlite3Select",
+          "samples": 96,
+          "sample_percent": 2.8699551569506725
+        },
+        {
+          "symbol": "<rusqlite::row::Rows as fallible_streaming_iterator::FallibleStreamingIterator>::advance",
+          "samples": 83,
+          "sample_percent": 2.4813153961136023
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast.constprop.0",
+          "samples": 70,
+          "sample_percent": 2.092675635276532
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast_c_loop",
+          "samples": 66,
+          "sample_percent": 1.9730941704035874
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 59,
+          "sample_percent": 1.7638266068759343
+        },
+        {
+          "symbol": "HUF_readDTableX1_wksp",
+          "samples": 49,
+          "sample_percent": 1.4648729446935724
+        },
+        {
+          "symbol": "ZSTD_decodeSeqHeaders",
+          "samples": 44,
+          "sample_percent": 1.3153961136023917
+        },
+        {
+          "symbol": "sqlite3WhereBegin",
+          "samples": 42,
+          "sample_percent": 1.2556053811659194
+        },
+        {
+          "symbol": "<sl7::pack::Writer>::add",
+          "samples": 42,
+          "sample_percent": 1.2556053811659194
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::write",
+          "samples": 42,
+          "sample_percent": 1.2556053811659194
+        },
+        {
+          "symbol": "<rusqlite::row::Rows>::get_expected_row",
+          "samples": 41,
+          "sample_percent": 1.2257100149476832
+        },
+        {
+          "symbol": "<sl7::store::Store>::info",
+          "samples": 40,
+          "sample_percent": 1.195814648729447
+        },
+        {
+          "symbol": "<sl7::store::Store>::find",
+          "samples": 40,
+          "sample_percent": 1.195814648729447
+        }
+      ],
+      "sample_categories": {
+        "other": 93,
+        "mounted_read": 1810,
+        "sealing": 1010,
+        "hydration": 432
+      },
+      "sha256_leaf_by_category": {
+        "mounted_read": 1138,
+        "sealing": 804,
+        "hydration": 332
+      },
+      "note": "Unweighted sample counts at requested 99 Hz; inclusive percentages overlap."
+    },
+    "edit-3-profile-cpu": {
+      "samples": 3785,
+      "top_leaf": [
+        {
+          "symbol": "sha2::sha256::compress256",
+          "samples": 2545,
+          "sample_percent": 67.23910171730515
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_default.constprop.0",
+          "samples": 229,
+          "sample_percent": 6.0501981505944515
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 111,
+          "sample_percent": 2.9326287978863936
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 95,
+          "sample_percent": 2.509907529722589
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast_c_loop",
+          "samples": 78,
+          "sample_percent": 2.060766182298547
+        },
+        {
+          "symbol": "ZSTD_buildFSETable_body_default.constprop.0",
+          "samples": 61,
+          "sample_percent": 1.6116248348745046
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 38,
+          "sample_percent": 1.0039630118890357
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 34,
+          "sample_percent": 0.8982826948480845
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 28,
+          "sample_percent": 0.7397622192866579
+        },
+        {
+          "symbol": "read",
+          "samples": 24,
+          "sample_percent": 0.6340819022457067
+        },
+        {
+          "symbol": "statx",
+          "samples": 17,
+          "sample_percent": 0.44914134742404227
+        },
+        {
+          "symbol": "sqlite3VdbeRecordCompareWithSkip",
+          "samples": 16,
+          "sample_percent": 0.4227212681638045
+        },
+        {
+          "symbol": "pread64",
+          "samples": 16,
+          "sample_percent": 0.4227212681638045
+        },
+        {
+          "symbol": "HUF_readDTableX1_wksp",
+          "samples": 15,
+          "sample_percent": 0.3963011889035667
+        },
+        {
+          "symbol": "HUF_readStats_wksp",
+          "samples": 14,
+          "sample_percent": 0.36988110964332893
+        },
+        {
+          "symbol": "sqlite3BtreeTableMoveto",
+          "samples": 14,
+          "sample_percent": 0.36988110964332893
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 14,
+          "sample_percent": 0.36988110964332893
+        },
+        {
+          "symbol": "pthread_mutex_lock",
+          "samples": 13,
+          "sample_percent": 0.34346103038309117
+        },
+        {
+          "symbol": "FSE_readNCount_body_default",
+          "samples": 12,
+          "sample_percent": 0.31704095112285335
+        },
+        {
+          "symbol": "FSE_decompress_wksp_bmi2",
+          "samples": 11,
+          "sample_percent": 0.2906208718626156
+        },
+        {
+          "symbol": "resolveExprStep",
+          "samples": 11,
+          "sample_percent": 0.2906208718626156
+        },
+        {
+          "symbol": "__open64",
+          "samples": 10,
+          "sample_percent": 0.26420079260237783
+        },
+        {
+          "symbol": "getxattr",
+          "samples": 9,
+          "sample_percent": 0.23778071334214002
+        },
+        {
+          "symbol": "sqlite3GetToken",
+          "samples": 9,
+          "sample_percent": 0.23778071334214002
+        },
+        {
+          "symbol": "sqlite3WhereBegin",
+          "samples": 8,
+          "sample_percent": 0.21136063408190225
+        },
+        {
+          "symbol": "writev",
+          "samples": 7,
+          "sample_percent": 0.18494055482166447
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 7,
+          "sample_percent": 0.18494055482166447
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 6,
+          "sample_percent": 0.15852047556142668
+        },
+        {
+          "symbol": "malloc",
+          "samples": 6,
+          "sample_percent": 0.15852047556142668
+        },
+        {
+          "symbol": "HUF_decompress4X2_usingDTable_internal_fast_c_loop",
+          "samples": 6,
+          "sample_percent": 0.15852047556142668
+        },
+        {
+          "symbol": "ZSTD_safecopy",
+          "samples": 5,
+          "sample_percent": 0.13210039630118892
+        },
+        {
+          "symbol": "sl7::pack::pack_path",
+          "samples": 5,
+          "sample_percent": 0.13210039630118892
+        },
+        {
+          "symbol": "sqlite3GetVarint",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "sqlite3VdbeMemSetStr",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "selectExpander",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "keywordCode.constprop.0",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "sqlite3VdbeSerialGet",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "pthread_mutex_lock@plt",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "exprAnalyze",
+          "samples": 4,
+          "sample_percent": 0.10568031704095113
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "tokenExpr",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "whereLoopAddBtree",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "columnTypeImpl",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "sqlite3Prepare",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "pwrite",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "__close",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "pthreadMutexEnter",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "<sl7::staging::State>::register",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "getPageNormal",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        },
+        {
+          "symbol": "sqlite3VdbeDelete",
+          "samples": 3,
+          "sample_percent": 0.07926023778071334
+        }
+      ],
+      "top_inclusive": [
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 3754,
+          "sample_percent": 99.18097754293262
+        },
+        {
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "samples": 3750,
+          "sample_percent": 99.07529722589167
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
+          "samples": 3749,
+          "sample_percent": 99.04887714663144
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 3748,
+          "sample_percent": 99.0224570673712
+        },
+        {
+          "symbol": "<std::sys::thread::unix::Thread>::new::thread_start",
+          "samples": 3745,
+          "sample_percent": 98.94319682959049
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 3745,
+          "sample_percent": 98.94319682959049
+        },
+        {
+          "symbol": "sha2::sha256::compress256",
+          "samples": 2545,
+          "sample_percent": 67.23910171730515
+        },
+        {
+          "symbol": "<sl7::store::Store>::read_file",
+          "samples": 2175,
+          "sample_percent": 57.46367239101717
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+          "samples": 1994,
+          "sample_percent": 52.68163804491414
+        },
+        {
+          "symbol": "<sl7::live::Live>::read",
+          "samples": 1985,
+          "sample_percent": 52.443857331572
+        },
+        {
+          "symbol": "sl7::pack::read",
+          "samples": 1947,
+          "sample_percent": 51.439894319682956
+        },
+        {
+          "symbol": "sl7::chunk::identity",
+          "samples": 1887,
+          "sample_percent": 49.85468956406869
+        },
+        {
+          "symbol": "<sl7::store::Store>::put",
+          "samples": 1118,
+          "sample_percent": 29.537648612945837
+        },
+        {
+          "symbol": "<sl7::live::Live>::seal",
+          "samples": 1110,
+          "sample_percent": 29.326287978863938
+        },
+        {
+          "symbol": "<sl7::staging::State>::release",
+          "samples": 1105,
+          "sample_percent": 29.194187582562748
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+          "samples": 1098,
+          "sample_percent": 29.009247027741083
+        },
+        {
+          "symbol": "<sl7::staging::State>::hydrate",
+          "samples": 600,
+          "sample_percent": 15.852047556142669
+        },
+        {
+          "symbol": "<sl7::live::Live>::hydrate",
+          "samples": 599,
+          "sample_percent": 15.825627476882431
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::setattr",
+          "samples": 579,
+          "sample_percent": 15.297225891677675
+        },
+        {
+          "symbol": "<sl7::store::Store>::stream::<std::fs::File>",
+          "samples": 577,
+          "sample_percent": 15.2443857331572
+        },
+        {
+          "symbol": "zstd::bulk::decompress",
+          "samples": 458,
+          "sample_percent": 12.100396301188903
+        },
+        {
+          "symbol": "<zstd::bulk::decompressor::Decompressor>::decompress",
+          "samples": 447,
+          "sample_percent": 11.809775429326288
+        },
+        {
+          "symbol": "ZSTD_decompressMultiFrame",
+          "samples": 445,
+          "sample_percent": 11.756935270805812
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_default.constprop.0",
+          "samples": 234,
+          "sample_percent": 6.182298546895641
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 220,
+          "sample_percent": 5.812417437252312
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 212,
+          "sample_percent": 5.601056803170409
+        },
+        {
+          "symbol": "ZSTD_decompressBlock_internal",
+          "samples": 208,
+          "sample_percent": 5.495376486129459
+        },
+        {
+          "symbol": "<sl7::live::Live>::sealed",
+          "samples": 177,
+          "sample_percent": 4.676354029062087
+        },
+        {
+          "symbol": "<rusqlite::inner_connection::InnerConnection>::prepare",
+          "samples": 162,
+          "sample_percent": 4.28005284015852
+        },
+        {
+          "symbol": "sqlite3LockAndPrepare.part.0",
+          "samples": 161,
+          "sample_percent": 4.253632760898283
+        },
+        {
+          "symbol": "sqlite3Prepare",
+          "samples": 159,
+          "sample_percent": 4.200792602377807
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 155,
+          "sample_percent": 4.095112285336856
+        },
+        {
+          "symbol": "ZSTD_decodeLiteralsBlock",
+          "samples": 135,
+          "sample_percent": 3.5667107001321003
+        },
+        {
+          "symbol": "HUF_decompress4X_hufOnly_wksp",
+          "samples": 134,
+          "sample_percent": 3.5402906208718625
+        },
+        {
+          "symbol": "<rusqlite::row::Rows as fallible_streaming_iterator::FallibleStreamingIterator>::advance",
+          "samples": 134,
+          "sample_percent": 3.5402906208718625
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 128,
+          "sample_percent": 3.381770145310436
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 120,
+          "sample_percent": 3.1704095112285335
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 110,
+          "sample_percent": 2.906208718626156
+        },
+        {
+          "symbol": "sqlite3Select",
+          "samples": 103,
+          "sample_percent": 2.7212681638044915
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 101,
+          "sample_percent": 2.668428005284016
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast.constprop.0",
+          "samples": 80,
+          "sample_percent": 2.1136063408190227
+        },
+        {
+          "symbol": "HUF_decompress4X1_usingDTable_internal_fast_c_loop",
+          "samples": 78,
+          "sample_percent": 2.060766182298547
+        },
+        {
+          "symbol": "ZSTD_decodeSeqHeaders",
+          "samples": 72,
+          "sample_percent": 1.9022457067371201
+        },
+        {
+          "symbol": "getPageNormal",
+          "samples": 65,
+          "sample_percent": 1.7173051519154559
+        },
+        {
+          "symbol": "<rusqlite::row::Rows>::get_expected_row",
+          "samples": 64,
+          "sample_percent": 1.690885072655218
+        },
+        {
+          "symbol": "ZSTD_buildFSETable_body_default.constprop.0",
+          "samples": 61,
+          "sample_percent": 1.6116248348745046
+        },
+        {
+          "symbol": "getAndInitPage",
+          "samples": 57,
+          "sample_percent": 1.5059445178335535
+        },
+        {
+          "symbol": "<sl7::store::Store>::info",
+          "samples": 49,
+          "sample_percent": 1.2945838837516512
+        },
+        {
+          "symbol": "<sl7::store::Store>::find",
+          "samples": 49,
+          "sample_percent": 1.2945838837516512
+        },
+        {
+          "symbol": "ZSTD_buildSeqTable.constprop.0",
+          "samples": 48,
+          "sample_percent": 1.2681638044914134
+        }
+      ],
+      "sample_categories": {
+        "other": 82,
+        "mounted_read": 1994,
+        "sealing": 1110,
+        "hydration": 599
+      },
+      "sha256_leaf_by_category": {
+        "mounted_read": 1204,
+        "sealing": 887,
+        "hydration": 454
+      },
+      "note": "Unweighted sample counts at requested 99 Hz; inclusive percentages overlap."
+    }
+  },
+  "syscalls": {
+    "edit-3-profile": {
+      "openat": 456910,
+      "close": 454838,
+      "read": 1819644,
+      "pread64": 630534,
+      "write": 44153,
+      "pwrite64": 348647,
+      "lseek": 346053,
+      "fsync": 1233,
+      "fdatasync": 0,
+      "getxattr": 774938,
+      "ftruncate": 47,
+      "futex": 0
+    },
+    "edit-2-profile": {
+      "openat": 453001,
+      "close": 450931,
+      "read": 1807555,
+      "pread64": 632736,
+      "write": 65603,
+      "pwrite64": 356489,
+      "lseek": 342144,
+      "fsync": 1233,
+      "fdatasync": 0,
+      "getxattr": 774585,
+      "ftruncate": 47,
+      "futex": 0
+    }
+  }
+}

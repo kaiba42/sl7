@@ -4,10 +4,10 @@ SL7 is an experimental Linux filesystem that deduplicates and compresses Rust
 build artifacts. Cargo writes ordinary files; SL7 shares repeated chunks and
 reconstructs them on reads. Worktrees keep independent output directories.
 
-**Prototype:** native macOS mounting is unsupported. The current implementation
-saved 72–74% of storage in our benchmark, but made debug builds/rebuilds
-2.3–3.1× slower. See the [measured results](docs/validation/synkro-build-performance.md)
-and [profiling findings](docs/validation/profiling.md).
+**Prototype:** native macOS mounting is unsupported. The initial benchmark saved
+72–74% of storage at a build-time cost. See the
+[latest optimization measurements](docs/validation/optimizations.md) and the
+[original native-versus-SL7 comparison](docs/validation/synkro-build-performance.md).
 
 ## Try it with Docker
 

@@ -124,14 +124,17 @@ def cpu(path):
             inclusive.update(set(frames))
             if '<sl7::live::Live>::hydrate' in frames:
                 category = 'hydration'
-            elif '<sl7::live::Live>::seal' in frames:
+            elif any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
+                    'sl7::store::prepare_import', 'sl7::staging::background::run',
+                    '<sl7::live::Live>::publish_seal']):
                 category = 'sealing'
             elif '<sl7::staging::StagingFs as fuser::Filesystem>::read' in frames:
                 category = 'mounted_read'
             else:
                 category = 'other'
             categories[category] += 1
-            if frames[0] == 'sha2::sha256::compress256':
+            if frames[0] in ('sha2::sha256::compress256',
+                             'sha2::sha256::aarch64::sha256_compress'):
                 sha_categories[category] += 1
     assert sample_count, 'No CPU stacks parsed'
     def rows(counter):

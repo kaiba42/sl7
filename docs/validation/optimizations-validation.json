@@ -1,0 +1,1491 @@
+{
+  "optimizations": [
+    {
+      "commit": "cc1c5ef",
+      "host": {
+        "rust_tests_passed": 28,
+        "strict_clippy": "passed"
+      },
+      "linux": {
+        "rust_tests_passed": 35,
+        "strict_clippy": "passed"
+      },
+      "mounted_suites": {
+        "readonly": "passed",
+        "staging": "passed",
+        "live": "passed",
+        "selfhost": "passed"
+      }
+    },
+    {
+      "commit": "332aa27",
+      "host": {
+        "rust_tests_passed": 28,
+        "strict_clippy": "passed"
+      },
+      "linux": {
+        "rust_tests_passed": 37,
+        "strict_clippy": "passed"
+      },
+      "mounted_suites": {
+        "readonly": "passed",
+        "staging": "passed",
+        "live": "passed",
+        "selfhost": "passed"
+      }
+    },
+    {
+      "commit": "6c5cd22",
+      "host": {
+        "rust_tests_passed": 30,
+        "strict_clippy": "passed"
+      },
+      "linux": {
+        "rust_tests_passed": 39,
+        "strict_clippy": "passed"
+      },
+      "mounted_suites": {
+        "readonly": "passed",
+        "staging": "passed",
+        "live": "passed",
+        "selfhost": "passed"
+      }
+    },
+    {
+      "commit": "3a44bf0",
+      "host": {
+        "rust_tests_passed": 30,
+        "strict_clippy": "passed"
+      },
+      "linux": {
+        "rust_tests_passed": 41,
+        "strict_clippy": "passed"
+      },
+      "mounted_suites": {
+        "readonly": "passed",
+        "staging": "passed",
+        "live": "passed",
+        "selfhost": "passed"
+      }
+    }
+  ],
+  "latest_mounted_report": {
+    "readonly": {
+      "platform": "Linux 7.2.12-orbstack-00394-gbecdd6130068",
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+      "mount": "passed",
+      "artifacts": [
+        {
+          "mountpoint": "/tmp/sl7-mounted-test-us_5hn8n/mount",
+          "artifact": "main/debug/data",
+          "size": 4194304,
+          "sha256": "163226d6a099097ff33602e3705c88c637b71d2eef6ddca2b575979fe29e15da",
+          "random_reads": 100,
+          "read_mmap": "passed",
+          "writable_open": "rejected",
+          "source_unchanged": true
+        },
+        {
+          "mountpoint": "/tmp/sl7-mounted-test-us_5hn8n/mount",
+          "artifact": "duplicate/debug/data",
+          "size": 4194304,
+          "sha256": "163226d6a099097ff33602e3705c88c637b71d2eef6ddca2b575979fe29e15da",
+          "random_reads": 100,
+          "read_mmap": "passed",
+          "writable_open": "rejected",
+          "source_unchanged": true
+        },
+        {
+          "mountpoint": "/tmp/sl7-mounted-test-us_5hn8n/mount",
+          "artifact": "edited/debug/data",
+          "size": 4194322,
+          "sha256": "17cdb4e461c803def9de049f4c9e82bfc746ac3d230bb855d00f34899dd1818d",
+          "random_reads": 100,
+          "read_mmap": "passed",
+          "writable_open": "rejected",
+          "source_unchanged": true
+        },
+        {
+          "mountpoint": "/tmp/sl7-mounted-test-us_5hn8n/mount",
+          "artifact": "main/empty",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "random_reads": 100,
+          "read_mmap": "skipped: empty file",
+          "writable_open": "rejected",
+          "source_unchanged": true
+        },
+        {
+          "mountpoint": "/tmp/sl7-mounted-test-us_5hn8n/mount",
+          "artifact": "main/debug/libsl7_fixture.rmeta",
+          "size": 2139,
+          "sha256": "f29ccc00a03ada03f05b5bf2f5b326c87220ee6f42ef0df4fc20f880839011b0",
+          "random_reads": 100,
+          "read_mmap": "passed",
+          "writable_open": "rejected",
+          "source_unchanged": true
+        },
+        {
+          "mountpoint": "/tmp/sl7-mounted-test-us_5hn8n/mount",
+          "artifact": "main/debug/libsl7_fixture.rlib",
+          "size": 7572,
+          "sha256": "b998dab2e90dcb3ae39ae321a83b97cbbd9c0fcc548badf4c132633897c9e179",
+          "random_reads": 100,
+          "read_mmap": "passed",
+          "writable_open": "rejected",
+          "source_unchanged": true
+        }
+      ],
+      "duplicate_new_chunks": 0,
+      "duplicate_new_pack_bytes": 0,
+      "edited_new_pack_bytes": 23780,
+      "first_new_pack_bytes": 1082695,
+      "namespace_mutations": "EROFS",
+      "independent_view_inodes": true,
+      "rustc_metadata_read": "passed",
+      "rustc_rlib_link_and_execution": "passed",
+      "store_lock_during_mount": "passed",
+      "post_unmount_check": {
+        "files": 6,
+        "logical_bytes": 12592641,
+        "unique_chunks": 114,
+        "unique_raw_bytes": 1110731,
+        "compressed_payload_bytes": 1106906,
+        "referenced_pack_bytes": 1112524,
+        "catalog_bytes": 176128,
+        "orphan_pack_bytes": 0,
+        "temporary_bytes": 0,
+        "total_file_bytes": 1288652
+      }
+    },
+    "staging": {
+      "platform": "Linux 7.2.12-orbstack-00394-gbecdd6130068",
+      "mount": "passed",
+      "native_and_mounted_probe": [
+        "hard_link",
+        "read_mmap",
+        "lock_contention",
+        "rename_over_open",
+        "unlink_open_mapping",
+        "shared_write_mmap",
+        "truncate_extend",
+        "fsync_and_directory_sync",
+        "execute_native_binary"
+      ],
+      "comparison_checks": [
+        "mapping_outlives_descriptor",
+        "same_inode_write_coherence",
+        "rename_over_mapping",
+        "hardlink_identity",
+        "relative_and_dangling_symlinks",
+        "nanosecond_mtime",
+        "chmod",
+        "append",
+        "large_readdir",
+        "directory_rename",
+        "cross_process_lock_contention"
+      ],
+      "cargo_build_test_check": "passed",
+      "cargo_warm_build_all_fresh": true,
+      "cargo_build_script_and_proc_macro": "passed",
+      "cargo_one_line_edit": "passed",
+      "separate_target_and_build_directories": true,
+      "post_unmount_native_bytes": "passed",
+      "daemon_kill_restart_synced_bytes": "passed",
+      "statvfs_capacity": "passed",
+      "writable_deduplication": "not implemented: native staging adapter only"
+    },
+    "live": {
+      "status": "passed",
+      "platform": "Linux 7.2.12-orbstack-00394-gbecdd6130068",
+      "probe": {
+        "directory": "/tmp/sl7-live-test-0u5mp41l/mount",
+        "checks": [
+          "hard_link",
+          "read_mmap",
+          "lock_contention",
+          "rename_over_open",
+          "unlink_open_mapping",
+          "shared_write_mmap",
+          "truncate_extend",
+          "fsync_and_directory_sync",
+          "execute_native_binary"
+        ]
+      },
+      "transition_checks": [
+        "cross-view sharing",
+        "metadata preservation",
+        "hydration",
+        "mapping pins native bytes",
+        "hard links",
+        "rename",
+        "truncate",
+        "unlink",
+        "quiescent GC"
+      ],
+      "edits": 10,
+      "daemon_kill_restart": "passed",
+      "cargo_commands": [
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.6558117929998843
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline --message-format=json",
+          "elapsed_seconds": 0.032866249999642605
+        },
+        {
+          "view": "main",
+          "command": "cargo test --workspace --offline",
+          "elapsed_seconds": 0.6741106270001183
+        },
+        {
+          "view": "main",
+          "command": "cargo check --workspace --offline",
+          "elapsed_seconds": 0.06791309099980936
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline --message-format=json",
+          "elapsed_seconds": 0.012112235000131477
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.34708395899997413
+        },
+        {
+          "view": "main",
+          "command": "cargo test --release --workspace --offline",
+          "elapsed_seconds": 0.23889003200019943
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline --message-format=json",
+          "elapsed_seconds": 0.027364832000330352
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.022246840999741835
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.01583957000002556
+        },
+        {
+          "view": "other",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.6355158719998144
+        },
+        {
+          "view": "other",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.46747099599997455
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.12605645800022103
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.08442146800007322
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.12851059800004805
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.09718163400020785
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.11166242199988119
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.19130169700019906
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.1449771820002752
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.1488781459997881
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.1187416249999842
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.09022514099979162
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.12380899099980525
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.10369244899993646
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.13145795699983864
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.08986955000000307
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.12627638000003572
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.10198157600007107
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.14454075499997998
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.10019724399990082
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.15224393100015732
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.10183861499990599
+        },
+        {
+          "view": "main",
+          "command": "cargo test --workspace --offline",
+          "elapsed_seconds": 0.4044640590000199
+        },
+        {
+          "view": "main",
+          "command": "cargo test --release --workspace --offline",
+          "elapsed_seconds": 0.292830720999973
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline --message-format=json",
+          "elapsed_seconds": 0.02842106500020236
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline --message-format=json",
+          "elapsed_seconds": 0.03221027600011439
+        },
+        {
+          "view": "main",
+          "command": "cargo clean --release --offline",
+          "elapsed_seconds": 0.09130012400009946
+        },
+        {
+          "view": "main",
+          "command": "cargo clean --offline",
+          "elapsed_seconds": 0.08228366799994546
+        },
+        {
+          "view": "other",
+          "command": "cargo clean --offline",
+          "elapsed_seconds": 0.06540603399980682
+        },
+        {
+          "view": "main",
+          "command": "cargo build --workspace --offline",
+          "elapsed_seconds": 0.7036905520003529
+        },
+        {
+          "view": "main",
+          "command": "cargo build --release --workspace --offline",
+          "elapsed_seconds": 0.35722452299978613
+        },
+        {
+          "view": "main",
+          "command": "cargo clean --offline",
+          "elapsed_seconds": 0.1582547349999004
+        }
+      ],
+      "snapshots": [
+        {
+          "stage": "two-identical-files",
+          "live": {
+            "files": 2,
+            "sealed_files": 2,
+            "logical_bytes": 4194304,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 2,
+              "logical_bytes": 4194304,
+              "unique_chunks": 31,
+              "unique_raw_bytes": 289799,
+              "compressed_payload_bytes": 289799,
+              "referenced_pack_bytes": 291326,
+              "catalog_bytes": 114688,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 406014
+            }
+          },
+          "gc": {
+            "removed_chunks": 0,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 0,
+            "stats": {
+              "files": 2,
+              "logical_bytes": 4194304,
+              "unique_chunks": 31,
+              "unique_raw_bytes": 289799,
+              "compressed_payload_bytes": 289799,
+              "referenced_pack_bytes": 291326,
+              "catalog_bytes": 114688,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 406014
+            }
+          }
+        },
+        {
+          "stage": "transition-fixtures-cleaned",
+          "live": {
+            "files": 0,
+            "sealed_files": 0,
+            "logical_bytes": 0,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          },
+          "gc": {
+            "removed_chunks": 32,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 315088,
+            "stats": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          }
+        },
+        {
+          "stage": "live-daemon-kill-restart",
+          "live": {
+            "files": 0,
+            "sealed_files": 0,
+            "logical_bytes": 0,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          },
+          "gc": {
+            "removed_chunks": 31,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 291326,
+            "stats": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          }
+        },
+        {
+          "stage": "debug-built",
+          "live": {
+            "files": 206,
+            "sealed_files": 17,
+            "logical_bytes": 33559707,
+            "native_allocated_bytes": 1392640,
+            "content": {
+              "files": 17,
+              "logical_bytes": 32629144,
+              "unique_chunks": 1795,
+              "unique_raw_bytes": 28098046,
+              "compressed_payload_bytes": 8241009,
+              "referenced_pack_bytes": 8329100,
+              "catalog_bytes": 499712,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 8828812
+            }
+          },
+          "gc": {
+            "removed_chunks": 0,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 1286700,
+            "stats": {
+              "files": 17,
+              "logical_bytes": 32629144,
+              "unique_chunks": 1795,
+              "unique_raw_bytes": 28098046,
+              "compressed_payload_bytes": 8241009,
+              "referenced_pack_bytes": 8329100,
+              "catalog_bytes": 499712,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 8828812
+            }
+          }
+        },
+        {
+          "stage": "release-built",
+          "live": {
+            "files": 254,
+            "sealed_files": 23,
+            "logical_bytes": 37077734,
+            "native_allocated_bytes": 1548288,
+            "content": {
+              "files": 23,
+              "logical_bytes": 36140704,
+              "unique_chunks": 2029,
+              "unique_raw_bytes": 31408939,
+              "compressed_payload_bytes": 9710975,
+              "referenced_pack_bytes": 9810580,
+              "catalog_bytes": 548864,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 10359444
+            }
+          },
+          "gc": {
+            "removed_chunks": 0,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 0,
+            "stats": {
+              "files": 23,
+              "logical_bytes": 36140704,
+              "unique_chunks": 2029,
+              "unique_raw_bytes": 31408939,
+              "compressed_payload_bytes": 9710975,
+              "referenced_pack_bytes": 9810580,
+              "catalog_bytes": 548864,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 10359444
+            }
+          }
+        },
+        {
+          "stage": "two-worktrees-built",
+          "live": {
+            "files": 393,
+            "sealed_files": 36,
+            "logical_bytes": 55558211,
+            "native_allocated_bytes": 2404352,
+            "content": {
+              "files": 36,
+              "logical_bytes": 54106279,
+              "unique_chunks": 2207,
+              "unique_raw_bytes": 34328412,
+              "compressed_payload_bytes": 10705765,
+              "referenced_pack_bytes": 10814172,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11473628
+            }
+          },
+          "gc": {
+            "removed_chunks": 0,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 0,
+            "stats": {
+              "files": 36,
+              "logical_bytes": 54106279,
+              "unique_chunks": 2207,
+              "unique_raw_bytes": 34328412,
+              "compressed_payload_bytes": 10705765,
+              "referenced_pack_bytes": 10814172,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11473628
+            }
+          }
+        },
+        {
+          "stage": "edit-1",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55712878,
+            "native_allocated_bytes": 2453504,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54216668,
+              "unique_chunks": 2221,
+              "unique_raw_bytes": 34481523,
+              "compressed_payload_bytes": 10784678,
+              "referenced_pack_bytes": 10893795,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11553251
+            }
+          },
+          "gc": {
+            "removed_chunks": 1,
+            "rewritten_packs": 1,
+            "removed_pack_bytes": 6333,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54216668,
+              "unique_chunks": 2221,
+              "unique_raw_bytes": 34481523,
+              "compressed_payload_bytes": 10784678,
+              "referenced_pack_bytes": 10893795,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11553251
+            }
+          }
+        },
+        {
+          "stage": "edit-2",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780817,
+              "referenced_pack_bytes": 10889844,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549300
+            }
+          },
+          "gc": {
+            "removed_chunks": 10,
+            "rewritten_packs": 1,
+            "removed_pack_bytes": 55840,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780817,
+              "referenced_pack_bytes": 10889844,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549300
+            }
+          }
+        },
+        {
+          "stage": "edit-3",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780811,
+              "referenced_pack_bytes": 10889846,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549302
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 1,
+            "removed_pack_bytes": 51886,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780811,
+              "referenced_pack_bytes": 10889846,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549302
+            }
+          }
+        },
+        {
+          "stage": "edit-4",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780806,
+              "referenced_pack_bytes": 10889841,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549297
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51889,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780806,
+              "referenced_pack_bytes": 10889841,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549297
+            }
+          }
+        },
+        {
+          "stage": "edit-5",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780809,
+              "referenced_pack_bytes": 10889844,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549300
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51886,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780809,
+              "referenced_pack_bytes": 10889844,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549300
+            }
+          }
+        },
+        {
+          "stage": "edit-6",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780808,
+              "referenced_pack_bytes": 10889843,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549299
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51885,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780808,
+              "referenced_pack_bytes": 10889843,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549299
+            }
+          }
+        },
+        {
+          "stage": "edit-7",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780777,
+              "referenced_pack_bytes": 10889812,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549268
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51890,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780777,
+              "referenced_pack_bytes": 10889812,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549268
+            }
+          }
+        },
+        {
+          "stage": "edit-8",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780775,
+              "referenced_pack_bytes": 10889810,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549266
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51883,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780775,
+              "referenced_pack_bytes": 10889810,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549266
+            }
+          }
+        },
+        {
+          "stage": "edit-9",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726808,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780809,
+              "referenced_pack_bytes": 10889844,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549300
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51857,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780809,
+              "referenced_pack_bytes": 10889844,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549300
+            }
+          }
+        },
+        {
+          "stage": "edit-10",
+          "live": {
+            "files": 398,
+            "sealed_files": 37,
+            "logical_bytes": 55726833,
+            "native_allocated_bytes": 2465792,
+            "content": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780814,
+              "referenced_pack_bytes": 10889849,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549305
+            }
+          },
+          "gc": {
+            "removed_chunks": 8,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 51884,
+            "stats": {
+              "files": 37,
+              "logical_bytes": 54217194,
+              "unique_chunks": 2219,
+              "unique_raw_bytes": 34474827,
+              "compressed_payload_bytes": 10780814,
+              "referenced_pack_bytes": 10889849,
+              "catalog_bytes": 659456,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11549305
+            }
+          }
+        },
+        {
+          "stage": "main-release-cleaned",
+          "live": {
+            "files": 356,
+            "sealed_files": 32,
+            "logical_bytes": 52616936,
+            "native_allocated_bytes": 2392064,
+            "content": {
+              "files": 32,
+              "logical_bytes": 51038097,
+              "unique_chunks": 2132,
+              "unique_raw_bytes": 33164505,
+              "compressed_payload_bytes": 10275095,
+              "referenced_pack_bytes": 10379859,
+              "catalog_bytes": 630784,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11010643
+            }
+          },
+          "gc": {
+            "removed_chunks": 123,
+            "rewritten_packs": 3,
+            "removed_pack_bytes": 725479,
+            "stats": {
+              "files": 32,
+              "logical_bytes": 51038097,
+              "unique_chunks": 2132,
+              "unique_raw_bytes": 33164505,
+              "compressed_payload_bytes": 10275095,
+              "referenced_pack_bytes": 10379859,
+              "catalog_bytes": 630784,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 11010643
+            }
+          }
+        },
+        {
+          "stage": "main-cleaned-other-preserved",
+          "live": {
+            "files": 139,
+            "sealed_files": 13,
+            "logical_bytes": 18480477,
+            "native_allocated_bytes": 856064,
+            "content": {
+              "files": 13,
+              "logical_bytes": 17965575,
+              "unique_chunks": 1018,
+              "unique_raw_bytes": 15710059,
+              "compressed_payload_bytes": 4927414,
+              "referenced_pack_bytes": 4977488,
+              "catalog_bytes": 319488,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 5296976
+            }
+          },
+          "gc": {
+            "removed_chunks": 1114,
+            "rewritten_packs": 8,
+            "removed_pack_bytes": 5402371,
+            "stats": {
+              "files": 13,
+              "logical_bytes": 17965575,
+              "unique_chunks": 1018,
+              "unique_raw_bytes": 15710059,
+              "compressed_payload_bytes": 4927414,
+              "referenced_pack_bytes": 4977488,
+              "catalog_bytes": 319488,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 5296976
+            }
+          }
+        },
+        {
+          "stage": "all-cleaned",
+          "live": {
+            "files": 0,
+            "sealed_files": 0,
+            "logical_bytes": 0,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          },
+          "gc": {
+            "removed_chunks": 1018,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 4977488,
+            "stats": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          }
+        },
+        {
+          "stage": "rebuilt-after-clean-and-cleaned-again",
+          "live": {
+            "files": 0,
+            "sealed_files": 0,
+            "logical_bytes": 0,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          },
+          "gc": {
+            "removed_chunks": 1016,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 6261583,
+            "stats": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          }
+        }
+      ],
+      "final_unique_chunks": 0
+    },
+    "selfhost": {
+      "status": "passed",
+      "project": "SL7 with all fuse dependencies",
+      "cargo_commands": [
+        {
+          "view": "selfhost",
+          "command": "cargo build --locked --features fuse --offline",
+          "elapsed_seconds": 14.680742504999671
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo test --locked --features fuse --offline",
+          "elapsed_seconds": 3.906577404000018
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo check --locked --features fuse --offline",
+          "elapsed_seconds": 3.6425599240001247
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --release --locked --features fuse --offline",
+          "elapsed_seconds": 37.16788924899993
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --locked --features fuse --offline --message-format=json",
+          "elapsed_seconds": 0.3577015760001814
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --release --locked --features fuse --offline --message-format=json",
+          "elapsed_seconds": 0.30517462800025896
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --locked --features fuse --offline",
+          "elapsed_seconds": 1.2874705569997786
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --release --locked --features fuse --offline",
+          "elapsed_seconds": 1.1981547570003386
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo test --locked --features fuse --offline",
+          "elapsed_seconds": 2.9431641619999027
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --locked --features fuse --offline --message-format=json",
+          "elapsed_seconds": 0.123396128999957
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --release --locked --features fuse --offline --message-format=json",
+          "elapsed_seconds": 0.08535178700003598
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo clean --release --offline",
+          "elapsed_seconds": 0.7051347940000596
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo clean --offline",
+          "elapsed_seconds": 0.7637694720001491
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --locked --features fuse --offline",
+          "elapsed_seconds": 22.72769009600006
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo build --release --locked --features fuse --offline",
+          "elapsed_seconds": 41.690494813999976
+        },
+        {
+          "view": "selfhost",
+          "command": "cargo clean --offline",
+          "elapsed_seconds": 2.1129811579999114
+        }
+      ],
+      "snapshots": [
+        {
+          "stage": "selfhost-debug-release-built",
+          "live": {
+            "files": 2375,
+            "sealed_files": 393,
+            "logical_bytes": 632570995,
+            "native_allocated_bytes": 12181504,
+            "content": {
+              "files": 393,
+              "logical_bytes": 627214887,
+              "unique_chunks": 27239,
+              "unique_raw_bytes": 429052554,
+              "compressed_payload_bytes": 141167823,
+              "referenced_pack_bytes": 142508006,
+              "catalog_bytes": 7081984,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 149589990
+            }
+          },
+          "gc": {
+            "removed_chunks": 2709,
+            "rewritten_packs": 293,
+            "removed_pack_bytes": 46250484,
+            "stats": {
+              "files": 393,
+              "logical_bytes": 627214887,
+              "unique_chunks": 27239,
+              "unique_raw_bytes": 429052554,
+              "compressed_payload_bytes": 141167823,
+              "referenced_pack_bytes": 142508006,
+              "catalog_bytes": 7081984,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 149589990
+            }
+          }
+        },
+        {
+          "stage": "selfhost-edited-and-rebuilt",
+          "live": {
+            "files": 2375,
+            "sealed_files": 393,
+            "logical_bytes": 632570995,
+            "native_allocated_bytes": 12181504,
+            "content": {
+              "files": 393,
+              "logical_bytes": 627214887,
+              "unique_chunks": 27238,
+              "unique_raw_bytes": 429052554,
+              "compressed_payload_bytes": 141167827,
+              "referenced_pack_bytes": 142507977,
+              "catalog_bytes": 7081984,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 149589961
+            }
+          },
+          "gc": {
+            "removed_chunks": 131,
+            "rewritten_packs": 2,
+            "removed_pack_bytes": 500884,
+            "stats": {
+              "files": 393,
+              "logical_bytes": 627214887,
+              "unique_chunks": 27238,
+              "unique_raw_bytes": 429052554,
+              "compressed_payload_bytes": 141167827,
+              "referenced_pack_bytes": 142507977,
+              "catalog_bytes": 7081984,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 149589961
+            }
+          }
+        },
+        {
+          "stage": "selfhost-release-cleaned",
+          "live": {
+            "files": 1387,
+            "sealed_files": 224,
+            "logical_bytes": 362826658,
+            "native_allocated_bytes": 6983680,
+            "content": {
+              "files": 224,
+              "logical_bytes": 359878220,
+              "unique_chunks": 16617,
+              "unique_raw_bytes": 261983874,
+              "compressed_payload_bytes": 84024531,
+              "referenced_pack_bytes": 84841884,
+              "catalog_bytes": 4218880,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 89060764
+            }
+          },
+          "gc": {
+            "removed_chunks": 10621,
+            "rewritten_packs": 2,
+            "removed_pack_bytes": 57666093,
+            "stats": {
+              "files": 224,
+              "logical_bytes": 359878220,
+              "unique_chunks": 16617,
+              "unique_raw_bytes": 261983874,
+              "compressed_payload_bytes": 84024531,
+              "referenced_pack_bytes": 84841884,
+              "catalog_bytes": 4218880,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 89060764
+            }
+          }
+        },
+        {
+          "stage": "selfhost-all-cleaned",
+          "live": {
+            "files": 0,
+            "sealed_files": 0,
+            "logical_bytes": 0,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          },
+          "gc": {
+            "removed_chunks": 16617,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 84841884,
+            "stats": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          }
+        },
+        {
+          "stage": "selfhost-rebuilt-after-clean-then-cleaned",
+          "live": {
+            "files": 0,
+            "sealed_files": 0,
+            "logical_bytes": 0,
+            "native_allocated_bytes": 0,
+            "content": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          },
+          "gc": {
+            "removed_chunks": 25351,
+            "rewritten_packs": 0,
+            "removed_pack_bytes": 166056926,
+            "stats": {
+              "files": 0,
+              "logical_bytes": 0,
+              "unique_chunks": 0,
+              "unique_raw_bytes": 0,
+              "compressed_payload_bytes": 0,
+              "referenced_pack_bytes": 0,
+              "catalog_bytes": 81920,
+              "orphan_pack_bytes": 0,
+              "temporary_bytes": 0,
+              "total_file_bytes": 81920
+            }
+          }
+        }
+      ],
+      "final_unique_chunks": 0
+    }
+  },
+  "additional_regressions": [
+    "Sealed chmod and timestamps preserve sparse backing and bytes",
+    "Zero truncation does not read old packs; process-death transition checks",
+    "Cache eviction, descriptor reuse, and integrity checks bypass cached bytes",
+    "Concurrent mutation cancels stale background publication",
+    "Open readers prevent background retirement; normal shutdown drains work"
+  ]
+}

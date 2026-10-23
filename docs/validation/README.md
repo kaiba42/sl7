@@ -1,12 +1,16 @@
 # Initial implementation validation
 
+This page preserves the original measurements. The subsequent
+[optimization report](optimizations.md) covers the current implementation,
+with [per-change validation](optimizations-validation.json) and fresh profiles.
+
 The full Synkro workspace has a separate
 [native-versus-SL7 build performance report](synkro-build-performance.md),
 including clean builds, one-line rebuilds, and storage before GC.
 The follow-up [profiling report](profiling.md) identifies CPU hotspots and
 filesystem request delays in the unchanged baseline implementation.
 
-The current machine-readable report is [end-to-end.json](end-to-end.json).
+The initial machine-readable report is [end-to-end.json](end-to-end.json).
 Run `bash scripts/docker-test.sh` to reproduce all four mounted suites. Run
 `bash scripts/verify.sh` for host formatting, compilation, tests, and Clippy.
 
@@ -117,8 +121,8 @@ umount /mnt/sl7-private
 These checks qualify the tested Linux build-tree operations and explicit
 process-death boundaries. They do not certify power-loss recovery, arbitrary
 POSIX permissions/ownership, hostile external writers, direct I/O, live GC,
-production-scale latency, or native macOS behavior. Sealing and reads serialize;
-GC is offline. The store's native `tree/` is private implementation data and must
+production-scale latency, or native macOS behavior. In that initial version, sealing and reads serialized; current background packing
+is described in the optimization report. GC remains offline. The store's native `tree/` is private implementation data and must
 not be used as ordinary artifacts after files have been sealed.
 
 Earlier read-only/staging reports and the single-real-artifact smoke report are

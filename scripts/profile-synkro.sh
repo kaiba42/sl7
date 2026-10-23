@@ -29,6 +29,13 @@ docker --context "$context" start "$container" >/dev/null
 docker --context "$context" exec "$container" mkdir -p /bench/source /bench/results
 docker --context "$context" cp "$archive" "$container:/bench/source.tar"
 docker --context "$context" exec "$container" tar xf /bench/source.tar -C /bench/source
+# The image supplies dependencies, not the implementation being measured.
+for source in Cargo.toml Cargo.lock; do
+    docker --context "$context" cp "$source" "$container:/sl7/$source"
+done
+docker --context "$context" cp src/. "$container:/sl7/src/"
+docker --context "$context" exec "$container" cargo build --locked --release --features fuse \
+    >"$results/sl7-build.log" 2>&1
 for script in profile-synkro.py benchmark-synkro.py mount_helpers.py analyze-profile.py; do
     docker --context "$context" cp "scripts/$script" "$container:/sl7/scripts/$script"
 done

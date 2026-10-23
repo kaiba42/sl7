@@ -1,5 +1,8 @@
 # Where SL7 performance work should start
 
+Historical baseline. The four changes below are now implemented; see the
+[measured optimization results](optimizations.md).
+
 Measured on 2026-10-23 using the exact Synkro revision, lockfile, Rust compiler,
 and optimized SL7 binary from the [build baseline](synkro-build-performance.md).
 The complete [profiling results](profiling.json) include sample counts, request
