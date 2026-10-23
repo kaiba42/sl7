@@ -1,0 +1,40 @@
+# Build outputs and local artifact stores
+target/
+/.sl7/
+/test-results/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.pack
+*.log
+*.tar
+*.tar.gz
+*.zip
+
+# Private corpus inventories, generated research, and unfinished local setup
+/docs/study/
+/.flox/
+
+# Credentials and local agent configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+/.aws/
+/.ssh/
+/.codex/
+/.claude/
+/.agents/
+
+# Editor and Python caches
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+*.swp
+*.swo

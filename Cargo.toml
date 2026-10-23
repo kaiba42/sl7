@@ -1,0 +1,36 @@
+[package]
+name = "sl7"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+description = "Experimental shared storage for build artifacts"
+
+[features]
+default = []
+fuse = ["dep:fuser", "dep:libc"]
+# Compile/test the adapter on macOS without linking a system FUSE library.
+# This feature deliberately disables mounting on macOS.
+fuse-check = ["fuse", "fuser/macos-no-mount"]
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"] }
+fs2 = "0.4.3"
+fuser = { version = "0.18.0", optional = true }
+libc = { version = "0.2", optional = true }
+memmap2 = "0.9"
+rusqlite = { version = "0.32.1", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10.9"
+tempfile = "3.27"
+thiserror = "2"
+zstd = "0.13.3"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

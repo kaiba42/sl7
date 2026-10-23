@@ -1,0 +1,59 @@
+{
+  "imports": [
+    {
+      "source": "target/release/deps/libsynkro_db-ed62d40c6ae8ef47.rmeta",
+      "first": {
+        "file": {
+          "id": 1,
+          "view": "main",
+          "name": "artifact-0",
+          "size": 61214294,
+          "sha256": "efd88a5a031be75a832e11c9d5bbddd9569df8dca24e4f58d450c2152b3e63b0"
+        },
+        "new_chunks": 5548,
+        "new_pack_bytes": 35210034,
+        "references": 5550
+      },
+      "duplicate": {
+        "file": {
+          "id": 2,
+          "view": "duplicate-view",
+          "name": "artifact-0",
+          "size": 61214294,
+          "sha256": "efd88a5a031be75a832e11c9d5bbddd9569df8dca24e4f58d450c2152b3e63b0"
+        },
+        "new_chunks": 0,
+        "new_pack_bytes": 0,
+        "references": 5550
+      }
+    }
+  ],
+  "verified_random_reads": 25,
+  "stats": {
+    "files": 2,
+    "logical_bytes": 122428588,
+    "unique_chunks": 5548,
+    "unique_raw_bytes": 61148758,
+    "compressed_payload_bytes": 34938174,
+    "referenced_pack_bytes": 35210034,
+    "catalog_bytes": 1658880,
+    "orphan_pack_bytes": 0,
+    "temporary_bytes": 0,
+    "total_file_bytes": 36868914
+  },
+  "native_probe": {
+    "directory": "<temporary-directory>/sl7-smoke",
+    "checks": [
+      "hard_link",
+      "read_mmap",
+      "lock_contention",
+      "rename_over_open",
+      "unlink_open_mapping",
+      "shared_write_mmap",
+      "truncate_extend",
+      "fsync_and_directory_sync",
+      "execute_native_binary"
+    ]
+  },
+  "temporary_store_removed_on_exit": true
+}

@@ -1,0 +1,127 @@
+{
+  "readonly": {
+    "platform": "Linux 7.2.9-orbstack-00391-g2b298d05fbd4",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "mount": "passed",
+    "artifacts": [
+      {
+        "mountpoint": "/tmp/sl7-mounted-test-q9d53qug/mount",
+        "artifact": "main/debug/data",
+        "size": 4194304,
+        "sha256": "163226d6a099097ff33602e3705c88c637b71d2eef6ddca2b575979fe29e15da",
+        "random_reads": 100,
+        "read_mmap": "passed",
+        "writable_open": "rejected",
+        "source_unchanged": true
+      },
+      {
+        "mountpoint": "/tmp/sl7-mounted-test-q9d53qug/mount",
+        "artifact": "duplicate/debug/data",
+        "size": 4194304,
+        "sha256": "163226d6a099097ff33602e3705c88c637b71d2eef6ddca2b575979fe29e15da",
+        "random_reads": 100,
+        "read_mmap": "passed",
+        "writable_open": "rejected",
+        "source_unchanged": true
+      },
+      {
+        "mountpoint": "/tmp/sl7-mounted-test-q9d53qug/mount",
+        "artifact": "edited/debug/data",
+        "size": 4194322,
+        "sha256": "17cdb4e461c803def9de049f4c9e82bfc746ac3d230bb855d00f34899dd1818d",
+        "random_reads": 100,
+        "read_mmap": "passed",
+        "writable_open": "rejected",
+        "source_unchanged": true
+      },
+      {
+        "mountpoint": "/tmp/sl7-mounted-test-q9d53qug/mount",
+        "artifact": "main/empty",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "random_reads": 100,
+        "read_mmap": "skipped: empty file",
+        "writable_open": "rejected",
+        "source_unchanged": true
+      },
+      {
+        "mountpoint": "/tmp/sl7-mounted-test-q9d53qug/mount",
+        "artifact": "main/debug/libsl7_fixture.rmeta",
+        "size": 2139,
+        "sha256": "661ad04eefbf6587c33095936a287461a9ae3378e8b8ec5c05f2681ceb2318c9",
+        "random_reads": 100,
+        "read_mmap": "passed",
+        "writable_open": "rejected",
+        "source_unchanged": true
+      },
+      {
+        "mountpoint": "/tmp/sl7-mounted-test-q9d53qug/mount",
+        "artifact": "main/debug/libsl7_fixture.rlib",
+        "size": 7572,
+        "sha256": "600700849916e38b62aefdaf53cf6bbe7ccde84f4c09f7d40109cc3b3f90db12",
+        "random_reads": 100,
+        "read_mmap": "passed",
+        "writable_open": "rejected",
+        "source_unchanged": true
+      }
+    ],
+    "duplicate_new_chunks": 0,
+    "duplicate_new_pack_bytes": 0,
+    "edited_new_pack_bytes": 23780,
+    "first_new_pack_bytes": 1082695,
+    "namespace_mutations": "EROFS",
+    "independent_view_inodes": true,
+    "rustc_metadata_read": "passed",
+    "rustc_rlib_link_and_execution": "passed",
+    "store_lock_during_mount": "passed",
+    "post_unmount_check": {
+      "files": 6,
+      "logical_bytes": 12592641,
+      "unique_chunks": 114,
+      "unique_raw_bytes": 1110731,
+      "compressed_payload_bytes": 1106906,
+      "referenced_pack_bytes": 1112524,
+      "catalog_bytes": 176128,
+      "orphan_pack_bytes": 0,
+      "temporary_bytes": 0,
+      "total_file_bytes": 1288652
+    }
+  },
+  "staging": {
+    "platform": "Linux 7.2.9-orbstack-00391-g2b298d05fbd4",
+    "mount": "passed",
+    "native_and_mounted_probe": [
+      "hard_link",
+      "read_mmap",
+      "lock_contention",
+      "rename_over_open",
+      "unlink_open_mapping",
+      "shared_write_mmap",
+      "truncate_extend",
+      "fsync_and_directory_sync",
+      "execute_native_binary"
+    ],
+    "comparison_checks": [
+      "mapping_outlives_descriptor",
+      "same_inode_write_coherence",
+      "rename_over_mapping",
+      "hardlink_identity",
+      "relative_and_dangling_symlinks",
+      "nanosecond_mtime",
+      "chmod",
+      "append",
+      "large_readdir",
+      "directory_rename",
+      "cross_process_lock_contention"
+    ],
+    "cargo_build_test_check": "passed",
+    "cargo_warm_build_all_fresh": true,
+    "cargo_build_script_and_proc_macro": "passed",
+    "cargo_one_line_edit": "passed",
+    "separate_target_and_build_directories": true,
+    "post_unmount_native_bytes": "passed",
+    "daemon_kill_restart_synced_bytes": "passed",
+    "statvfs_capacity": "passed",
+    "writable_deduplication": "not implemented: native staging adapter only"
+  }
+}
