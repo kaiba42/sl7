@@ -3,8 +3,9 @@
 //! tree must be exclusively owned by this process while mounted. Kernel-local
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
 use fuser::*;
+mod background;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     ffi::{CString, OsStr, OsString},
     fs::{self, File, Metadata, OpenOptions},
     io,
@@ -16,7 +17,11 @@ use std::{
         },
     },
     path::{Path, PathBuf},
-    sync::Mutex,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
+        mpsc::SyncSender,
+    },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -26,6 +31,9 @@ struct Inode {
     identity: (u64, u64),
     references: u64,
     opens: u64,
+    epoch: Arc<AtomicU64>,
+    queued: bool,
+    packing: bool,
 }
 struct DirectoryEntry {
     ino: INodeNo,
@@ -44,12 +52,27 @@ struct State {
     handles: HashMap<FileHandle, Handle>,
     next_inode: u64,
     next_handle: u64,
+    seal_queue: VecDeque<INodeNo>,
+    wake: Option<SyncSender<()>>,
+    stopping: bool,
+    worker_failed: bool,
+    seal_stats: background::Stats,
+    #[cfg(test)]
+    seal_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
 }
 pub struct StagingFs {
-    state: Mutex<State>,
+    state: Arc<Mutex<State>>,
+    worker: Option<std::thread::JoinHandle<()>>,
     _owner: Owner,
 }
 struct Owner(File);
+impl Drop for StagingFs {
+    fn drop(&mut self) {
+        if let Some(worker) = self.worker.take() {
+            background::stop(&self.state, worker);
+        }
+    }
+}
 impl Drop for Owner {
     fn drop(&mut self) {
         // A fork before CLOEXEC must not extend ownership after this session.
@@ -152,7 +175,19 @@ fn timespec(time: Option<TimeOrNow>) -> io::Result<libc::timespec> {
 }
 
 impl State {
+    fn invalidate(&mut self, ino: INodeNo) -> io::Result<()> {
+        self.nodes
+            .get(&ino)
+            .ok_or_else(|| error(libc::ENOENT))?
+            .epoch
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.checked_add(1)
+            })
+            .map_err(|_| error(libc::EOVERFLOW))?;
+        Ok(())
+    }
     fn truncate_zero(&mut self, ino: INodeNo) -> io::Result<()> {
+        self.invalidate(ino)?;
         if let Some(live) = &mut self.live {
             live.truncate_zero(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
                 .map_err(storage)?;
@@ -160,6 +195,7 @@ impl State {
         Ok(())
     }
     fn hydrate(&mut self, ino: INodeNo) -> io::Result<()> {
+        self.invalidate(ino)?;
         if let Some(live) = &mut self.live {
             live.hydrate(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
                 .map_err(storage)?;
@@ -167,6 +203,7 @@ impl State {
         Ok(())
     }
     fn mutated(&mut self, ino: INodeNo) -> io::Result<()> {
+        self.invalidate(ino)?;
         if let Some(live) = &mut self.live {
             live.mutated(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
                 .map_err(storage)?;
@@ -174,10 +211,12 @@ impl State {
         Ok(())
     }
     fn namespace_changed(&mut self, ino: INodeNo) -> io::Result<()> {
+        self.invalidate(ino)?;
         if let Some(live) = &mut self.live {
             live.namespace_changed(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
                 .map_err(storage)?;
         }
+        self.schedule_seal(ino);
         Ok(())
     }
     fn inode(&self, ino: INodeNo) -> io::Result<&File> {
@@ -223,6 +262,9 @@ impl State {
                 identity: key,
                 references: 0,
                 opens: 0,
+                epoch: Arc::new(AtomicU64::new(0)),
+                queued: false,
+                packing: false,
             },
         );
         Ok(ino)
@@ -349,16 +391,7 @@ impl State {
             .get_mut(&ino)
             .ok_or_else(|| error(libc::ENOENT))?
             .opens -= 1;
-        if let Some(live) = &mut self.live {
-            let node = self.nodes.get(&ino).unwrap();
-            if node.opens == 0 {
-                // Sealing is optional for the write contract. An error leaves
-                // either native bytes or a committed manifest authoritative.
-                if let Err(error) = live.seal(&node.pin) {
-                    eprintln!("sl7: sealing inode {}: {error}", u64::from(ino));
-                }
-            }
-        }
+        self.schedule_seal(ino);
         self.reclaim(ino);
         Ok(())
     }
@@ -378,7 +411,7 @@ impl State {
             && self
                 .nodes
                 .get(&ino)
-                .is_some_and(|n| n.references == 0 && n.opens == 0)
+                .is_some_and(|n| n.references == 0 && n.opens == 0 && !n.queued && !n.packing)
         {
             let node = self.nodes.remove(&ino).unwrap();
             self.identities.remove(&node.identity);
@@ -400,10 +433,18 @@ impl StagingFs {
             handles: HashMap::new(),
             next_inode: 1,
             next_handle: 1,
+            seal_queue: VecDeque::new(),
+            wake: None,
+            stopping: false,
+            worker_failed: false,
+            seal_stats: background::Stats::default(),
+            #[cfg(test)]
+            seal_pause: None,
         };
         assert_eq!(state.register(pin(backing)?)?, INodeNo::ROOT);
         Ok(Self {
-            state: Mutex::new(state),
+            state: Arc::new(Mutex::new(state)),
+            worker: None,
             _owner: Owner(owner),
         })
     }
@@ -411,10 +452,12 @@ impl StagingFs {
         let mut live = crate::live::Live::open(store)?;
         let mut fs = Self::new(&live.tree())?;
         live.recover()?;
+        let packer = crate::store::Packer::new(&live.store.root)?;
         fs.state
-            .get_mut()
+            .lock()
             .map_err(|_| crate::Error::Invalid("poisoned filesystem state".into()))?
             .live = Some(live);
+        fs.worker = Some(background::start(Arc::clone(&fs.state), packer)?);
         Ok(fs)
     }
     fn with<T>(
@@ -498,6 +541,7 @@ impl Filesystem for StagingFs {
             if m.file_type().is_symlink() {
                 return Err(error(libc::EOPNOTSUPP));
             }
+            s.invalidate(ino)?;
             if m.is_file() && size.is_some() {
                 if size == Some(0) {
                     s.truncate_zero(ino)?;
@@ -528,6 +572,7 @@ impl Filesystem for StagingFs {
                 live.metadata_changed(&s.nodes[&ino].pin, atime.is_some(), mtime.is_some())
                     .map_err(storage)?;
             }
+            s.schedule_seal(ino);
             s.attr(ino)
         }) {
             Ok(a) => reply.attr(&TTL, &a),
@@ -993,7 +1038,15 @@ fn run_mount(fs: StagingFs, mountpoint: &Path) -> crate::Result<()> {
         MountOption::NoAtime,
         MountOption::FSName("sl7".into()),
     ];
+    let state = Arc::clone(&fs.state);
     fuser::mount(fs, mountpoint, &config)?;
+    if state
+        .lock()
+        .map_err(|_| io::Error::other("poisoned filesystem state"))?
+        .worker_failed
+    {
+        return Err(io::Error::other("background sealing worker failed").into());
+    }
     Ok(())
 }
 

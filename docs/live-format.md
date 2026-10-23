@@ -20,9 +20,12 @@ until hydration commits removal of its binding.
 Sealing, with no open handles/mappings:
 
 1. Capture logical metadata and durably assign an xattr identity if needed.
-2. Increment the generation; chunk native bytes and publish immutable packs.
-   Pack data and directory entries are synced before the manifest commits.
-3. Commit the manifest binding and metadata using SQLite WAL/FULL.
+2. Increment the generation and capture an in-memory mutation epoch. A single
+   background worker chunks native bytes and publishes immutable packs outside
+   the filesystem mutex, using a separate read-only catalog connection. Pack data
+   and directory entries are synced before the manifest commits.
+3. Reacquire the mutex and require the same epoch and zero open handles. Discard
+   stale work; otherwise commit the manifest and binding using SQLite WAL/FULL.
 4. Truncate the native file, restore its logical length as a sparse placeholder,
    restore atime/mtime, and sync. Permissions and hard links stay native.
 
@@ -43,9 +46,13 @@ native inode, then atomically removes its manifest and metadata binding. Before
 that commit recovery still restores the old manifest; afterward the durable
 empty native file is authoritative. Nonzero size changes still hydrate first.
 
-Callbacks and transitions hold one mutex. This excludes competing writers during
-packing instead of speculatively packing in the background and validating a
-generation afterward. Files below 64 KiB, unlinked files, and files lacking owner
+Callbacks and publication hold one mutex; expensive packing does not. Mutations
+invalidate pending work. Open readers prevent retirement until their last release.
+One worker bounds active jobs; a 1,024-entry queue spills pending flags onto pinned
+inodes. Normal unmount drains the worker before releasing store ownership. Canceled
+work can leave orphan packs for offline GC; native bytes remain authoritative.
+`SL7_CACHE_STATS=1` also prints sealing counts and preparation/publication timings.
+Files below 64 KiB, unlinked files, and files lacking owner
 read/write permission stay native. Sealing errors are logged and leave native
 bytes or an already committed manifest authoritative. Failure of the optimization
 does not turn close into a failed user write.
@@ -102,8 +109,8 @@ Use the mount for all artifact access. Native reads of sealed `tree/` files retu
 sparse zeros. Copying that directory alone loses the content; backups must preserve
 the entire unmounted store and xattrs. External mutation is unsupported.
 
-There is no online control socket, background packing,
-multi-daemon writer protocol, or native macOS writable backend. Native metadata
+There is no online control socket, multi-daemon writer protocol, or native macOS
+writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
-permission transitions remain outside qualification. This first implementation
-establishes byte sharing and lifecycle behavior before concurrent packing.
+permission transitions remain outside qualification. Background packing still serializes catalog publication and sparse retirement
+with filesystem callbacks.

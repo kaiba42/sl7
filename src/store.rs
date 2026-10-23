@@ -71,6 +71,43 @@ impl Drop for Store {
     }
 }
 
+/// Durable packs without catalog references. Abandoned candidates are GC orphans.
+pub(crate) struct PreparedImport {
+    size: u64,
+    digest: Hash,
+    extents: Vec<(u64, Hash)>,
+    locations: Vec<pack::Location>,
+    packs: Vec<(String, u64)>,
+}
+
+#[cfg(all(feature = "fuse", target_os = "linux"))]
+pub(crate) struct Packer {
+    root: PathBuf,
+    db: Connection,
+}
+#[cfg(all(feature = "fuse", target_os = "linux"))]
+impl Packer {
+    pub fn new(root: &Path) -> Result<Self> {
+        let db = Connection::open_with_flags(
+            root.join("catalog.sqlite"),
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )?;
+        db.busy_timeout(std::time::Duration::from_secs(10))?;
+        Ok(Self {
+            root: root.to_path_buf(),
+            db,
+        })
+    }
+    pub fn prepare(&self, source: &Path, canceled: impl Fn() -> bool) -> Result<PreparedImport> {
+        use std::os::unix::fs::OpenOptionsExt;
+        let file = OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOATIME)
+            .open(source)?;
+        prepare_import(&self.root, &self.db, &file, pack::LIMIT, canceled)
+    }
+}
+
 struct OwnerLock(File);
 impl Drop for OwnerLock {
     fn drop(&mut self) {
@@ -166,81 +203,30 @@ impl Store {
                 name: name.into(),
             });
         }
-        let file = File::open(source)?;
-        let before = file.metadata()?;
-        if !before.is_file() {
-            return Err(Error::Invalid(format!(
-                "source is not a regular file: {}",
-                source.display()
-            )));
-        }
-        // Quiescent sources only: these checks detect common races, not arbitrary external writers.
-        let mut chunker = chunk::Chunker::new(BufReader::new(&file));
-        let mut digest = Sha256::new();
-        let mut extents: Vec<(u64, Hash)> = Vec::new();
-        let mut seen = HashSet::new();
-        let mut locations = Vec::new();
-        let mut packs = Vec::new();
-        // No pack is needed until the first novel chunk.
-        let mut writer: Option<pack::Writer> = None;
-        let mut offset = 0_u64;
-        while let Some(bytes) = chunker.next_chunk()? {
-            digest.update(&bytes);
-            let hash = chunk::identity(&bytes);
-            let exists: bool = self.db.query_row(
-                "SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)",
-                [hash.as_slice()],
-                |r| r.get(0),
-            )?;
-            if !exists && seen.insert(hash) {
-                if let Some(w) = writer.take() {
-                    if w.size + bytes.len() as u64 + 49 > pack_limit {
-                        let (id, size, locs) = w.finish(&self.root)?;
-                        packs.push((id, size));
-                        locations.extend(locs);
-                    } else {
-                        writer = Some(w);
-                    }
-                }
-                let mut w = match writer.take() {
-                    Some(w) => w,
-                    None => pack::Writer::new(&self.root)?,
-                };
-                w.add(hash, &bytes)?;
-                writer = Some(w);
-            }
-            extents.push((offset, hash));
-            offset = offset
-                .checked_add(bytes.len() as u64)
-                .ok_or_else(|| Error::Invalid("source length overflow".into()))?;
-            if offset > i64::MAX as u64 {
-                return Err(Error::Invalid("source exceeds catalog length limit".into()));
-            }
-        }
-        let after = file.metadata()?;
-        if before.len() != after.len() {
-            return Err(Error::SourceChanged(format!(
-                "length {} -> {}",
-                before.len(),
-                after.len()
-            )));
-        }
-        if before.modified()? != after.modified()? {
-            return Err(Error::SourceChanged("modification time differs".into()));
-        }
-        if offset != before.len() {
-            return Err(Error::SourceChanged(format!(
-                "read {offset} bytes, expected {}",
-                before.len()
-            )));
-        }
-        if let Some(w) = writer {
-            let (id, size, locs) = w.finish(&self.root)?;
-            packs.push((id, size));
-            locations.extend(locs);
-        }
-        // Packs and directory entries are durable before any reference is committed.
-        let digest: Hash = digest.finalize().into();
+        let prepared = prepare_import(
+            &self.root,
+            &self.db,
+            &File::open(source)?,
+            pack_limit,
+            || false,
+        )?;
+        self.publish_import(view, name, prepared)
+    }
+    pub(crate) fn publish_import(
+        &mut self,
+        view: &str,
+        name: &str,
+        prepared: PreparedImport,
+    ) -> Result<ImportReport> {
+        validate_label("view", view)?;
+        validate_label("artifact name", name)?;
+        let PreparedImport {
+            size: offset,
+            digest,
+            extents,
+            locations,
+            packs,
+        } = prepared;
         let tx = self.db.transaction()?;
         for (id, size) in &packs {
             tx.execute(
@@ -539,6 +525,96 @@ impl Store {
         })
     }
 }
+fn prepare_import(
+    root: &Path,
+    db: &Connection,
+    file: &File,
+    pack_limit: u64,
+    canceled: impl Fn() -> bool,
+) -> Result<PreparedImport> {
+    let before = file.metadata()?;
+    if !before.is_file() {
+        return Err(Error::Invalid("source is not a regular file".into()));
+    }
+    // Quiescent sources only: these checks detect common races, not arbitrary external writers.
+    let mut chunker = chunk::Chunker::new(BufReader::new(file));
+    let mut digest = Sha256::new();
+    let mut extents: Vec<(u64, Hash)> = Vec::new();
+    let mut seen = HashSet::new();
+    let mut locations = Vec::new();
+    let mut packs = Vec::new();
+    // No pack is needed until the first novel chunk.
+    let mut writer: Option<pack::Writer> = None;
+    let mut offset = 0_u64;
+    while let Some(bytes) = chunker.next_chunk()? {
+        if canceled() {
+            return Err(Error::SourceChanged("sealing candidate canceled".into()));
+        }
+        digest.update(&bytes);
+        let hash = chunk::identity(&bytes);
+        let exists: bool = db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)",
+            [hash.as_slice()],
+            |r| r.get(0),
+        )?;
+        if !exists && seen.insert(hash) {
+            if let Some(w) = writer.take() {
+                if w.size + bytes.len() as u64 + 49 > pack_limit {
+                    let (id, size, locs) = w.finish(root)?;
+                    packs.push((id, size));
+                    locations.extend(locs);
+                } else {
+                    writer = Some(w);
+                }
+            }
+            let mut w = match writer.take() {
+                Some(w) => w,
+                None => pack::Writer::new(root)?,
+            };
+            w.add(hash, &bytes)?;
+            writer = Some(w);
+        }
+        extents.push((offset, hash));
+        offset = offset
+            .checked_add(bytes.len() as u64)
+            .ok_or_else(|| Error::Invalid("source length overflow".into()))?;
+        if offset > i64::MAX as u64 {
+            return Err(Error::Invalid("source exceeds catalog length limit".into()));
+        }
+    }
+    let after = file.metadata()?;
+    if before.len() != after.len() {
+        return Err(Error::SourceChanged(format!(
+            "length {} -> {}",
+            before.len(),
+            after.len()
+        )));
+    }
+    if before.modified()? != after.modified()? {
+        return Err(Error::SourceChanged("modification time differs".into()));
+    }
+    if offset != before.len() {
+        return Err(Error::SourceChanged(format!(
+            "read {offset} bytes, expected {}",
+            before.len()
+        )));
+    }
+    if let Some(w) = writer {
+        let (id, size, locs) = w.finish(root)?;
+        packs.push((id, size));
+        locations.extend(locs);
+    }
+    // Packs and directory entries are durable before any reference is committed.
+    let digest: Hash = digest.finalize().into();
+    Ok(PreparedImport {
+        size: offset,
+        digest,
+        extents,
+        locations,
+        packs,
+    })
+}
+
 fn acquire(file: File) -> Result<OwnerLock> {
     match file.try_lock_exclusive() {
         Ok(()) => Ok(OwnerLock(file)),

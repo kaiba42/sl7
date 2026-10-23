@@ -108,8 +108,10 @@ compresses each independently with a raw fallback. Identical files add namespace
 and extent metadata but no new chunk payload. Edits can reuse unchanged chunks.
 
 Files at least 64 KiB with owner read/write permission are sealed after the last
-FUSE handle/mapping is released. Packing is synchronous under the filesystem
-mutex. Reads reconstruct requested ranges; writable opens hydrate sealed files
+FUSE handle/mapping is released. One background worker packs files outside the
+filesystem mutex and validates that they remain unchanged before publishing.
+Normal unmount drains pending sealing. Reads reconstruct requested ranges through
+a bounded verified-chunk cache; writable opens hydrate sealed files
 before mutation. Hard links share an inode; separate files keep separate identities.
 See [the live format and recovery protocol](live-format.md).
 

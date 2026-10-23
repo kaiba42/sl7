@@ -71,6 +71,11 @@ pub struct Sealed {
 pub struct Live {
     pub(crate) store: Store,
 }
+pub(crate) struct SealCandidate {
+    id: i64,
+    generation: i64,
+    metadata: Metadata,
+}
 // Persistent identity, optional manifest id, optional logical metadata JSON.
 type InodeRecord = (i64, Option<i64>, Option<String>);
 
@@ -246,10 +251,8 @@ impl Live {
         File::open(fd_path(file))?.sync_all()?;
         Ok(id)
     }
-    /// Called only with no open handles/mappings, under the inode-state mutex.
-    /// Holding that lock throughout this first implementation excludes changes
-    /// rather than speculatively packing outside the lock and retrying a version.
-    pub fn seal(&mut self, file: &File) -> Result<bool> {
+    /// Capture transition identity while the filesystem state is locked.
+    pub(crate) fn begin_seal(&mut self, file: &File) -> Result<Option<SealCandidate>> {
         let native = file.metadata()?;
         if !native.is_file()
             || native.nlink() == 0
@@ -260,7 +263,7 @@ impl Live {
             || native.mode() & 0o600 != 0o600
             || self.sealed(file)?.is_some()
         {
-            return Ok(false);
+            return Ok(None);
         }
         let metadata = self.metadata(file)?.unwrap_or(Metadata::capture(file)?);
         let id = self.identity(file)?;
@@ -269,17 +272,49 @@ impl Live {
             [id],
             |r| r.get(0),
         )?;
-        let report = self
-            .store
-            .put(VIEW, &format!("{id}-{generation}"), &fd_path(file))?;
-        self.store.db.execute(
-            "UPDATE live_files SET manifest=?1,metadata=?2 WHERE id=?3",
-            params![report.file.id, encode(&metadata)?, id],
+        Ok(Some(SealCandidate {
+            id,
+            generation,
+            metadata,
+        }))
+    }
+    fn bind_seal(&mut self, file: &File, candidate: SealCandidate, manifest: i64) -> Result<bool> {
+        let changed = self.store.db.execute(
+            "UPDATE live_files SET manifest=?1,metadata=?2 WHERE id=?3 AND generation=?4 AND manifest IS NULL",
+            params![manifest, encode(&candidate.metadata)?, candidate.id, candidate.generation],
         )?;
+        if changed != 1 {
+            return Err(Error::Invalid("stale seal generation".into()));
+        }
         #[cfg(test)]
         crate::crash_at("live-seal-committed");
-        self.retire(file, &metadata)?;
+        self.retire(file, &candidate.metadata)?;
         Ok(true)
+    }
+    pub(crate) fn publish_seal(
+        &mut self,
+        file: &File,
+        candidate: SealCandidate,
+        prepared: crate::store::PreparedImport,
+    ) -> Result<bool> {
+        let report = self.store.publish_import(
+            VIEW,
+            &format!("{}-{}", candidate.id, candidate.generation),
+            prepared,
+        )?;
+        self.bind_seal(file, candidate, report.file.id)
+    }
+    /// Synchronous transition used by offline tests and recovery fixtures.
+    pub fn seal(&mut self, file: &File) -> Result<bool> {
+        let Some(candidate) = self.begin_seal(file)? else {
+            return Ok(false);
+        };
+        let report = self.store.put(
+            VIEW,
+            &format!("{}-{}", candidate.id, candidate.generation),
+            &fd_path(file),
+        )?;
+        self.bind_seal(file, candidate, report.file.id)
     }
     fn retire(&self, file: &File, metadata: &Metadata) -> Result<()> {
         // The catalog is authoritative from this point, even after partial
