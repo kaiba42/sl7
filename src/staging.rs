@@ -69,6 +69,8 @@ struct State {
     seal_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
     #[cfg(test)]
     publish_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
+    #[cfg(test)]
+    retire_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
 }
 pub struct StagingFs {
     state: Arc<Mutex<State>>,
@@ -492,6 +494,8 @@ impl StagingFs {
             seal_pause: None,
             #[cfg(test)]
             publish_pause: None,
+            #[cfg(test)]
+            retire_pause: None,
         };
         assert_eq!(state.register(pin(backing)?)?, INodeNo::ROOT);
         Ok(Self {
@@ -571,13 +575,17 @@ impl StagingFs {
             if inodes.iter().any(|ino| !state.nodes.contains_key(ino)) {
                 return Err(Errno::ENOENT);
             }
-            if inodes
-                .iter()
-                .any(|ino| state.nodes.get(ino).is_some_and(|n| n.readers != 0))
+            let publishing = inodes.iter().any(|ino| state.nodes[ino].publishing);
+            if publishing
+                || inodes
+                    .iter()
+                    .any(|ino| state.nodes.get(ino).is_some_and(|n| n.readers != 0))
             {
                 // Reserve these inodes against new readers so a stream of reads
                 // cannot starve a mutation. Never hold state or a catalog permit
-                // while waiting for payload reconstruction to finish.
+                // while waiting for payload reconstruction or retirement. The
+                // publisher releases its catalog permit before native retirement,
+                // so the inode gate, rather than that permit, excludes mutation.
                 for ino in &inodes {
                     state.nodes.get_mut(ino).unwrap().waiting_mutations += 1;
                 }
@@ -588,7 +596,12 @@ impl StagingFs {
                     state.seal_stats.max_request_state_seconds.max(seconds);
                 let started = Instant::now();
                 state = self.publication_done.wait(state).map_err(|_| Errno::EIO)?;
-                state.seal_stats.mutation_read_wait_seconds += started.elapsed().as_secs_f64();
+                if publishing {
+                    state.seal_stats.mutation_publication_wait_seconds +=
+                        started.elapsed().as_secs_f64();
+                } else {
+                    state.seal_stats.mutation_read_wait_seconds += started.elapsed().as_secs_f64();
+                }
                 for ino in &inodes {
                     state.nodes.get_mut(ino).unwrap().waiting_mutations -= 1;
                 }
@@ -605,7 +618,6 @@ impl StagingFs {
                 .try_fold(false, |needed, ino| -> io::Result<bool> {
                     let node = state.nodes.get(ino).ok_or_else(|| error(libc::ENOENT))?;
                     Ok(needed
-                        || node.publishing
                         || state
                             .live
                             .as_ref()

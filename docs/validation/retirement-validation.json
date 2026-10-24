@@ -1,0 +1,26 @@
+{
+  "binary_sha256": "0bd2e2d1be0a9189e70ae4f16cc6bf8cc099a38197ddf009d785d59cc01737f4",
+  "source_sha256": {
+    "src/live.rs": "4a5f04edbc9f352d54c65002aba007e82310919122c613df3cbf07633dac9428",
+    "src/staging.rs": "f177171d47ea1942534c65c4a09e537441c561e05b841699f113062392053339",
+    "src/staging/namespace.rs": "96de7bf5df1fb13e2c4f33645f5f1de4acbe296989e93c0ddcccdd9660567a15",
+    "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+    "src/staging/reads.rs": "8c363ca8a8e6a552e0b090fd6125dfa3c9ce9f202455ba8c56c50ee70b600991",
+    "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+    "src/staging/background.rs": "cc64282b2657c0d4de0b2221691c898efdd1b8ec85d52d05b2e5d0876b626879"
+  },
+  "linux_tests": 60,
+  "host_tests": 35,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
+  "durability": "Content manifest and binding remain FULL-durable before native retirement. The catalog permit is released after binding; the inode gate excludes mutations until retirement completes. Timestamp sync policy is unchanged.",
+  "retirement_test": "Paused retirement blocks same-inode writes and hardlinks while another sealed inode hydrates, writes, and fsyncs; both mutation paths are observed waiting at the inode gate.",
+  "benchmark": "pending"
+}

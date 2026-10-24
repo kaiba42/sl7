@@ -76,6 +76,17 @@ pub(crate) struct SealCandidate {
     generation: i64,
     metadata: Metadata,
 }
+/// The manifest and live binding are durable. Native retirement needs only this
+/// pinned inode and its logical metadata; it does not access the catalog.
+pub(crate) struct CommittedSeal {
+    file: File,
+    metadata: Metadata,
+}
+impl CommittedSeal {
+    pub(crate) fn retire(self) -> Result<()> {
+        Live::retire(&self.file, &self.metadata)
+    }
+}
 pub(crate) struct MetadataUpdate {
     identity: i64,
     value: String,
@@ -305,7 +316,8 @@ impl Live {
         File::open(fd_path(file))?.sync_all()?;
         Ok(id)
     }
-    /// Capture transition identity while the filesystem state is locked.
+    /// Assign a durable identity/generation before packing. The caller serializes
+    /// catalog writes and revalidates the inode's mutation epoch before publishing.
     pub(crate) fn begin_seal(&mut self, file: &File) -> Result<Option<SealCandidate>> {
         let native = file.metadata()?;
         if !native.is_file()
@@ -332,7 +344,7 @@ impl Live {
             metadata,
         }))
     }
-    fn bind_seal(&mut self, file: &File, candidate: SealCandidate, manifest: i64) -> Result<bool> {
+    fn bind_seal(&mut self, candidate: SealCandidate, manifest: i64) -> Result<Metadata> {
         let changed = self.store.db.execute(
             "UPDATE live_files SET manifest=?1,metadata=?2 WHERE id=?3 AND generation=?4 AND manifest IS NULL",
             params![manifest, encode(&candidate.metadata)?, candidate.id, candidate.generation],
@@ -342,21 +354,23 @@ impl Live {
         }
         #[cfg(test)]
         crate::crash_at("live-seal-committed");
-        self.retire(file, &candidate.metadata)?;
-        Ok(true)
+        Ok(candidate.metadata)
     }
     pub(crate) fn publish_seal(
         &mut self,
-        file: &File,
+        file: File,
         candidate: SealCandidate,
         prepared: crate::store::PreparedImport,
-    ) -> Result<bool> {
+    ) -> Result<CommittedSeal> {
         let report = self.store.publish_import(
             VIEW,
             &format!("{}-{}", candidate.id, candidate.generation),
             prepared,
         )?;
-        self.bind_seal(file, candidate, report.file.id)
+        Ok(CommittedSeal {
+            file,
+            metadata: self.bind_seal(candidate, report.file.id)?,
+        })
     }
     /// Synchronous transition used by offline tests and recovery fixtures.
     pub fn seal(&mut self, file: &File) -> Result<bool> {
@@ -368,9 +382,11 @@ impl Live {
             &format!("{}-{}", candidate.id, candidate.generation),
             &fd_path(file),
         )?;
-        self.bind_seal(file, candidate, report.file.id)
+        let metadata = self.bind_seal(candidate, report.file.id)?;
+        Self::retire(file, &metadata)?;
+        Ok(true)
     }
-    fn retire(&self, file: &File, metadata: &Metadata) -> Result<()> {
+    fn retire(file: &File, metadata: &Metadata) -> Result<()> {
         // The catalog is authoritative from this point, even after partial
         // retirement. The native inode remains for names, links and permissions.
         let native = OpenOptions::new().write(true).open(fd_path(file))?;
@@ -404,7 +420,7 @@ impl Live {
                     }
                     if let Some(sealed) = self.sealed(&file)? {
                         if m.blocks() != 0 || m.len() != sealed.metadata.size {
-                            self.retire(&file, &sealed.metadata)?;
+                            Self::retire(&file, &sealed.metadata)?;
                         }
                     }
                 }

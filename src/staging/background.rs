@@ -20,6 +20,8 @@ pub(super) struct Stats {
     prepare_seconds: f64,
     publish_seconds: f64,
     max_publish_seconds: f64,
+    catalog_publish_seconds: f64,
+    retirement_seconds: f64,
     publication_state_seconds: f64,
     max_publication_state_seconds: f64,
     selection_state_seconds: f64,
@@ -46,6 +48,7 @@ pub(super) struct Stats {
     pub(super) read_state_seconds: f64,
     pub(super) read_wait_seconds: f64,
     pub(super) mutation_read_wait_seconds: f64,
+    pub(super) mutation_publication_wait_seconds: f64,
     max_queue_len: usize,
 }
 
@@ -257,7 +260,7 @@ fn run(
         }
         // All catalog writers acquire this permit before filesystem state.
         // Waiters therefore never pin the state mutex behind SQLite commits.
-        let Ok(_writer) = catalog_writer.lock() else {
+        let Ok(writer) = catalog_writer.lock() else {
             return;
         };
         #[cfg(test)]
@@ -309,7 +312,26 @@ fn run(
             let _ = resume.recv();
         }
         let started = Instant::now();
-        let result = publisher.publish_seal(&job.pin, candidate, prepared);
+        let committed = publisher.publish_seal(job.pin, candidate, prepared);
+        let catalog_seconds = started.elapsed().as_secs_f64();
+        // No catalog access remains. Keep this inode's publication gate closed
+        // while allowing unrelated catalog writers to overlap native retirement.
+        drop(writer);
+        #[cfg(test)]
+        if committed.is_ok() {
+            let pause = state.lock().unwrap().retire_pause.take();
+            if let Some((ready, resume)) = pause {
+                let _ = ready.send(());
+                let _ = resume.recv();
+            }
+        }
+        let mut retirement_seconds = 0.0;
+        let result = committed.and_then(|committed| {
+            let started = Instant::now();
+            let result = committed.retire();
+            retirement_seconds = started.elapsed().as_secs_f64();
+            result
+        });
         let seconds = started.elapsed().as_secs_f64();
         {
             let Ok(mut state) = state.lock() else {
@@ -324,6 +346,8 @@ fn run(
                 }
             }
             state.seal_stats.publish_seconds += seconds;
+            state.seal_stats.catalog_publish_seconds += catalog_seconds;
+            state.seal_stats.retirement_seconds += retirement_seconds;
             state.seal_stats.max_publish_seconds =
                 state.seal_stats.max_publish_seconds.max(seconds);
             let elapsed = locked.elapsed().as_secs_f64();
@@ -493,6 +517,125 @@ mod tests {
             expected
         );
         live.store.check().unwrap();
+    }
+
+    #[test]
+    fn retirement_blocks_its_inode_but_allows_unrelated_catalog_writes() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("store");
+        let fs = StagingFs::deduplicating(crate::Store::init(&root).unwrap()).unwrap();
+        let bytes = vec![42; 128 * 1024];
+        fs::write(root.join("tree/first"), &bytes).unwrap();
+        fs::write(root.join("tree/second"), &bytes).unwrap();
+        let (ready, retiring) = mpsc::sync_channel(1);
+        let (resume, paused) = mpsc::sync_channel(1);
+        let (a, b) = fs
+            .with(|s| {
+                let a = s.lookup(INodeNo::ROOT, OsStr::new("first"))?;
+                let b = s.lookup(INodeNo::ROOT, OsStr::new("second"))?;
+                s.entry_attr(a)?;
+                s.entry_attr(b)?;
+                let pin = s.inode(b)?.try_clone()?;
+                s.live.as_mut().unwrap().seal(&pin).map_err(storage)?;
+                s.retire_pause = Some((ready, paused));
+                let fh = s.open(a, libc::O_RDONLY)?;
+                s.release(a, fh)?;
+                Ok((a, b))
+            })
+            .unwrap();
+        retiring.recv_timeout(Duration::from_secs(10)).unwrap();
+        thread::scope(|scope| {
+            let fs = &fs;
+            let writer = scope.spawn(move || {
+                let fh = fs.open_handle(a, libc::O_RDWR)?;
+                fs.write_handle(a, fh, 0, b"changed")?;
+                fs.with_read(|s| s.release(a, fh))
+            });
+            let namespace = scope.spawn(move || {
+                fs.with_namespace_mutation(
+                    |_| Ok(vec![a]),
+                    |s| {
+                        fs::hard_link(
+                            s.child(INodeNo::ROOT, OsStr::new("first"))?,
+                            s.child(INodeNo::ROOT, OsStr::new("alias"))?,
+                        )?;
+                        Ok(((), vec![a]))
+                    },
+                    |_, ()| Ok(()),
+                )
+            });
+            // Both mutation entry points must actually reach the inode gate.
+            // Merely not receiving a result could mean a thread wasn't scheduled.
+            let deadline = Instant::now() + Duration::from_secs(5);
+            let blocked = loop {
+                if fs
+                    .with_read(|s| Ok(s.nodes.get(&a).is_some_and(|n| n.waiting_mutations == 2)))
+                    .unwrap()
+                {
+                    break true;
+                }
+                if writer.is_finished() || namespace.is_finished() || Instant::now() >= deadline {
+                    break false;
+                }
+                thread::sleep(Duration::from_millis(1));
+            };
+            let (done, completed) = mpsc::sync_channel(1);
+            scope.spawn(move || {
+                let result = (|| {
+                    // Hydration commits on another connection, and fsync writes
+                    // a FULL barrier: both need the released catalog permit.
+                    let fh = fs.open_handle(b, libc::O_RDWR)?;
+                    fs.write_handle(b, fh, 0, b"other")?;
+                    fs.sync_handle(b, fh, false)?;
+                    let value = fs.read_handle(b, fh, 0, 5)?;
+                    fs.with_read(|s| s.release(b, fh))?;
+                    Ok::<_, Errno>(value)
+                })();
+                done.send(result).unwrap();
+            });
+            let independent = completed.recv_timeout(Duration::from_secs(5));
+            let during_retirement = fs.with_read(|s| {
+                Ok((
+                    s.nodes.get(&a).is_some_and(|n| n.publishing),
+                    s.live
+                        .as_ref()
+                        .unwrap()
+                        .sealed(s.inode(a)?)
+                        .map_err(storage)?
+                        .is_some(),
+                    s.attr(a)?.size,
+                ))
+            });
+            // Resume before assertions/joins even when the overlap check failed.
+            resume.send(()).unwrap();
+            writer.join().unwrap().unwrap();
+            namespace.join().unwrap().unwrap();
+            let (still_publishing, bound, size) = during_retirement.unwrap();
+            assert!(bound);
+            assert_eq!(size, bytes.len() as u64);
+            assert!(
+                blocked && still_publishing,
+                "same-inode mutation bypassed retirement"
+            );
+            assert_eq!(
+                independent
+                    .expect("retirement held the catalog permit")
+                    .unwrap(),
+                b"other"
+            );
+        });
+        let fh = fs.open_handle(a, libc::O_RDONLY).unwrap();
+        let mut expected = bytes;
+        expected[..7].copy_from_slice(b"changed");
+        assert_eq!(fs.read_handle(a, fh, 0, expected.len()).unwrap(), expected);
+        fs.with_read(|s| {
+            assert_eq!(s.lookup(INodeNo::ROOT, OsStr::new("alias"))?, a);
+            assert!(s.seal_stats.mutation_publication_wait_seconds > 0.0);
+            s.release(a, fh)
+        })
+        .unwrap();
+        drop(fs);
+        crate::Store::open(&root).unwrap().check().unwrap();
     }
 
     #[test]

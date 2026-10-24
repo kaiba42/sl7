@@ -27,12 +27,17 @@ Sealing, with no open handles/mappings:
 3. Acquire the catalog-writer permit, then briefly reacquire filesystem state.
    Require the same epoch and zero open handles. Discard stale work; otherwise
    mark this inode as publishing and release filesystem state.
-4. Commit the manifest and binding using SQLite WAL/FULL, then truncate the native
-   file, restore its logical length as a sparse placeholder, restore atime/mtime,
-   and sync. Permissions and hard links stay native. This work holds the catalog
-   permit, but not filesystem state.
-5. Briefly reacquire state to clear the inode's publication gate and wake waiters.
+4. Commit the manifest and binding using SQLite WAL/FULL, then release the catalog
+   permit. The committed seal owns a pinned native descriptor and its logical
+   metadata; it requires no further catalog access.
+5. Keep the inode's publication gate closed while truncating the native file,
+   restoring its logical length as a sparse placeholder, restoring atime/mtime,
+   and syncing. Permissions and hard links stay native. Neither filesystem state
+   nor the catalog-writer permit is held; unrelated catalog mutations can overlap.
+6. Briefly reacquire state to clear the inode's publication gate and wake waiters.
    Error/unwind cleanup also clears the gate; committed bindings retain authority.
+   Same-inode mutations wait directly on that gate without holding either lock;
+   acquiring the catalog permit alone no longer proves retirement has finished.
 
 Hydration, before mutable access:
 
@@ -122,6 +127,8 @@ work can leave orphan packs for offline GC; native bytes remain authoritative.
 `SL7_CACHE_STATS=1` also prints sealing counts and candidate/preparation/publication
 wall times, selection/publication state-lock hold totals and maxima, foreground
 state-lock hold times, catalog-permit waits, and same-inode publication-open waits.
+Publication counters separately measure catalog commits and native retirement;
+mutation waits distinguish publication from active readers.
 Read counters include in-flight/max concurrent requests, time outside state, read
 bookkeeping time, and waits between same-inode readers and mutations. Cache counters
 include active/max overlapping payload loads and duplicate loads. A request count
