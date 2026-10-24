@@ -19,7 +19,7 @@
     }
   },
   "host_tests": 36,
-  "x86_validation": "pending",
+  "x86_validation": "passed",
   "benchmark": "pending",
   "durability": "A bounded 64 KiB buffer coalesces each active pack writer. finish explicitly flushes before syncing the file, then persists and syncs the directory before catalog publication. Pack bytes, hashes, schema and ordering are unchanged.",
   "tests": "The pack-synced process-death case now requires the abandoned temporary pack to match a complete published reference byte for byte, including a tail smaller than the buffer. Existing corruption, failed publication, rollover, GC, mounted Cargo and recovery suites pass.",
@@ -50,5 +50,28 @@
       "total_file_bytes": 4097944
     },
     "limitation": "Public standard-library artifact in an empty store. Counts under strace, not elapsed Cargo performance. Published pack bytes and source hashes match exactly."
+  },
+  "implementation_commit": "4db4330199a3b29003a9f748ac8f9239c134b66d",
+  "x86_64": {
+    "binary_sha256": "dd9251e1c1513b5df13a4480c5cc2da6696bcfb25ab49cd60cd3e176fd5f4739",
+    "source_sha256": {
+      "src/staging.rs": "8cfd3c30259e0ce359dba06a23e644bbc07aa8d01664b9915598b1b57f08de1f",
+      "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+      "src/live.rs": "4df7358dbeeadd0988c33f983050521846f537fd97937a968a6e4042087f1255",
+      "src/store.rs": "f8c36f245d433c97fb2dccc959442bcd9235da5d2476d108e3beb14a3b2118bf",
+      "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+      "src/staging/background.rs": "0ab2a44c045a2c38fbe46568c588f47c187e2fdc77a898a74581fdb8d9ead028",
+      "src/staging/reads.rs": "cb218bc20f1517c103a264994534d5f5a56a751a8527ea40da17773ed8e2481f",
+      "src/pack.rs": "1042e7f3493dd9323985d6d663a878e5759d6e94137d40ffdbc74f5a2b39ae3b"
+    },
+    "linux_tests": 72,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
   }
 }
