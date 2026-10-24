@@ -74,6 +74,7 @@ def main():
                   profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
                   import_pipeline=os.environ.get('SL7_IMPORT_PIPELINE', '0'),
+                  compress_workers=os.environ.get('SL7_COMPRESS_WORKERS', '0'),
                   settle_mode=settle_mode,
                   mount_helpers_sha256=hashlib.sha256(Path(__file__).with_name('mount_helpers.py').read_bytes()).hexdigest(),
                   daemon_cpu_scope=f'Cargo plus post-build {settle_mode} observation; excludes executable checks, profiler shutdown and unmount',

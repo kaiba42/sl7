@@ -133,7 +133,7 @@ def cpu(path):
                 category = 'hydration'
             # Worker names retain attribution when caller frames are inlined or
             # absent from the bounded DWARF stack sample.
-            elif comm == 'sl7-chunks' or comm == 'sl7-pack' or comm.startswith('sl7-pack-') or any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
+            elif comm.startswith('sl7-zstd-') or comm == 'sl7-chunks' or comm == 'sl7-pack' or comm.startswith('sl7-pack-') or any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
                     'sl7::store::prepare_import', 'sl7::staging::background::run',
                     '<sl7::live::Live>::publish_seal']):
                 category = 'sealing'

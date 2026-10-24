@@ -112,6 +112,8 @@ def main():
                         help="Add a named SL7 implementation to --backends (repeatable)")
     parser.add_argument("--seal-workers", action="append", default=[], metavar="NAME=COUNT",
                         help="Set sealing workers for a backend, allowing same-binary 1/2/4-worker comparisons")
+    parser.add_argument("--compress-workers", action="append", default=[], metavar="NAME=COUNT",
+                        help="Set compression workers per sealer (0 disables; maximum 4)")
     parser.add_argument("--import-pipeline", action="append", default=[], metavar="NAME=0|1",
                         help="Enable or disable the large-artifact pipeline per backend")
     parser.add_argument("--profiles", nargs="+", choices=["debug", "release"],
@@ -143,6 +145,12 @@ def main():
         if not separator or name not in binaries or name in seal_workers or count not in {str(n) for n in range(1, 9)}:
             parser.error("seal workers require unique SL7 backend NAME=COUNT entries, with COUNT from 1 to 8")
         seal_workers[name] = int(count)
+    compress_workers = {}
+    for item in args.compress_workers:
+        name, separator, count = item.partition("=")
+        if not separator or name not in binaries or name in compress_workers or count not in {str(n) for n in range(5)}:
+            parser.error("compression workers require unique SL7 backend NAME=COUNT entries, with COUNT from 0 to 4")
+        compress_workers[name] = count
     import_pipeline = {}
     for item in args.import_pipeline:
         name, separator, enabled = item.partition("=")
@@ -175,6 +183,8 @@ def main():
                                for name,path in binaries.items()}
     report["seal_workers"] = {name:seal_workers.get(name, os.environ.get("SL7_SEAL_WORKERS", "binary default"))
                               for name in binaries}
+    report["compress_workers"] = {name:compress_workers.get(name, os.environ.get("SL7_COMPRESS_WORKERS", "0"))
+                                  for name in binaries}
     report["import_pipeline"] = {name:import_pipeline.get(name, os.environ.get("SL7_IMPORT_PIPELINE", "0"))
                                  for name in binaries}
     if args.baseline_binary:
@@ -215,6 +225,7 @@ def main():
                         daemon_env["SL7_MOUNT_STATUS"] = "1" if args.settle_mode == "quiescent" else "0"
                         if backend in seal_workers:
                             daemon_env["SL7_SEAL_WORKERS"] = str(seal_workers[backend])
+                        daemon_env["SL7_COMPRESS_WORKERS"] = report["compress_workers"][backend]
                         daemon_env["SL7_IMPORT_PIPELINE"] = report["import_pipeline"][backend]
                         process = subprocess.Popen([str(case_binary), "--store", str(store), "mount", str(mount)], stdout=daemon_log, stderr=daemon_log,
                                                    env=daemon_env)

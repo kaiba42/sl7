@@ -133,6 +133,26 @@ With `SL7_CACHE_STATS=1`, the unmount report includes `import_pipeline` and
 `pipelined_prepares`; the latter counts attempted preparations, including canceled
 ones. Cancellation closes the queue and joins the producer before returning.
 
+For parallel compression within an artifact, use `SL7_COMPRESS_WORKERS=2`
+(default `0`, supported range 0–4). Each sealing worker lazily creates its own
+persistent compression pool. Only novel chunks from files at least 16 MiB enter
+that pool; duplicate chunks and smaller files avoid it. The coordinator keeps
+chunk hashing and catalog lookups ordered, submits batches of 16 novel chunks,
+and writes compressed results in original order. Chunk identities, pack bytes,
+rollover, and durability barriers remain unchanged. This works independently of
+`SL7_IMPORT_PIPELINE`.
+
+At most four submitted batches plus one accumulating batch are retained per
+sealer: at most 2.5 MiB of raw-equivalent payload, plus per-worker compression
+scratch/output, metadata, and existing import buffers. With two sealers and two
+compression workers, up to four compression threads can run. Cancellation skips
+queued work and drains every outstanding receipt before preparation returns;
+normal unmount therefore cannot leave compression running. Diagnostics expose
+`compression_workers_per_sealer`, `max_parallel_compression_per_sealer`, and
+`compressed_chunks_on_workers` (including work from subsequently canceled seals).
+The peak is a per-sealer high-water mark, not a mount-wide concurrency count.
+Keep this option experimental until matched builds show a benefit on your workload.
+
 Operations on the publishing inode wait; unrelated reads and native writes can
 continue through the four request workers.
 Normal unmount drains pending sealing. Reads reconstruct concurrently outside the

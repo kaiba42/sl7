@@ -4,7 +4,12 @@ use crate::{
     chunk::{Chunker, Hash},
 };
 use sha2::{Digest, Sha256};
-use std::{cell::Cell, io::Read, sync::mpsc, thread};
+use std::{
+    cell::{Cell, RefCell},
+    io::Read,
+    sync::mpsc,
+    thread,
+};
 
 const BATCH_CHUNKS: usize = 16;
 const QUEUED_BATCHES: usize = 2;
@@ -13,6 +18,7 @@ const MIN_PIPELINE_SIZE: u64 = 16 * 1024 * 1024;
 /// One instance belongs to one packer. Counters need no cross-worker sharing.
 pub(crate) struct Mode {
     enabled: bool,
+    pub(crate) encoder: RefCell<crate::compression::Encoder>,
     started: Cell<u64>,
 }
 impl Mode {
@@ -22,16 +28,19 @@ impl Mode {
     fn new(enabled: bool) -> Self {
         Self {
             enabled,
+            encoder: RefCell::new(crate::compression::Encoder::new(0)),
             started: Cell::new(0),
         }
     }
     #[cfg(all(feature = "fuse", target_os = "linux"))]
     pub(crate) fn from_env() -> Result<Self> {
-        match std::env::var("SL7_IMPORT_PIPELINE") {
+        let mut mode = match std::env::var("SL7_IMPORT_PIPELINE") {
             Err(std::env::VarError::NotPresent) => Ok(Self::disabled()),
             Ok(value) => Self::parse(&value),
             Err(_) => Err(Error::Invalid("SL7_IMPORT_PIPELINE must be 0 or 1".into())),
-        }
+        }?;
+        mode.encoder = RefCell::new(crate::compression::Encoder::from_env()?);
+        Ok(mode)
     }
     #[cfg(any(test, all(feature = "fuse", target_os = "linux")))]
     fn parse(value: &str) -> Result<Self> {
@@ -55,6 +64,12 @@ impl Mode {
         }
         self.started.set(self.started.get().saturating_add(1));
         true
+    }
+    #[cfg(test)]
+    pub(crate) fn with_compression_for_test(enabled: bool, workers: usize) -> Self {
+        let mut mode = Self::new(enabled);
+        mode.encoder = RefCell::new(crate::compression::Encoder::new(workers));
+        mode
     }
     #[cfg(test)]
     pub(crate) fn enabled_for_test() -> Self {

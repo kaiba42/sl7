@@ -23,6 +23,28 @@ pub struct Location {
     pub stored_len: u64,
     pub codec: u8,
 }
+/// Encoded independently; the ordered writer still defines pack identity.
+pub(crate) struct Encoded {
+    pub raw_len: u64,
+    codec: u8,
+    stored: Vec<u8>,
+}
+impl Encoded {
+    pub(crate) fn new(raw: Vec<u8>) -> Result<Self> {
+        let compressed = zstd::bulk::compress(&raw, 1)?;
+        let raw_len = raw.len() as u64;
+        let (codec, stored) = if compressed.len() < raw.len() {
+            (1, compressed)
+        } else {
+            (0, raw)
+        };
+        Ok(Self {
+            raw_len,
+            codec,
+            stored,
+        })
+    }
+}
 pub struct Writer {
     temp: BufWriter<NamedTempFile>,
     digest: Sha256,
@@ -54,9 +76,15 @@ impl Writer {
         } else {
             (0, raw)
         };
+        self.add_parts(hash, raw.len() as u64, codec, stored)
+    }
+    pub(crate) fn add_encoded(&mut self, hash: Hash, encoded: &Encoded) -> Result<()> {
+        self.add_parts(hash, encoded.raw_len, encoded.codec, &encoded.stored)
+    }
+    fn add_parts(&mut self, hash: Hash, raw_len: u64, codec: u8, stored: &[u8]) -> Result<()> {
         let loc = Location {
             hash,
-            raw_len: raw.len() as u64,
+            raw_len,
             pack: String::new(),
             offset: self.size,
             stored_len: stored.len() as u64,

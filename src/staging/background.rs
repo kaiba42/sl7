@@ -29,6 +29,9 @@ pub(super) struct Workers(Vec<JoinHandle<()>>);
 #[derive(Default, Serialize)]
 pub(super) struct Stats {
     import_pipeline: bool,
+    compression_workers_per_sealer: usize,
+    max_parallel_compression_per_sealer: usize,
+    compressed_chunks_on_workers: usize,
     pipelined_prepares: u64,
     workers: usize,
     active_seals: usize,
@@ -216,6 +219,9 @@ pub(super) fn start(
             .map_err(|_| io::Error::other("poisoned filesystem state"))?;
         state.wake = Some(Arc::clone(&wake));
         state.seal_stats.workers = connections.len();
+        state.seal_stats.compression_workers_per_sealer = connections
+            .first()
+            .map_or(0, |(p, _)| p.compression_stats().0);
         state.seal_stats.import_pipeline = connections
             .first()
             .is_some_and(|(packer, _)| packer.pipeline_enabled());
@@ -377,6 +383,7 @@ fn run(
         }
         let started = Instant::now();
         let pipelines_before = packer.pipeline_prepares();
+        let compressed_before = packer.compression_stats().2;
         let prepared = packer.prepare(&fd_path(&job.pin), || {
             job.epoch.load(Ordering::Relaxed) != job.version
         });
@@ -386,6 +393,12 @@ fn run(
                 return;
             };
             state.seal_stats.active_prepares -= 1;
+            let (_, peak, compressed) = packer.compression_stats();
+            state.seal_stats.max_parallel_compression_per_sealer = state
+                .seal_stats
+                .max_parallel_compression_per_sealer
+                .max(peak);
+            state.seal_stats.compressed_chunks_on_workers += compressed - compressed_before;
             state.seal_stats.pipelined_prepares += packer.pipeline_prepares() - pipelines_before;
         }
         #[cfg(test)]

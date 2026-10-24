@@ -87,6 +87,15 @@ class IoTraceTests(unittest.TestCase):
 
 
 class CpuCounterTests(unittest.TestCase):
+    def test_compression_threads_are_sealing_cpu(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'cpu.txt'
+            path.write_text('sl7-zstd-1 15 1.003: 10101010 cpu-clock:u:\n'
+                            '    aaaa ZSTD_compressBlock_fast+0x1 (/sl7)\n')
+            result = analysis.cpu(path)
+        self.assertEqual(result['sample_categories'], {'sealing': 1})
+        self.assertEqual(result['samples_by_thread_name'], {'sl7-zstd-1': 1})
+
     def test_producer_cpu_is_attributed_to_sealing_and_its_thread(self):
         # The scoped producer's stack does not contain background::run. Keep
         # its hashing in the sealing total and expose samples by thread name.

@@ -1,5 +1,6 @@
 //! Shared artifact storage, exact range reconstruction, and optional FUSE mounts.
 mod chunk;
+mod compression;
 mod gc;
 mod import_stream;
 pub use gc::GcReport;

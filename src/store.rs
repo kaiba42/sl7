@@ -106,6 +106,9 @@ impl Packer {
     pub(crate) fn pipeline_enabled(&self) -> bool {
         self.import_mode.enabled()
     }
+    pub(crate) fn compression_stats(&self) -> (usize, usize, usize) {
+        self.import_mode.encoder.borrow().stats()
+    }
     pub(crate) fn pipeline_prepares(&self) -> u64 {
         self.import_mode.started()
     }
@@ -704,31 +707,28 @@ fn prepare_import_mode(
     if !before.is_file() {
         return Err(Error::Invalid("source is not a regular file".into()));
     }
+    let mut encoder = mode.encoder.borrow_mut();
+    let mut output = crate::compression::Packs::new(root, pack_limit, &mut encoder, before.len());
     if mode.start_for(before.len()) {
         crate::import_stream::with_pipeline(BufReader::new(file), |chunks| {
-            prepare_chunks(root, db, file, pack_limit, canceled, &before, chunks)
+            prepare_chunks(db, file, canceled, &before, chunks, &mut output)
         })
     } else {
         let mut chunks = crate::import_stream::Serial::new(BufReader::new(file));
-        prepare_chunks(root, db, file, pack_limit, canceled, &before, &mut chunks)
+        prepare_chunks(db, file, canceled, &before, &mut chunks, &mut output)
     }
 }
 fn prepare_chunks(
-    root: &Path,
     db: &Connection,
     file: &File,
-    pack_limit: u64,
     canceled: impl Fn() -> bool,
     before: &std::fs::Metadata,
     chunks: &mut impl crate::import_stream::Chunks,
+    output: &mut crate::compression::Packs<'_>,
 ) -> Result<PreparedImport> {
     // Quiescent sources only: these checks detect common races, not arbitrary external writers.
     let mut extents: Vec<(u64, Hash)> = Vec::new();
     let mut seen = HashSet::new();
-    let mut locations = Vec::new();
-    let mut packs = Vec::new();
-    // No pack is needed until the first novel chunk.
-    let mut writer: Option<pack::Writer> = None;
     let mut offset = 0_u64;
     let mut exists_query =
         db.prepare_cached("SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)")?;
@@ -738,26 +738,13 @@ fn prepare_chunks(
         }
         let hash = chunk::identity(&bytes);
         let exists: bool = exists_query.query_row([hash.as_slice()], |r| r.get(0))?;
+        let len = bytes.len() as u64;
         if !exists && seen.insert(hash) {
-            if let Some(w) = writer.take() {
-                if w.size + bytes.len() as u64 + 49 > pack_limit {
-                    let (id, size, locs) = w.finish(root)?;
-                    packs.push((id, size));
-                    locations.extend(locs);
-                } else {
-                    writer = Some(w);
-                }
-            }
-            let mut w = match writer.take() {
-                Some(w) => w,
-                None => pack::Writer::new(root)?,
-            };
-            w.add(hash, &bytes)?;
-            writer = Some(w);
+            output.add(hash, bytes)?;
         }
         extents.push((offset, hash));
         offset = offset
-            .checked_add(bytes.len() as u64)
+            .checked_add(len)
             .ok_or_else(|| Error::Invalid("source length overflow".into()))?;
         if offset > i64::MAX as u64 {
             return Err(Error::Invalid("source exceeds catalog length limit".into()));
@@ -781,11 +768,11 @@ fn prepare_chunks(
             before.len()
         )));
     }
-    if let Some(w) = writer {
-        let (id, size, locs) = w.finish(root)?;
-        packs.push((id, size));
-        locations.extend(locs);
+    output.finish()?;
+    if canceled() {
+        return Err(Error::SourceChanged("sealing candidate canceled".into()));
     }
+    let (packs, locations) = output.take_results();
     // Packs and directory entries are durable before any reference is committed.
     Ok(PreparedImport {
         size: offset,
@@ -1067,6 +1054,9 @@ mod tests {
         for (index, mode) in [
             crate::import_stream::Mode::disabled(),
             crate::import_stream::Mode::enabled_for_test(),
+            crate::import_stream::Mode::with_compression_for_test(false, 1),
+            crate::import_stream::Mode::with_compression_for_test(false, 2),
+            crate::import_stream::Mode::with_compression_for_test(true, 4),
         ]
         .into_iter()
         .enumerate()
@@ -1092,7 +1082,7 @@ mod tests {
                 );
                 reports.push(serde_json::to_value(report).unwrap());
             }
-            assert_eq!(mode.started(), if index == 0 { 0 } else { 2 });
+            assert_eq!(mode.started(), if index == 1 || index == 4 { 2 } else { 0 });
             store.check()?;
             let mut packs = fs::read_dir(root.join("packs"))?
                 .map(|entry| {
@@ -1104,12 +1094,14 @@ mod tests {
             assert!(packs.len() > 1, "pack rollover was not exercised");
             snapshots.push((reports, packs));
         }
-        assert_eq!(snapshots[0], snapshots[1]);
+        for snapshot in &snapshots[1..] {
+            assert_eq!(&snapshots[0], snapshot);
+        }
 
         let root = temp.path().join("canceled");
         let mut store = Store::init(&root)?;
         let calls = std::cell::Cell::new(0);
-        let mode = crate::import_stream::Mode::enabled_for_test();
+        let mode = crate::import_stream::Mode::with_compression_for_test(true, 2);
         let result = prepare_import_mode(
             &root,
             &store.db,

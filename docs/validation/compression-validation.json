@@ -1,0 +1,90 @@
+{
+  "runtime_base_commit": "d161a85",
+  "source_sha256": {
+    "src/chunk.rs": "85e40e340274bb0f664c065c2f51431658c127020f487089e05cf952191d2f45",
+    "src/compression.rs": "fff879811b4e37ee024b547cee6aec7ed1eea842858d6a829f74a7795e772eda",
+    "src/gc.rs": "1bbd6969e5a43efc4e5ed5e848e47903e5f670335c21f8cec68f21ce7b89a0d8",
+    "src/import_stream.rs": "9364bd9db71ce859670908842815546fcf0a4ca2a3e120be8e1795128425b88a",
+    "src/lib.rs": "75aec36209beb87c8815d679ed59ea18fe5648edb72d57961488570f0778b41b",
+    "src/live.rs": "9e0c0f5f0692e4a8ce658f139e74c7e693ad091e5714fc3cb25f8ef02cad299c",
+    "src/main.rs": "93fdcc5b8f4e73c9932309ce8f67d5083057bc2d76b6394d42c42be638f4c7fa",
+    "src/pack.rs": "8d3de68d0f8d6ce714307dd7d0bce7a2196b51df738079c86aff45c2c8ba0341",
+    "src/probe.rs": "9f1d4e5a7db1e917ec22768074e77bcc679ce778b65f811ddb901c1682795bbe",
+    "src/read_cache.rs": "e5e18cb8d4d1033b40db0580c22951987b3a19c015139da571f9a614e69c036b",
+    "src/readonly.rs": "61a20804ced30c239389994a2e774b41fc16d3a9bdc2a7324609be532f4671da",
+    "src/staging/background.rs": "151e120337d71a062e78475114547e3798528fffc39b8e91fe0a51f2a01fe638",
+    "src/staging/namespace.rs": "96de7bf5df1fb13e2c4f33645f5f1de4acbe296989e93c0ddcccdd9660567a15",
+    "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+    "src/staging/reads.rs": "cb218bc20f1517c103a264994534d5f5a56a751a8527ea40da17773ed8e2481f",
+    "src/staging.rs": "68045727ca77bb4213c4ba014797cc0d05f2f8c17e217405f24b21b893d9a77f",
+    "src/store.rs": "ef3c1d6c2be6ca67e6e5d0632920767164a74048a5f4609de6185cca5af37aba",
+    "Cargo.toml": "7c4a97d8f6e7e4ee1c7c3c3c959d0cc230043e22359596f214946ff1edb66f1e",
+    "Cargo.lock": "6b837dd243627d67365921105b01c53d51bafa029bbc723ff5dab4959ab89422",
+    "scripts/benchmark-synkro.py": "b9ad4e31b424c4d281fb1b6180d76473c329a48a8b5b9cee44597871d9b06283",
+    "scripts/profile-synkro.py": "80705e150ba3d8b9e541a82cb216f671c49885469cf01ad8e4b83bbbc0480f86",
+    "scripts/analyze-profile.py": "4a8e9fe40beb37ba25656c4b8179b8ef0dede99759fea2396e102deeb4131060",
+    "scripts/mount_helpers.py": "ce84ea1527e9eb16d64c267107b9c0eb977b35e0a2bcfaa610d2e3d39b419963",
+    "scripts/compression-test.py": "7f9b3daee2a504e815c819e2cc01e042d5022a5c399d4c96abf0eff11c287c32",
+    "tests/test_profile_analysis.py": "93963e254bca95eb44c3c5019bfb06ea38ef1f7f3c91da815e084363c5d3a484"
+  },
+  "binary_sha256": "1a0c5fa65cba579ac374e64fe46e7080f1a9ce8a7187deb2940fe48a93e90526",
+  "platform": "x86_64-unknown-linux-gnu",
+  "node": "top",
+  "linux_tests": 85,
+  "host_tests": 47,
+  "python_tests": 11,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "mounted_compression_modes": {
+    "arm-off": {
+      "status": "passed",
+      "payload_bytes": 20971520,
+      "checks": [
+        "novel chunks use compression workers",
+        "duplicate chunks bypass compression",
+        "one-byte edit reuses chunks",
+        "exact reconstruction and sparse retirement",
+        "drained work before unmount",
+        "store integrity and GC"
+      ],
+      "first_compressed_chunks": 1515,
+      "peak_parallel_compression_per_sealer": 2
+    },
+    "arm-on": {
+      "status": "passed",
+      "payload_bytes": 20971520,
+      "checks": [
+        "novel chunks use compression workers",
+        "duplicate chunks bypass compression",
+        "one-byte edit reuses chunks",
+        "exact reconstruction and sparse retirement",
+        "drained work before unmount",
+        "store integrity and GC"
+      ],
+      "first_compressed_chunks": 1515,
+      "peak_parallel_compression_per_sealer": 2
+    }
+  },
+  "report_sha256": {
+    "arm-on.json": "7a9956e52d5e017fe5373e79e758aefd8bcbf925a1cf709148e36d53e363d016",
+    "off.json": "f3e872f79eb6f08ebeb8f9e76201b84d0f32cb7b23361f24a9e3d81a5687bc1b",
+    "mounted.json": "ed5b054ea696ea66f853a24ad999e049d88af7a1fe6a52d6079d8d1195b9149b",
+    "on.json": "85c10dab14173f55a49c55dee2d89c2dbd840b25ebf0164b34e9f9f82caad61a",
+    "arm-off.json": "1890c2e6c80e283bb8318a78ff63632c8355d9e077fc8a9b00a2a553148b6e7d"
+  },
+  "default": "Compression workers disabled; opt in with SL7_COMPRESS_WORKERS=2.",
+  "tests": [
+    "Two workers paused inside encoding concurrently; always resumed before test assertions.",
+    "Serial/1/2/4-worker packs and manifests identical, including repeated content, a one-byte edit and pack rollover.",
+    "Cancellation and worker panic wake consumers; abandoned result receivers do not stop persistent workers.",
+    "Large mounted artifacts compress novel chunks, bypass duplicate compression, reconstruct exactly and pass integrity/GC."
+  ],
+  "benchmark": "pending",
+  "profile": "pending"
+}
