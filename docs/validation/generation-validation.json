@@ -1,0 +1,28 @@
+{
+  "snapshot_base_commit": "a3af884513d571fba67433b2443712a7828cbaf7",
+  "source_sha256": {
+    "src/live.rs": "0bfc9842cd5a4948b1983764e9a030bf532bdc5d4a0ff03155086e134d296a97",
+    "src/staging/background.rs": "9db060e3653062636cec32af252665a841c46cd641115241783878f1bad7b0cd",
+    "scripts/cache-test.py": "13d40bb23ca7bb853a180036d18bfa68b21134145abe1c9cac675877cb6a0c14"
+  },
+  "orbstack": {
+    "platform": "aarch64-unknown-linux-gnu",
+    "binary_sha256": "2532de96cf734049769c4fa900b5859c0be3f74d61393bf7b7716895302303c7",
+    "image_id": "sha256:d61f212be2eaaf424cc7b9a3b1240eee5f6ea1d0e543b6f593f9cf744cf705f0",
+    "linux_tests": 63,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  },
+  "host_tests": 35,
+  "cache_test_correction": "OrbStack native directories report nlink=1 before and after mkdir; compare mounted/native link counts and require immediate parent mtime coherence instead of assuming +1.",
+  "x86_validation": "pending",
+  "benchmark": "pending",
+  "durability": "Generation, manifest and live binding commit atomically in one FULL transaction; durable identity/xattr assignment is unchanged.",
+  "tests": "Canceled and failed publications do not consume generations; stale candidates roll back; legacy orphan labels do not collide; exhausted counters remain integers; process death before/after commit preserves generation and content ordering."
+}

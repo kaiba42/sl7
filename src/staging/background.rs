@@ -214,7 +214,7 @@ fn run(
             }
         };
         // Pinning the inode and capturing its epoch are the only selection
-        // work under filesystem state. Identity/generation commits and fsync
+        // work under filesystem state. Identity assignment and its fsync
         // run on the worker connection; concurrent native mutations invalidate
         // the captured epoch before this candidate can be published.
         let publication = Publication {

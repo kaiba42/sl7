@@ -81,9 +81,11 @@ def run(work):
     with h.mounted():
         directory = h.mount/'metadata'
         directory.mkdir()
+        native_directory = h.store/'tree/metadata'
         stamp = 1_600_000_000_123_456_789
         os.utime(directory, ns=(stamp, stamp))
         parent_links = directory.stat().st_nlink
+        assert parent_links == native_directory.stat().st_nlink
         assert directory.stat().st_mtime_ns == stamp
         child = directory/'child'
         child.write_bytes(b'initial')
@@ -111,10 +113,19 @@ def run(work):
         assert moved.stat().st_ino == replacement_ino and moved.read_bytes() == b'replaced'
         subdir = directory/'subdir'
         assert not subdir.exists()
+        os.utime(directory, ns=(stamp, stamp))
+        assert directory.stat().st_mtime_ns == stamp
         subdir.mkdir()
-        assert directory.stat().st_nlink == parent_links + 1
+        # Some backing filesystems report a constant directory link count (1),
+        # so compare against native metadata rather than assuming 2 + subdirs.
+        assert directory.stat().st_nlink == native_directory.stat().st_nlink
+        assert directory.stat().st_mtime_ns == native_directory.stat().st_mtime_ns != stamp
+        os.utime(directory, ns=(stamp, stamp))
+        assert directory.stat().st_mtime_ns == stamp
         subdir.rmdir()
         assert not subdir.exists() and directory.stat().st_nlink == parent_links
+        assert directory.stat().st_nlink == native_directory.stat().st_nlink
+        assert directory.stat().st_mtime_ns == native_directory.stat().st_mtime_ns != stamp
 
     expected = bytearray(payload)
     replacement = bytes(b ^ 0xFF for b in payload)

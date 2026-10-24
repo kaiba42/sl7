@@ -316,8 +316,9 @@ impl Live {
         File::open(fd_path(file))?.sync_all()?;
         Ok(id)
     }
-    /// Assign a durable identity/generation before packing. The caller serializes
-    /// catalog writes and revalidates the inode's mutation epoch before publishing.
+    /// Persist a new identity if needed, then plan the next generation without
+    /// writing it. Publication advances the generation atomically with its label
+    /// and binding; canceled preparations cannot leave a conflicting label.
     pub(crate) fn begin_seal(&mut self, file: &File) -> Result<Option<SealCandidate>> {
         let native = file.metadata()?;
         if !native.is_file()
@@ -334,10 +335,16 @@ impl Live {
         let metadata = self.metadata(file)?.unwrap_or(Metadata::capture(file)?);
         let id = self.identity(file)?;
         let generation: i64 = self.store.db.query_row(
-            "UPDATE live_files SET generation=generation+1 WHERE id=?1 RETURNING generation",
+            "SELECT generation FROM live_files WHERE id=?1",
             [id],
             |r| r.get(0),
         )?;
+        if generation < 0 {
+            return Err(Error::Corrupt("negative live seal generation".into()));
+        }
+        let generation = generation
+            .checked_add(1)
+            .ok_or_else(|| Error::Invalid("live seal generation exhausted".into()))?;
         Ok(Some(SealCandidate {
             id,
             generation,
@@ -360,14 +367,14 @@ impl Live {
         #[cfg(test)]
         crate::crash_at("live-seal-inserted");
         let changed = tx.execute(
-            "UPDATE live_files SET manifest=?1,metadata=?2 WHERE id=?3 AND generation=?4 AND manifest IS NULL",
-            params![report.file.id, encode(&candidate.metadata)?, candidate.id, candidate.generation],
+            "UPDATE live_files SET manifest=?1,metadata=?2,generation=?4 WHERE id=?3 AND generation=?5 AND manifest IS NULL",
+            params![report.file.id, encode(&candidate.metadata)?, candidate.id, candidate.generation, candidate.generation - 1],
         )?;
         if changed != 1 {
             return Err(Error::Invalid("stale seal generation".into()));
         }
-        // The manifest and its live binding become authoritative together. Any
-        // insertion/binding failure rolls back both and leaves native bytes intact.
+        // The generation, manifest and binding become authoritative together.
+        // Any failure rolls back all three and leaves native bytes intact.
         tx.commit()?;
         #[cfg(test)]
         crate::crash_at("live-seal-committed");
@@ -630,6 +637,113 @@ mod tests {
             .map(|i| ((i * 17 + i / 251) % 253) as u8)
             .collect()
     }
+    fn stored_generation(live: &Live, identity: i64) -> Result<i64> {
+        Ok(live.store.db.query_row(
+            "SELECT generation FROM live_files WHERE id=?1",
+            [identity],
+            |r| r.get(0),
+        )?)
+    }
+    #[test]
+    fn seal_generation_advances_only_when_publication_commits() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut live = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let path = live.tree().join("artifact");
+        fs::write(&path, bytes())?;
+        let file = File::open(&path)?;
+        let canceled = live.begin_seal(&file)?.unwrap();
+        let identity = canceled.id;
+        assert_eq!(canceled.generation, 1);
+        assert_eq!(stored_generation(&live, identity)?, 0);
+        let candidate = live.begin_seal(&file)?.unwrap();
+        assert_eq!(candidate.generation, 1);
+        let prepared = live.store.prepare_native(&file)?;
+        live.store.db.execute_batch(
+            "CREATE TRIGGER fail_generation BEFORE UPDATE OF manifest ON live_files
+             WHEN NEW.manifest IS NOT NULL
+             BEGIN SELECT RAISE(ABORT, 'injected binding failure'); END;",
+        )?;
+        assert!(
+            live.publish_seal(file.try_clone()?, candidate, prepared)
+                .is_err()
+        );
+        assert_eq!(stored_generation(&live, identity)?, 0);
+        assert_eq!(live.store.stats()?.files, 0);
+        assert_eq!(live.store.stats()?.unique_chunks, 0);
+        assert_eq!(fs::read(&path)?, bytes());
+        live.store
+            .db
+            .execute_batch("DROP TRIGGER fail_generation")?;
+        for generation in [1_i64, 2] {
+            let canceled = live.begin_seal(&file)?.unwrap();
+            assert_eq!(canceled.generation, generation);
+            assert!(live.seal(&file)?);
+            assert_eq!(stored_generation(&live, identity)?, generation);
+            assert_eq!(
+                live.sealed(&file)?.unwrap().manifest.name,
+                format!("{identity}-{generation}")
+            );
+            assert_eq!(live.read(&file, 0, 300_000)?.unwrap(), bytes());
+            live.hydrate(&file)?;
+        }
+        Ok(())
+    }
+    #[test]
+    fn stale_generation_rolls_back_and_legacy_orphan_labels_do_not_collide() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut live = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let path = live.tree().join("artifact");
+        fs::write(&path, bytes())?;
+        let file = File::open(&path)?;
+        let stale = live.begin_seal(&file)?.unwrap();
+        let identity = stale.id;
+        let prepared = live.store.prepare_native(&file)?;
+        // Older versions allocated generations before packing. Simulate an
+        // intervening allocation, without a manifest to trigger uniqueness first.
+        live.store
+            .db
+            .execute("UPDATE live_files SET generation=7 WHERE id=?1", [identity])?;
+        assert!(matches!(
+            live.publish_seal(file.try_clone()?, stale, prepared),
+            Err(Error::Invalid(_))
+        ));
+        assert_eq!(stored_generation(&live, identity)?, 7);
+        assert_eq!(live.store.stats()?.files, 0);
+        assert_eq!(live.store.stats()?.unique_chunks, 0);
+        assert!(live.sealed(&file)?.is_none());
+        assert_eq!(fs::read(&path)?, bytes());
+        // Legacy publication could commit this label and crash before binding.
+        live.store.put(VIEW, &format!("{identity}-7"), &path)?;
+        assert!(live.seal(&file)?);
+        assert_eq!(stored_generation(&live, identity)?, 8);
+        assert_eq!(
+            live.sealed(&file)?.unwrap().manifest.name,
+            format!("{identity}-8")
+        );
+        assert_eq!(live.store.stats()?.files, 2);
+        live.gc()?;
+        assert_eq!(live.store.stats()?.files, 1);
+        assert_eq!(live.read(&file, 0, 300_000)?.unwrap(), bytes());
+        Ok(())
+    }
+    #[test]
+    fn exhausted_generation_is_rejected_without_changing_the_integer() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut live = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let path = live.tree().join("artifact");
+        fs::write(&path, bytes())?;
+        let file = File::open(&path)?;
+        let identity = live.begin_seal(&file)?.unwrap().id;
+        live.store.db.execute(
+            "UPDATE live_files SET generation=?1 WHERE id=?2",
+            params![i64::MAX, identity],
+        )?;
+        assert!(matches!(live.begin_seal(&file), Err(Error::Invalid(_))));
+        assert_eq!(stored_generation(&live, identity)?, i64::MAX);
+        assert_eq!(live.store.stats()?.files, 0);
+        assert_eq!(fs::read(&path)?, bytes());
+        Ok(())
+    }
     #[test]
     fn namespace_timestamps_use_explicit_full_barriers() -> Result<()> {
         let temp = tempfile::tempdir()?;
@@ -840,6 +954,11 @@ mod tests {
             let mut live = Live::open(Store::open(&root)?)?;
             live.recover()?;
             let file = File::open(&path)?;
+            assert_eq!(
+                stored_generation(&live, id(&file)?.unwrap())?,
+                if stage == "live-seal-inserted" { 0 } else { 1 },
+                "{stage}"
+            );
             if stage == "live-seal-inserted" {
                 // Process death before binding/commit must leave no catalog
                 // manifest or chunks, and must not begin native retirement.

@@ -7,8 +7,10 @@ links retain that identity; native inode-number reuse cannot alias an old row.
 
 Each live row records a generation, optional manifest ID, and optional logical
 size/atime/mtime/ctime snapshot. Internal manifests use reserved view
-`:sl7-live-v1:` and names `<identity>-<generation>`. A durable generation increment
-prevents interrupted imports from colliding with retries. Existing offline
+`:sl7-live-v1:` and names `<identity>-<generation>`. The next generation is planned
+before packing and committed atomically with the manifest and live binding.
+Canceled preparations or rolled-back publications leave no label and consume no
+generation. Previously committed generations are never reused. Existing offline
 imports under the reserved view prevent live initialization.
 
 ## Authority and transitions
@@ -20,14 +22,16 @@ until hydration commits removal of its binding.
 Sealing, with no open handles/mappings:
 
 1. Under filesystem state, pin the inode and capture its mutation epoch. Release
-   state before capturing metadata, assigning an xattr identity, or incrementing
-   the durable generation. Those operations use a separate worker catalog connection.
+   state before capturing metadata, assigning an xattr identity, or reading the
+   generation. A new identity and its xattr still become durable before publication.
+   Planning the next generation requires only a read on the worker connection.
 2. Chunk native bytes and prepare immutable packs outside filesystem state. Pack
    data and directory entries are synced before the manifest commits.
 3. Acquire the catalog-writer permit, then briefly reacquire filesystem state.
    Require the same epoch and zero open handles. Discard stale work; otherwise
    mark this inode as publishing and release filesystem state.
-4. Insert the manifest and live binding in one SQLite WAL/FULL transaction, then
+4. Insert the manifest, advance the generation conditionally, and bind the inode
+   in one SQLite WAL/FULL transaction, then
    release the catalog permit. The committed seal owns a pinned native descriptor and its logical
    metadata; it requires no further catalog access.
 5. Keep the inode's publication gate closed while truncating the native file,
@@ -43,6 +47,13 @@ Manifest insertion or binding failure rolls back the entire publication. Native
 bytes remain authoritative, and any previously synced packs are GC orphans. This
 replaces two sequential FULL commits with one atomic FULL commit. The synchronous
 seal path used by recovery fixtures exercises the same transaction as the worker.
+Generation allocation also uses that transaction, removing the former separate
+commit before packing. A stale candidate cannot overwrite a newer generation;
+counter exhaustion is rejected without changing the stored integer. Stores from
+older versions may contain orphan manifests whose labels were committed before
+binding failed; their labels are no greater than the stored generation, so the
+next generation remains distinct. The schema and older-version read compatibility
+are unchanged.
 
 Hydration, before mutable access:
 
