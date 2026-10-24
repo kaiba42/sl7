@@ -74,5 +74,7 @@
       "selfhost": "passed"
     }
   },
-  "comparison_report": "pack-buffer-costs.json"
+  "comparison_report": "pack-buffer-costs.json",
+  "profile": "passed",
+  "profile_report": "pack-buffer-costs-profile.json"
 }
