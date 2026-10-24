@@ -32,6 +32,13 @@ SYSCALLS = ['openat', 'close', 'read', 'pread64', 'write', 'pwrite64',
 
 def main():
     ROOT.mkdir(parents=True, exist_ok=True)
+    cgroup = benchmark.process_cgroup()
+    cpu_max = (cgroup/'cpu.max').read_text().strip()
+    memory_max = (cgroup/'memory.max').read_text().strip()
+    assert cpu_max == '800000 100000', cpu_max
+    assert int(memory_max) == 12 * 2**30, memory_max
+    fuse_trace_available = all(Path(f'/sys/kernel/tracing/events/fuse/fuse_request_{event}/id').exists()
+                               for event in ('send', 'sent', 'end'))
     env = dict(os.environ, CARGO_BUILD_JOBS='8', SYNKRO_BUILD_SHA=REVISION[:7],
                SYNKRO_SENTRY_ENABLED='false', SYNKRO_RELEASE_NOTICES_ENABLED='false',
                SYNKRO_TEST_ISOLATION='1', CARGO_TERM_COLOR='never')
@@ -46,7 +53,10 @@ def main():
                   perf=subprocess.check_output(['perf', '--version'], text=True).strip(),
                   sl7_sha256=hashlib.sha256(BINARY.read_bytes()).hexdigest(),
                   lock_sha256=hashlib.sha256((SOURCE/'Cargo.lock').read_bytes()).hexdigest(),
-                  cpu_quota=8, memory_limit_gib=12, stages=[])
+                  cpu_quota=8, memory_limit_gib=12, cpu_max=cpu_max, memory_max=memory_max,
+                  nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
+                  fuse_trace_available=fuse_trace_available,
+                  resources_before=benchmark.resource_counters(cgroup), stages=[])
 
     def save():
         (ROOT/'profile.json').write_text(json.dumps(report, indent=2)+'\n')
@@ -90,22 +100,29 @@ def main():
                     start_profiler('cpu', ['perf', 'record', '-e', 'cpu-clock:u', '-F', '99',
                         '--call-graph', 'dwarf,8192', '-p', str(daemon.pid),
                         '-o', str(ROOT/f'{stage}-cpu.data')])
-                if trace:
+                if trace and fuse_trace_available:
                     command = ['perf', 'record', '-a', '-m', '1024', '-o', str(ROOT/f'{stage}-fuse.data')]
                     for event in ['send', 'sent', 'end']:
                         command += ['-e', f'fuse:fuse_request_{event}', '--filter', f'connection == {connection}']
                     start_profiler('fuse', command)
+                if trace:
                     start_profiler('syscalls', ['perf', 'stat', '-x', ',', '-p', str(daemon.pid),
                         '-e', ','.join(f'syscalls:sys_enter_{s}' for s in SYSCALLS),
                         '-o', str(ROOT/f'{stage}-syscalls.csv')])
-                if profilers:
-                    time.sleep(.3)
-                    assert all(p.poll() is None for _, p in profilers), 'profiler failed to attach'
-                before = resource.getrusage(resource.RUSAGE_CHILDREN)
-                cpu_before = daemon_cpu(daemon.pid)
-                start = time.monotonic()
+                    command = ['perf', 'record', '-m', '1024', '-p', str(daemon.pid),
+                               '-o', str(ROOT/f'{stage}-io.data')]
+                    for name in ('fsync', 'fdatasync', 'pwrite64'):
+                        for phase in ('enter', 'exit'):
+                            command += ['-e', f'syscalls:sys_{phase}_{name}']
+                    start_profiler('io', command)
                 command = ['cargo', 'build', '--workspace', '--locked', '--offline', '--message-format=json']
                 try:
+                    if profilers:
+                        time.sleep(.3)
+                        assert all(p.poll() is None for _, p in profilers), 'profiler failed to attach'
+                    before = resource.getrusage(resource.RUSAGE_CHILDREN)
+                    cpu_before = daemon_cpu(daemon.pid)
+                    start = time.monotonic()
                     with (ROOT/f'{stage}.jsonl').open('w') as out, (ROOT/f'{stage}.stderr').open('w') as err:
                         result = subprocess.run(command, cwd=SOURCE, env=env, stdout=out, stderr=err)
                     wall = time.monotonic()-start
@@ -114,13 +131,26 @@ def main():
                     idle = settle(daemon, mount)
                     cpu = daemon_cpu(daemon.pid)-cpu_before
                 finally:
+                    stop_started = time.monotonic()
+                    failures = []
                     for _, process in profilers:
-                        process.send_signal(signal.SIGINT)
+                        if process.poll() is None:
+                            process.terminate()
+                        else:
+                            failures.append(('profiler exited before stop', process.returncode))
                     for kind, process in profilers:
-                        process.wait(timeout=60)
-                        assert process.returncode in [0, 130, -signal.SIGINT], (kind, process.returncode)
+                        try:
+                            process.wait(timeout=60)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait(timeout=10)
+                            failures.append((kind, 'shutdown timeout'))
+                        if process.returncode not in [0, 128 + signal.SIGTERM, -signal.SIGTERM]:
+                            failures.append((kind, process.returncode))
                     for handle in handles:
                         handle.close()
+                    profiler_stop_seconds = time.monotonic() - stop_started
+                    assert not failures, failures
                 records = [a for line in (ROOT/f'{stage}.jsonl').read_text().splitlines()
                            if (a := json.loads(line)).get('reason')=='compiler-artifact']
                 assert records
@@ -131,7 +161,9 @@ def main():
                 row = dict(stage=stage, wall_seconds=wall, daemon_cpu_seconds=cpu,
                            cargo_cpu_seconds=after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
                            idle_seconds=idle, artifacts=len(records), fresh_artifacts=sum(a['fresh'] for a in records),
-                           cpu_sampling=sample, fuse_tracing=trace)
+                           cpu_sampling=sample, fuse_tracing=trace and fuse_trace_available,
+                           syscall_counting=trace, io_tracing=trace,
+                           profiler_stop_seconds=profiler_stop_seconds)
                 report['stages'].append(row)
                 save()
                 print(json.dumps(row), flush=True)
@@ -142,6 +174,7 @@ def main():
             build('edit-2-profile', edit=2, sample=True, trace=True)
             build('edit-3-profile', edit=3, sample=True, trace=True)
             build('unchanged-final', fresh=True)
+            report['incremental_artifacts'] = benchmark.incremental_inventory(mount)
         finally:
             edited.write_text(original)
             drain_started = time.monotonic()
@@ -162,7 +195,8 @@ def main():
         report['integrity'] = json.loads(subprocess.check_output([str(BINARY), '--store', str(store), 'check'], text=True))
         report['integrity_seconds'] = time.monotonic()-start
         report['storage'] = json.loads(subprocess.check_output([str(BINARY), '--store', str(store), 'live-stats'], text=True))
-        report['memory_events'] = Path('/sys/fs/cgroup/memory.events').read_text()
+        report['resources_after'] = benchmark.resource_counters(cgroup)
+        report['memory_events'] = (cgroup/'memory.events').read_text()
         report['status'] = 'passed'
         save()
         print('Profiling and integrity checks passed', flush=True)

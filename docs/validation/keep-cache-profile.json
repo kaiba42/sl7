@@ -1,0 +1,1848 @@
+{
+  "implementation": "14f72b46d6954d43f42978ff678271d2b1aa9701",
+  "profile": {
+    "revision": "ec6d4c53b8fdf4321de220a922f7efce67788d40",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+    "kernel": "6.12.58",
+    "perf": "perf version 6.1.190",
+    "sl7_sha256": "5215e2d34e8b3bcdc25d3684cb404f054541018828d52503ed44576727fc9212",
+    "lock_sha256": "e755d04b657a714d18ea5211763e950bf8c6d68b2b9a7807b4123cb7b2c60c50",
+    "cpu_quota": 8,
+    "memory_limit_gib": 12,
+    "cpu_max": "800000 100000",
+    "memory_max": "12884901888",
+    "nofile_limit": [
+      524288,
+      524288
+    ],
+    "fuse_trace_available": false,
+    "resources_before": {
+      "cpu.stat": "usage_usec 9309527108\nuser_usec 8067405943\nsystem_usec 1242121164\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 22256\nnr_throttled 2998\nthrottled_usec 16898887\nnr_bursts 0\nburst_usec 0",
+      "cpu.pressure": "some avg10=0.44 avg60=0.43 avg300=0.15 total=9068335\nfull avg10=0.36 avg60=0.35 avg300=0.10 total=7129812",
+      "io.pressure": "some avg10=1.38 avg60=1.67 avg300=1.77 total=39869481\nfull avg10=1.38 avg60=1.66 avg300=1.69 total=37571710",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "stages": [
+      {
+        "stage": "clean",
+        "wall_seconds": 204.83554874639958,
+        "daemon_cpu_seconds": 108.47,
+        "cargo_cpu_seconds": 1064.3760140000002,
+        "idle_seconds": 3.910214231349528,
+        "artifacts": 601,
+        "fresh_artifacts": 0,
+        "cpu_sampling": true,
+        "fuse_tracing": false,
+        "syscall_counting": false,
+        "io_tracing": false,
+        "profiler_stop_seconds": 0.46467144042253494
+      },
+      {
+        "stage": "unchanged",
+        "wall_seconds": 3.91118420753628,
+        "daemon_cpu_seconds": 6.400000000000006,
+        "cargo_cpu_seconds": 0.576637000000062,
+        "idle_seconds": 16.34074543789029,
+        "artifacts": 601,
+        "fresh_artifacts": 601,
+        "cpu_sampling": false,
+        "fuse_tracing": false,
+        "syscall_counting": false,
+        "io_tracing": false,
+        "profiler_stop_seconds": 1.3317912817001343e-06
+      },
+      {
+        "stage": "edit-1-control",
+        "wall_seconds": 19.458959575742483,
+        "daemon_cpu_seconds": 8.799999999999997,
+        "cargo_cpu_seconds": 8.43058600000002,
+        "idle_seconds": 0.3009023582562804,
+        "artifacts": 601,
+        "fresh_artifacts": 599,
+        "cpu_sampling": false,
+        "fuse_tracing": false,
+        "syscall_counting": false,
+        "io_tracing": false,
+        "profiler_stop_seconds": 1.6130506992340088e-06
+      },
+      {
+        "stage": "edit-2-profile",
+        "wall_seconds": 18.742336495779455,
+        "daemon_cpu_seconds": 10.079999999999998,
+        "cargo_cpu_seconds": 8.023112000000026,
+        "idle_seconds": 2.105564600788057,
+        "artifacts": 601,
+        "fresh_artifacts": 599,
+        "cpu_sampling": true,
+        "fuse_tracing": false,
+        "syscall_counting": true,
+        "io_tracing": true,
+        "profiler_stop_seconds": 1.2310379538685083
+      },
+      {
+        "stage": "edit-3-profile",
+        "wall_seconds": 20.615967590361834,
+        "daemon_cpu_seconds": 9.409999999999997,
+        "cargo_cpu_seconds": 7.8388409999998885,
+        "idle_seconds": 2.105409499257803,
+        "artifacts": 601,
+        "fresh_artifacts": 599,
+        "cpu_sampling": true,
+        "fuse_tracing": false,
+        "syscall_counting": true,
+        "io_tracing": true,
+        "profiler_stop_seconds": 0.3788592955097556
+      },
+      {
+        "stage": "unchanged-final",
+        "wall_seconds": 1.204153192229569,
+        "daemon_cpu_seconds": 0.789999999999992,
+        "cargo_cpu_seconds": 0.5053899999999345,
+        "idle_seconds": 0.3009340213611722,
+        "artifacts": 601,
+        "fresh_artifacts": 601,
+        "cpu_sampling": false,
+        "fuse_tracing": false,
+        "syscall_counting": false,
+        "io_tracing": false,
+        "profiler_stop_seconds": 1.0523945093154907e-06
+      }
+    ],
+    "fuse_connection": 1274,
+    "daemon_threads": 6,
+    "incremental_artifacts": {
+      "files": 2212,
+      "logical_bytes": 2393464652
+    },
+    "unmount_drain_seconds": 0.6291151102632284,
+    "sealing_stats": {
+      "completed": 3455,
+      "canceled": 179,
+      "skipped": 13504,
+      "errors": 0,
+      "candidate_seconds": 72.78287623299997,
+      "prepare_seconds": 83.86119843099993,
+      "publish_seconds": 69.92009744500031,
+      "max_publish_seconds": 0.855366966,
+      "publication_state_seconds": 0.009905747999998108,
+      "max_publication_state_seconds": 4.4635e-05,
+      "selection_state_seconds": 0.19000813099999952,
+      "max_selection_state_seconds": 0.00013565,
+      "request_state_seconds": 80.18059032613941,
+      "max_request_state_seconds": 0.923250546,
+      "catalog_wait_seconds": 28.479312683999186,
+      "publication_open_wait_seconds": 0.5349089949999999,
+      "read_operations": 153218,
+      "active_reads": 0,
+      "max_parallel_reads": 4,
+      "read_seconds": 10.650118879999972,
+      "read_state_seconds": 0.05045929600000351,
+      "read_wait_seconds": 0.38294374199999964,
+      "mutation_read_wait_seconds": 0.16363517300000038,
+      "max_queue_len": 1024
+    },
+    "cache_stats": {
+      "chunk_hits": 10398,
+      "chunk_misses": 49203,
+      "pack_opens": 5602,
+      "decoded_bytes": 879070524,
+      "requested_bytes": 574917283,
+      "cached_bytes": 134204311,
+      "open_packs": 64,
+      "map_hits": 14775,
+      "map_misses": 10845,
+      "map_queries": 10845,
+      "map_fallbacks": 0,
+      "map_bytes": 14317824,
+      "map_windows": 4096,
+      "active_loads": 0,
+      "max_parallel_loads": 4,
+      "duplicate_loads": 1239,
+      "load_seconds": 2.6789591679999942
+    },
+    "integrity": {
+      "files": 3455,
+      "logical_bytes": 11904403670,
+      "unique_chunks": 373149,
+      "unique_raw_bytes": 5747646579,
+      "compressed_payload_bytes": 1730875724,
+      "referenced_pack_bytes": 1749187649,
+      "catalog_bytes": 112074752,
+      "orphan_pack_bytes": 12425538,
+      "temporary_bytes": 0,
+      "total_file_bytes": 1873687939
+    },
+    "integrity_seconds": 35.333118703216314,
+    "storage": {
+      "files": 7731,
+      "sealed_files": 2317,
+      "logical_bytes": 7315923768,
+      "native_allocated_bytes": 49086464,
+      "content": {
+        "files": 3455,
+        "logical_bytes": 11904403670,
+        "unique_chunks": 373149,
+        "unique_raw_bytes": 5747646579,
+        "compressed_payload_bytes": 1730875724,
+        "referenced_pack_bytes": 1749187649,
+        "catalog_bytes": 112074752,
+        "orphan_pack_bytes": 12425538,
+        "temporary_bytes": 0,
+        "total_file_bytes": 1873687939
+      }
+    },
+    "resources_after": {
+      "cpu.stat": "usage_usec 10583171197\nuser_usec 9157275262\nsystem_usec 1425895935\nnice_usec 0\ncore_sched.force_idle_usec 0\nnr_periods 25511\nnr_throttled 3376\nthrottled_usec 18782431\nnr_bursts 0\nburst_usec 0",
+      "cpu.pressure": "some avg10=0.00 avg60=0.02 avg300=0.08 total=10358382\nfull avg10=0.00 avg60=0.00 avg300=0.04 total=8126432",
+      "io.pressure": "some avg10=0.34 avg60=4.33 avg300=2.96 total=49924477\nfull avg10=0.32 avg60=4.17 avg300=2.84 total=47232494",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+    "status": "passed"
+  },
+  "analysis": {
+    "clean-cpu": {
+      "samples": 4272,
+      "top_leaf": [
+        {
+          "symbol": "sha2::sha256::x86::digest_blocks",
+          "samples": 669,
+          "sample_percent": 15.660112359550562
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 351,
+          "sample_percent": 8.21629213483146
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 344,
+          "sample_percent": 8.05243445692884
+        },
+        {
+          "symbol": "statx",
+          "samples": 295,
+          "sample_percent": 6.905430711610487
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 215,
+          "sample_percent": 5.032771535580524
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 182,
+          "sample_percent": 4.260299625468165
+        },
+        {
+          "symbol": "ZSTD_encodeSequences_bmi2",
+          "samples": 132,
+          "sample_percent": 3.0898876404494384
+        },
+        {
+          "symbol": "writev",
+          "samples": 91,
+          "sample_percent": 2.1301498127340825
+        },
+        {
+          "symbol": "__close",
+          "samples": 87,
+          "sample_percent": 2.0365168539325844
+        },
+        {
+          "symbol": "__open64",
+          "samples": 78,
+          "sample_percent": 1.8258426966292134
+        },
+        {
+          "symbol": "HUF_buildCTable_wksp",
+          "samples": 70,
+          "sample_percent": 1.6385767790262171
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 59,
+          "sample_percent": 1.3810861423220975
+        },
+        {
+          "symbol": "getxattr",
+          "samples": 54,
+          "sample_percent": 1.2640449438202248
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 53,
+          "sample_percent": 1.2406367041198503
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 52,
+          "sample_percent": 1.2172284644194757
+        },
+        {
+          "symbol": "read",
+          "samples": 50,
+          "sample_percent": 1.1704119850187267
+        },
+        {
+          "symbol": "std::sys::fs::unix::try_statx",
+          "samples": 43,
+          "sample_percent": 1.006554307116105
+        },
+        {
+          "symbol": "HIST_count_parallel_wksp",
+          "samples": 42,
+          "sample_percent": 0.9831460674157303
+        },
+        {
+          "symbol": "syscall",
+          "samples": 41,
+          "sample_percent": 0.9597378277153558
+        },
+        {
+          "symbol": "FSE_buildCTable_wksp",
+          "samples": 40,
+          "sample_percent": 0.9363295880149812
+        },
+        {
+          "symbol": "HUF_compress1X_usingCTable_internal_bmi2",
+          "samples": 39,
+          "sample_percent": 0.9129213483146067
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 34,
+          "sample_percent": 0.795880149812734
+        },
+        {
+          "symbol": "<std::fs::File>::metadata",
+          "samples": 33,
+          "sample_percent": 0.7724719101123596
+        },
+        {
+          "symbol": "malloc",
+          "samples": 32,
+          "sample_percent": 0.7490636704119851
+        },
+        {
+          "symbol": "pread64",
+          "samples": 31,
+          "sample_percent": 0.7256554307116105
+        },
+        {
+          "symbol": "ZSTD_seqToCodes",
+          "samples": 30,
+          "sample_percent": 0.702247191011236
+        },
+        {
+          "symbol": "<sl7::staging::State>::register",
+          "samples": 29,
+          "sample_percent": 0.6788389513108615
+        },
+        {
+          "symbol": "__write",
+          "samples": 29,
+          "sample_percent": 0.6788389513108615
+        },
+        {
+          "symbol": "pwrite",
+          "samples": 29,
+          "sample_percent": 0.6788389513108615
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_bmi2.constprop.0",
+          "samples": 29,
+          "sample_percent": 0.6788389513108615
+        },
+        {
+          "symbol": "__libc_free",
+          "samples": 24,
+          "sample_percent": 0.5617977528089888
+        },
+        {
+          "symbol": "pthread_mutex_lock",
+          "samples": 21,
+          "sample_percent": 0.49157303370786515
+        },
+        {
+          "symbol": "<std::sys::sync::mutex::futex::Mutex>::lock_contended",
+          "samples": 20,
+          "sample_percent": 0.4681647940074906
+        },
+        {
+          "symbol": "HIST_countFast_wksp",
+          "samples": 19,
+          "sample_percent": 0.4447565543071161
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 19,
+          "sample_percent": 0.4447565543071161
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+          "samples": 18,
+          "sample_percent": 0.42134831460674155
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 16,
+          "sample_percent": 0.37453183520599254
+        },
+        {
+          "symbol": "pcache1TruncateUnsafe",
+          "samples": 16,
+          "sample_percent": 0.37453183520599254
+        },
+        {
+          "symbol": "<sl7::staging::State>::child",
+          "samples": 13,
+          "sample_percent": 0.30430711610486894
+        },
+        {
+          "symbol": "yy_reduce.constprop.0",
+          "samples": 13,
+          "sample_percent": 0.30430711610486894
+        },
+        {
+          "symbol": "FSE_writeNCount_generic",
+          "samples": 13,
+          "sample_percent": 0.30430711610486894
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 12,
+          "sample_percent": 0.2808988764044944
+        },
+        {
+          "symbol": "sl7::live::id",
+          "samples": 12,
+          "sample_percent": 0.2808988764044944
+        },
+        {
+          "symbol": "sqlite3BtreeTableMoveto",
+          "samples": 11,
+          "sample_percent": 0.25749063670411987
+        },
+        {
+          "symbol": "walChecksumBytes",
+          "samples": 11,
+          "sample_percent": 0.25749063670411987
+        },
+        {
+          "symbol": "<sl7::staging::State>::lookup",
+          "samples": 10,
+          "sample_percent": 0.2340823970037453
+        },
+        {
+          "symbol": "sqlite3DbMallocRawNN",
+          "samples": 10,
+          "sample_percent": 0.2340823970037453
+        },
+        {
+          "symbol": "<std::hash::random::RandomState as core::hash::BuildHasher>::hash_one::<&fuser::ll::request::INodeNo>",
+          "samples": 10,
+          "sample_percent": 0.2340823970037453
+        },
+        {
+          "symbol": "sqlite3PagerSharedLock",
+          "samples": 10,
+          "sample_percent": 0.2340823970037453
+        },
+        {
+          "symbol": "FSE_compress_usingCTable_generic",
+          "samples": 9,
+          "sample_percent": 0.21067415730337077
+        }
+      ],
+      "top_inclusive": [
+        {
+          "symbol": "[unknown]",
+          "samples": 4272,
+          "sample_percent": 100.0
+        },
+        {
+          "symbol": "<std::sys::thread::unix::Thread>::new::thread_start",
+          "samples": 2854,
+          "sample_percent": 66.80711610486891
+        },
+        {
+          "symbol": "sl7::staging::background::run",
+          "samples": 2600,
+          "sample_percent": 60.86142322097378
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<sl7::staging::background::start::{closure#1}, ()>",
+          "samples": 2453,
+          "sample_percent": 57.420411985018724
+        },
+        {
+          "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#0}>",
+          "samples": 2143,
+          "sample_percent": 50.16385767790262
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<sl7::staging::background::start::{closure#1}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 2057,
+          "sample_percent": 48.15074906367041
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
+          "samples": 1666,
+          "sample_percent": 38.99812734082397
+        },
+        {
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "samples": 1666,
+          "sample_percent": 38.99812734082397
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 1666,
+          "sample_percent": 38.99812734082397
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 1590,
+          "sample_percent": 37.21910112359551
+        },
+        {
+          "symbol": "<sl7::pack::Writer>::add",
+          "samples": 976,
+          "sample_percent": 22.846441947565545
+        },
+        {
+          "symbol": "zstd::bulk::compress",
+          "samples": 889,
+          "sample_percent": 20.80992509363296
+        },
+        {
+          "symbol": "<zstd::bulk::compressor::Compressor>::compress",
+          "samples": 874,
+          "sample_percent": 20.45880149812734
+        },
+        {
+          "symbol": "ZSTD_compress2",
+          "samples": 871,
+          "sample_percent": 20.388576779026216
+        },
+        {
+          "symbol": "ZSTD_compressStream_generic",
+          "samples": 827,
+          "sample_percent": 19.35861423220974
+        },
+        {
+          "symbol": "ZSTD_compressEnd_public",
+          "samples": 827,
+          "sample_percent": 19.35861423220974
+        },
+        {
+          "symbol": "ZSTD_compress_frameChunk",
+          "samples": 825,
+          "sample_percent": 19.31179775280899
+        },
+        {
+          "symbol": "ZSTD_compressBlock_internal",
+          "samples": 823,
+          "sample_percent": 19.26498127340824
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+          "samples": 760,
+          "sample_percent": 17.790262172284645
+        },
+        {
+          "symbol": "sha2::sha256::x86::digest_blocks",
+          "samples": 669,
+          "sample_percent": 15.660112359550562
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 496,
+          "sample_percent": 11.610486891385769
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 474,
+          "sample_percent": 11.095505617977528
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 467,
+          "sample_percent": 10.931647940074907
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 455,
+          "sample_percent": 10.650749063670412
+        },
+        {
+          "symbol": "<sl7::staging::State>::lookup",
+          "samples": 437,
+          "sample_percent": 10.22940074906367
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 410,
+          "sample_percent": 9.597378277153558
+        },
+        {
+          "symbol": "ZSTD_buildSeqStore",
+          "samples": 398,
+          "sample_percent": 9.316479400749063
+        },
+        {
+          "symbol": "<std::fs::File>::metadata",
+          "samples": 391,
+          "sample_percent": 9.152621722846442
+        },
+        {
+          "symbol": "<sl7::live::Live>::publish_seal",
+          "samples": 369,
+          "sample_percent": 8.637640449438202
+        },
+        {
+          "symbol": "<sl7::store::Store>::publish_import",
+          "samples": 346,
+          "sample_percent": 8.099250936329588
+        },
+        {
+          "symbol": "std::sys::fs::unix::try_statx",
+          "samples": 338,
+          "sample_percent": 7.911985018726591
+        },
+        {
+          "symbol": "sl7::chunk::identity",
+          "samples": 316,
+          "sample_percent": 7.397003745318352
+        },
+        {
+          "symbol": "statx",
+          "samples": 295,
+          "sample_percent": 6.905430711610487
+        },
+        {
+          "symbol": "sl7::live::id",
+          "samples": 274,
+          "sample_percent": 6.413857677902621
+        },
+        {
+          "symbol": "<rusqlite::row::Rows>::get_expected_row",
+          "samples": 222,
+          "sample_percent": 5.196629213483146
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 215,
+          "sample_percent": 5.032771535580524
+        },
+        {
+          "symbol": "<rusqlite::Connection>::execute::<&[&dyn rusqlite::types::to_sql::ToSql]>",
+          "samples": 215,
+          "sample_percent": 5.032771535580524
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::opendir",
+          "samples": 199,
+          "sample_percent": 4.658239700374532
+        },
+        {
+          "symbol": "<sl7::staging::State>::register",
+          "samples": 187,
+          "sample_percent": 4.377340823970037
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+          "samples": 186,
+          "sample_percent": 4.353932584269663
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+          "samples": 185,
+          "sample_percent": 4.330524344569288
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::execute_with_bound_parameters",
+          "samples": 183,
+          "sample_percent": 4.283707865168539
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 182,
+          "sample_percent": 4.260299625468165
+        },
+        {
+          "symbol": "ZSTD_compressLiterals",
+          "samples": 181,
+          "sample_percent": 4.23689138576779
+        },
+        {
+          "symbol": "HUF_compress_internal",
+          "samples": 177,
+          "sample_percent": 4.143258426966292
+        },
+        {
+          "symbol": "HUF_compress4X_repeat",
+          "samples": 176,
+          "sample_percent": 4.119850187265918
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 166,
+          "sample_percent": 3.885767790262172
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::write",
+          "samples": 165,
+          "sample_percent": 3.8623595505617976
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::query_row::<(i64, core::option::Option<i64>, core::option::Option<alloc::string::String>), [i64; 1], <sl7::live::Live>::record::{closure#0}>",
+          "samples": 156,
+          "sample_percent": 3.651685393258427
+        },
+        {
+          "symbol": "sqlite3_prepare_v3",
+          "samples": 142,
+          "sample_percent": 3.3239700374531833
+        }
+      ],
+      "sample_categories": {
+        "other": 1448,
+        "sealing": 2600,
+        "mounted_read": 186,
+        "hydration": 38
+      },
+      "sha256_leaf_by_category": {
+        "sealing": 4
+      },
+      "note": "Unweighted sample counts at requested 99 Hz; inclusive percentages overlap."
+    },
+    "edit-2-profile-cpu": {
+      "samples": 384,
+      "top_leaf": [
+        {
+          "symbol": "sha2::sha256::x86::digest_blocks",
+          "samples": 116,
+          "sample_percent": 30.208333333333332
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 53,
+          "sample_percent": 13.802083333333334
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 32,
+          "sample_percent": 8.333333333333334
+        },
+        {
+          "symbol": "pread64",
+          "samples": 16,
+          "sample_percent": 4.166666666666667
+        },
+        {
+          "symbol": "statx",
+          "samples": 11,
+          "sample_percent": 2.8645833333333335
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 10,
+          "sample_percent": 2.6041666666666665
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_bmi2.constprop.0",
+          "samples": 9,
+          "sample_percent": 2.34375
+        },
+        {
+          "symbol": "read",
+          "samples": 9,
+          "sample_percent": 2.34375
+        },
+        {
+          "symbol": "writev",
+          "samples": 8,
+          "sample_percent": 2.0833333333333335
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 7,
+          "sample_percent": 1.8229166666666667
+        },
+        {
+          "symbol": "malloc",
+          "samples": 6,
+          "sample_percent": 1.5625
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 5,
+          "sample_percent": 1.3020833333333333
+        },
+        {
+          "symbol": "__libc_free",
+          "samples": 4,
+          "sample_percent": 1.0416666666666667
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 4,
+          "sample_percent": 1.0416666666666667
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 4,
+          "sample_percent": 1.0416666666666667
+        },
+        {
+          "symbol": "HUF_compress1X_usingCTable_internal_bmi2",
+          "samples": 4,
+          "sample_percent": 1.0416666666666667
+        },
+        {
+          "symbol": "getxattr",
+          "samples": 3,
+          "sample_percent": 0.78125
+        },
+        {
+          "symbol": "readDbPage",
+          "samples": 3,
+          "sample_percent": 0.78125
+        },
+        {
+          "symbol": "<sl7::staging::State>::take_job",
+          "samples": 3,
+          "sample_percent": 0.78125
+        },
+        {
+          "symbol": "pthread_mutex_lock",
+          "samples": 3,
+          "sample_percent": 0.78125
+        },
+        {
+          "symbol": "walFindFrame.constprop.0",
+          "samples": 3,
+          "sample_percent": 0.78125
+        },
+        {
+          "symbol": "<std::time::SystemTime as core::ops::arith::Add<core::time::Duration>>::add",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "sqlite3_reset",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "sl7::live::id",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "__close",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "HIST_countFast_wksp",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "ZSTD_encodeSequences_bmi2",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "HIST_count_parallel_wksp",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "sqlite3VdbeHalt",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "core::str::converts::from_utf8",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::query_row::<bool, [&[u8]; 1], sl7::store::prepare_import<sl7::staging::background::run::{closure#0}>::{closure#0}>",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "btreeInitPage",
+          "samples": 2,
+          "sample_percent": 0.5208333333333334
+        },
+        {
+          "symbol": "<core::fmt::Formatter>::pad_integral",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<sl7::staging::State>::register",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "getPageNormal",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<rusqlite::cache::StatementCache>::get",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "unixShmLock",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "sqlite3_column_text",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<std::sys::sync::mutex::futex::Mutex>::lock_contended",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "sqlite3CompleteInsertion",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<fuser::ll::request::AnyRequest>::operation",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "pcache1TruncateUnsafe",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::value_ref",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "std::sys::fs::unix::try_statx",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "sqlite3VdbeMemGrow",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "core::ptr::drop_glue::<rusqlite::statement::Statement>",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<serde_json::read::SliceRead>::skip_to_escape",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 1,
+          "sample_percent": 0.2604166666666667
+        }
+      ],
+      "top_inclusive": [
+        {
+          "symbol": "[unknown]",
+          "samples": 384,
+          "sample_percent": 100.0
+        },
+        {
+          "symbol": "<std::sys::thread::unix::Thread>::new::thread_start",
+          "samples": 270,
+          "sample_percent": 70.3125
+        },
+        {
+          "symbol": "sl7::staging::background::run",
+          "samples": 263,
+          "sample_percent": 68.48958333333333
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<sl7::staging::background::start::{closure#1}, ()>",
+          "samples": 258,
+          "sample_percent": 67.1875
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<sl7::staging::background::start::{closure#1}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 235,
+          "sample_percent": 61.197916666666664
+        },
+        {
+          "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#0}>",
+          "samples": 233,
+          "sample_percent": 60.677083333333336
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
+          "samples": 121,
+          "sample_percent": 31.510416666666668
+        },
+        {
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "samples": 121,
+          "sample_percent": 31.510416666666668
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 121,
+          "sample_percent": 31.510416666666668
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 118,
+          "sample_percent": 30.729166666666668
+        },
+        {
+          "symbol": "sha2::sha256::x86::digest_blocks",
+          "samples": 116,
+          "sample_percent": 30.208333333333332
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 65,
+          "sample_percent": 16.927083333333332
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 64,
+          "sample_percent": 16.666666666666668
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 63,
+          "sample_percent": 16.40625
+        },
+        {
+          "symbol": "sl7::chunk::identity",
+          "samples": 62,
+          "sample_percent": 16.145833333333332
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 45,
+          "sample_percent": 11.71875
+        },
+        {
+          "symbol": "<rusqlite::row::Rows>::get_expected_row",
+          "samples": 39,
+          "sample_percent": 10.15625
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+          "samples": 39,
+          "sample_percent": 10.15625
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 37,
+          "sample_percent": 9.635416666666666
+        },
+        {
+          "symbol": "getPageNormal",
+          "samples": 36,
+          "sample_percent": 9.375
+        },
+        {
+          "symbol": "<sl7::live::Live>::read",
+          "samples": 36,
+          "sample_percent": 9.375
+        },
+        {
+          "symbol": "getAndInitPage",
+          "samples": 32,
+          "sample_percent": 8.333333333333334
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 31,
+          "sample_percent": 8.072916666666666
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::query_row::<bool, [&[u8]; 1], sl7::store::prepare_import<sl7::staging::background::run::{closure#0}>::{closure#0}>",
+          "samples": 31,
+          "sample_percent": 8.072916666666666
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+          "samples": 30,
+          "sample_percent": 7.8125
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+          "samples": 30,
+          "sample_percent": 7.8125
+        },
+        {
+          "symbol": "<sl7::store::Store>::read_file_mode",
+          "samples": 30,
+          "sample_percent": 7.8125
+        },
+        {
+          "symbol": "<sl7::pack::Writer>::add",
+          "samples": 30,
+          "sample_percent": 7.8125
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::query_row::<(i64, core::option::Option<i64>, core::option::Option<alloc::string::String>), [i64; 1], <sl7::live::Live>::record::{closure#0}>",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compress2",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compressStream_generic",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "<zstd::bulk::compressor::Compressor>::compress",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compress_frameChunk",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "zstd::bulk::compress",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compressEnd_public",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compressBlock_internal",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "<sl7::store::Store>::publish_import",
+          "samples": 21,
+          "sample_percent": 5.46875
+        },
+        {
+          "symbol": "<sl7::live::Live>::publish_seal",
+          "samples": 21,
+          "sample_percent": 5.46875
+        },
+        {
+          "symbol": "readDbPage",
+          "samples": 20,
+          "sample_percent": 5.208333333333333
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::execute_with_bound_parameters",
+          "samples": 20,
+          "sample_percent": 5.208333333333333
+        },
+        {
+          "symbol": "<sl7::read_cache::ReadCache>::read",
+          "samples": 17,
+          "sample_percent": 4.427083333333333
+        },
+        {
+          "symbol": "<sl7::store::Store>::append_extent",
+          "samples": 17,
+          "sample_percent": 4.427083333333333
+        },
+        {
+          "symbol": "sl7::pack::read_from",
+          "samples": 17,
+          "sample_percent": 4.427083333333333
+        },
+        {
+          "symbol": "sl7::live::id",
+          "samples": 16,
+          "sample_percent": 4.166666666666667
+        },
+        {
+          "symbol": "pread64",
+          "samples": 16,
+          "sample_percent": 4.166666666666667
+        },
+        {
+          "symbol": "ZSTD_buildSeqStore",
+          "samples": 15,
+          "sample_percent": 3.90625
+        },
+        {
+          "symbol": "unixRead",
+          "samples": 14,
+          "sample_percent": 3.6458333333333335
+        },
+        {
+          "symbol": "<std::fs::File>::metadata",
+          "samples": 14,
+          "sample_percent": 3.6458333333333335
+        },
+        {
+          "symbol": "sqlite3VdbeHalt",
+          "samples": 14,
+          "sample_percent": 3.6458333333333335
+        },
+        {
+          "symbol": "sqlite3_reset",
+          "samples": 13,
+          "sample_percent": 3.3854166666666665
+        }
+      ],
+      "sample_categories": {
+        "other": 82,
+        "mounted_read": 39,
+        "sealing": 263
+      },
+      "sha256_leaf_by_category": {},
+      "note": "Unweighted sample counts at requested 99 Hz; inclusive percentages overlap."
+    },
+    "edit-3-profile-cpu": {
+      "samples": 359,
+      "top_leaf": [
+        {
+          "symbol": "sha2::sha256::x86::digest_blocks",
+          "samples": 113,
+          "sample_percent": 31.47632311977716
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 56,
+          "sample_percent": 15.598885793871867
+        },
+        {
+          "symbol": "[unknown]",
+          "samples": 38,
+          "sample_percent": 10.584958217270195
+        },
+        {
+          "symbol": "pread64",
+          "samples": 12,
+          "sample_percent": 3.3426183844011144
+        },
+        {
+          "symbol": "writev",
+          "samples": 10,
+          "sample_percent": 2.785515320334262
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 9,
+          "sample_percent": 2.5069637883008355
+        },
+        {
+          "symbol": "statx",
+          "samples": 6,
+          "sample_percent": 1.6713091922005572
+        },
+        {
+          "symbol": "__close",
+          "samples": 6,
+          "sample_percent": 1.6713091922005572
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+          "samples": 6,
+          "sample_percent": 1.6713091922005572
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 5,
+          "sample_percent": 1.392757660167131
+        },
+        {
+          "symbol": "<sl7::staging::State>::take_job",
+          "samples": 4,
+          "sample_percent": 1.1142061281337048
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 4,
+          "sample_percent": 1.1142061281337048
+        },
+        {
+          "symbol": "<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_struct::<<sl7::live::Metadata as serde_core::de::Deserialize>::deserialize::__Visitor>",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "unixShmLock",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "malloc",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "sqlite3VdbeHalt",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "pcache1TruncateUnsafe",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "ZSTD_decompressSequences_bmi2.constprop.0",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "getxattr",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "sqlite3VdbeFreeCursorNN",
+          "samples": 3,
+          "sample_percent": 0.8356545961002786
+        },
+        {
+          "symbol": "pthread_mutex_lock",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "sqlite3DbMallocRawNN",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "<rusqlite::cache::StatementCache>::get",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "__libc_free",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "btreeEndTransaction",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "syscall",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "read",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "ZSTD_compressBlock_fast",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "HUF_buildCTable_wksp",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "walFindFrame.constprop.0",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "sqlite3BtreeTableMoveto",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "pcache1Unpin",
+          "samples": 2,
+          "sample_percent": 0.5571030640668524
+        },
+        {
+          "symbol": "<std::time::SystemTime>::duration_since",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<alloc::ffi::c_str::CString>::_from_vec_unchecked",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<sl7::staging::State>::register",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "pcache1FetchStage2",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<sl7::staging::State>::path",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<fuser::reply::ReplyEntry>::entry",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "sqlite3_finalize",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "std::sys::fs::unix::try_statx",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "<sl7::read_cache::ReadCache>::read",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "FSE_buildCTable_wksp",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "ZSTD_encodeSequences_bmi2",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "sqlite3RunParser",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        },
+        {
+          "symbol": "core::ptr::drop_glue::<rusqlite::row::Rows>",
+          "samples": 1,
+          "sample_percent": 0.2785515320334262
+        }
+      ],
+      "top_inclusive": [
+        {
+          "symbol": "[unknown]",
+          "samples": 359,
+          "sample_percent": 100.0
+        },
+        {
+          "symbol": "<std::sys::thread::unix::Thread>::new::thread_start",
+          "samples": 262,
+          "sample_percent": 72.98050139275766
+        },
+        {
+          "symbol": "sl7::staging::background::run",
+          "samples": 251,
+          "sample_percent": 69.91643454038997
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<sl7::staging::background::start::{closure#1}, ()>",
+          "samples": 248,
+          "sample_percent": 69.08077994428969
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<sl7::staging::background::start::{closure#1}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 235,
+          "sample_percent": 65.45961002785515
+        },
+        {
+          "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#0}>",
+          "samples": 212,
+          "sample_percent": 59.05292479108635
+        },
+        {
+          "symbol": "sha2::sha256::x86::digest_blocks",
+          "samples": 113,
+          "sample_percent": 31.47632311977716
+        },
+        {
+          "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
+          "samples": 106,
+          "sample_percent": 29.526462395543174
+        },
+        {
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "samples": 106,
+          "sample_percent": 29.526462395543174
+        },
+        {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 106,
+          "sample_percent": 29.526462395543174
+        },
+        {
+          "symbol": "<fuser::request::RequestWithSender>::dispatch::<sl7::staging::StagingFs>",
+          "samples": 105,
+          "sample_percent": 29.24791086350975
+        },
+        {
+          "symbol": "sqlite3_step",
+          "samples": 67,
+          "sample_percent": 18.662952646239553
+        },
+        {
+          "symbol": "sqlite3VdbeExec",
+          "samples": 66,
+          "sample_percent": 18.384401114206128
+        },
+        {
+          "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+          "samples": 60,
+          "sample_percent": 16.71309192200557
+        },
+        {
+          "symbol": "sl7::chunk::identity",
+          "samples": 55,
+          "sample_percent": 15.32033426183844
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+          "samples": 35,
+          "sample_percent": 9.749303621169917
+        },
+        {
+          "symbol": "<sl7::live::Live>::record",
+          "samples": 34,
+          "sample_percent": 9.470752089136491
+        },
+        {
+          "symbol": "<rusqlite::row::Rows>::get_expected_row",
+          "samples": 33,
+          "sample_percent": 9.192200557103064
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+          "samples": 30,
+          "sample_percent": 8.356545961002785
+        },
+        {
+          "symbol": "sqlite3BtreeIndexMoveto",
+          "samples": 29,
+          "sample_percent": 8.07799442896936
+        },
+        {
+          "symbol": "getPageNormal",
+          "samples": 27,
+          "sample_percent": 7.520891364902507
+        },
+        {
+          "symbol": "getAndInitPage",
+          "samples": 27,
+          "sample_percent": 7.520891364902507
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::execute_with_bound_parameters",
+          "samples": 27,
+          "sample_percent": 7.520891364902507
+        },
+        {
+          "symbol": "<sl7::live::Live>::publish_seal",
+          "samples": 27,
+          "sample_percent": 7.520891364902507
+        },
+        {
+          "symbol": "<sl7::store::Store>::publish_import",
+          "samples": 27,
+          "sample_percent": 7.520891364902507
+        },
+        {
+          "symbol": "<sl7::live::Live>::read",
+          "samples": 25,
+          "sample_percent": 6.963788300835654
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::query_row::<bool, [&[u8]; 1], sl7::store::prepare_import<sl7::staging::background::run::{closure#0}>::{closure#0}>",
+          "samples": 24,
+          "sample_percent": 6.685236768802229
+        },
+        {
+          "symbol": "<sl7::staging::State>::attr",
+          "samples": 23,
+          "sample_percent": 6.406685236768802
+        },
+        {
+          "symbol": "<sl7::staging::State>::lookup",
+          "samples": 20,
+          "sample_percent": 5.571030640668524
+        },
+        {
+          "symbol": "<rusqlite::statement::Statement>::query_row::<(i64, core::option::Option<i64>, core::option::Option<alloc::string::String>), [i64; 1], <sl7::live::Live>::record::{closure#0}>",
+          "samples": 19,
+          "sample_percent": 5.2924791086350975
+        },
+        {
+          "symbol": "<sl7::store::Store>::read_file_mode",
+          "samples": 19,
+          "sample_percent": 5.2924791086350975
+        },
+        {
+          "symbol": "<sl7::pack::Writer>::add",
+          "samples": 19,
+          "sample_percent": 5.2924791086350975
+        },
+        {
+          "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+          "samples": 17,
+          "sample_percent": 4.735376044568246
+        },
+        {
+          "symbol": "readDbPage",
+          "samples": 16,
+          "sample_percent": 4.456824512534819
+        },
+        {
+          "symbol": "zstd::bulk::compress",
+          "samples": 16,
+          "sample_percent": 4.456824512534819
+        },
+        {
+          "symbol": "ZSTD_compress2",
+          "samples": 15,
+          "sample_percent": 4.178272980501393
+        },
+        {
+          "symbol": "<zstd::bulk::compressor::Compressor>::compress",
+          "samples": 15,
+          "sample_percent": 4.178272980501393
+        },
+        {
+          "symbol": "sqlite3VdbeHalt",
+          "samples": 14,
+          "sample_percent": 3.8997214484679668
+        },
+        {
+          "symbol": "ZSTD_compressStream_generic",
+          "samples": 14,
+          "sample_percent": 3.8997214484679668
+        },
+        {
+          "symbol": "ZSTD_compress_frameChunk",
+          "samples": 14,
+          "sample_percent": 3.8997214484679668
+        },
+        {
+          "symbol": "ZSTD_compressEnd_public",
+          "samples": 14,
+          "sample_percent": 3.8997214484679668
+        },
+        {
+          "symbol": "ZSTD_compressBlock_internal",
+          "samples": 14,
+          "sample_percent": 3.8997214484679668
+        },
+        {
+          "symbol": "<sl7::live::Live>::sealed",
+          "samples": 13,
+          "sample_percent": 3.6211699164345403
+        },
+        {
+          "symbol": "pread64",
+          "samples": 13,
+          "sample_percent": 3.6211699164345403
+        },
+        {
+          "symbol": "unixRead",
+          "samples": 13,
+          "sample_percent": 3.6211699164345403
+        },
+        {
+          "symbol": "core::ptr::drop_glue::<rusqlite::row::Rows>",
+          "samples": 12,
+          "sample_percent": 3.3426183844011144
+        },
+        {
+          "symbol": "sl7::live::id",
+          "samples": 11,
+          "sample_percent": 3.064066852367688
+        },
+        {
+          "symbol": "<sl7::staging::State>::child",
+          "samples": 11,
+          "sample_percent": 3.064066852367688
+        },
+        {
+          "symbol": "sqlite3_reset",
+          "samples": 11,
+          "sample_percent": 3.064066852367688
+        },
+        {
+          "symbol": "pcache1Fetch",
+          "samples": 11,
+          "sample_percent": 3.064066852367688
+        }
+      ],
+      "sample_categories": {
+        "other": 78,
+        "sealing": 251,
+        "mounted_read": 30
+      },
+      "sha256_leaf_by_category": {},
+      "note": "Unweighted sample counts at requested 99 Hz; inclusive percentages overlap."
+    },
+    "edit-2-profile-io": {
+      "events": {
+        "enter": 51364,
+        "exit": 51364
+      },
+      "incomplete": {
+        "missing_exit": 0
+      },
+      "errors": {},
+      "operations": {
+        "background/fsync": {
+          "count": 78,
+          "sum_seconds": 3.810462270863354,
+          "median_seconds": 0.005093148443847895,
+          "p95_seconds": 0.01855855342000723,
+          "p99_seconds": 3.2477667592465878,
+          "max_seconds": 3.2477667592465878
+        },
+        "background/pwrite64": {
+          "count": 40083,
+          "sum_seconds": 0.0589472483843565,
+          "median_seconds": 1.473352313041687e-06,
+          "p95_seconds": 2.2454187273979187e-06,
+          "p99_seconds": 3.0156224966049194e-06,
+          "max_seconds": 4.710908979177475e-05
+        },
+        "foreground/fsync": {
+          "count": 1134,
+          "sum_seconds": 5.491642105393112,
+          "median_seconds": 0.00508125638589263,
+          "p95_seconds": 0.005365007556974888,
+          "p99_seconds": 0.006790590472519398,
+          "max_seconds": 0.019665908999741077
+        },
+        "foreground/pwrite64": {
+          "count": 10069,
+          "sum_seconds": 0.5347131239250302,
+          "median_seconds": 7.604248821735382e-06,
+          "p95_seconds": 0.00031578168272972107,
+          "p99_seconds": 0.0005489587783813477,
+          "max_seconds": 0.0012959297746419907
+        }
+      },
+      "note": "Per-thread syscall durations include scheduling and I/O waits; concurrent totals overlap."
+    },
+    "edit-3-profile-io": {
+      "events": {
+        "enter": 44417,
+        "exit": 44417
+      },
+      "incomplete": {
+        "missing_exit": 0
+      },
+      "errors": {},
+      "operations": {
+        "background/fsync": {
+          "count": 78,
+          "sum_seconds": 4.174063913524151,
+          "median_seconds": 0.005182881839573383,
+          "p95_seconds": 0.1604909412562847,
+          "p99_seconds": 2.4230130026116967,
+          "max_seconds": 2.4230130026116967
+        },
+        "background/pwrite64": {
+          "count": 31967,
+          "sum_seconds": 0.04759474750608206,
+          "median_seconds": 1.4416873455047607e-06,
+          "p95_seconds": 2.3050233721733093e-06,
+          "p99_seconds": 4.248693585395813e-06,
+          "max_seconds": 4.898197948932648e-05
+        },
+        "foreground/fsync": {
+          "count": 1137,
+          "sum_seconds": 7.746733129955828,
+          "median_seconds": 0.0043593719601631165,
+          "p95_seconds": 0.005943171679973602,
+          "p99_seconds": 0.0806290889158845,
+          "max_seconds": 0.1444963440299034
+        },
+        "foreground/pwrite64": {
+          "count": 11235,
+          "sum_seconds": 0.493687829002738,
+          "median_seconds": 5.1995739340782166e-06,
+          "p95_seconds": 0.00029208697378635406,
+          "p99_seconds": 0.0004316093400120735,
+          "max_seconds": 0.0008760225027799606
+        }
+      },
+      "note": "Per-thread syscall durations include scheduling and I/O waits; concurrent totals overlap."
+    }
+  },
+  "raw_archive_sha256": "c51d946c470deb813926dd799a98dce13c716a649a058381a14e7a102b53ae20",
+  "limitations": [
+    "CPU samples omit off-CPU waits.",
+    "Per-thread syscall durations overlap; do not subtract them from wall time.",
+    "Foreground syscall totals include both FUSE callbacks and internal storage work.",
+    "This kernel lacks FUSE request tracepoints.",
+    "Profile timings are instrumented and are not the matched benchmark."
+  ]
+}

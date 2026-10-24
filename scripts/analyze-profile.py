@@ -144,20 +144,62 @@ def cpu(path):
                 note='Unweighted sample counts at requested 99 Hz; inclusive percentages overlap.')
 
 
+def io_latencies(path):
+    """Pair owned-daemon syscall events by TID; attachment can cut boundary calls."""
+    pattern = re.compile(r'^\s*(\S+)\s+(\d+)\s+([\d.]+):\s+syscalls:sys_(enter|exit)_(fsync|fdatasync|pwrite64):\s*(.*)')
+    pending = {}
+    durations = defaultdict(list)
+    errors = Counter()
+    incomplete = Counter()
+    events = Counter()
+    for line in path.read_text().splitlines():
+        if not line.strip() or line.startswith('#'):
+            continue
+        match = pattern.match(line)
+        assert match, ('unparsed I/O event', line)
+        comm, tid, timestamp, phase, operation, detail = match.groups()
+        timestamp = float(timestamp)
+        group = 'foreground' if comm.startswith('fuser-') else 'background' if comm=='sl7-pack' else comm
+        events[phase] += 1
+        if phase == 'enter':
+            assert tid not in pending, ('overlapping syscalls in one thread', tid)
+            pending[tid] = (timestamp, operation, group)
+        elif tid not in pending:
+            incomplete['missing_enter'] += 1
+        else:
+            started, expected, group = pending.pop(tid)
+            assert expected == operation and timestamp >= started
+            durations[group+'/'+operation].append(timestamp-started)
+            result = re.search(r'\bret[:=]\s*(-?(?:0x)?[0-9a-fA-F]+)\b', detail)
+            if result is None:
+                # perf's syscall pretty-printer emits a bare return value.
+                result = re.fullmatch(r'\s*(-?(?:0x)?[0-9a-fA-F]+)\s*', detail)
+            assert result, ('missing syscall return value', line)
+            value = int(result[1], 16 if '0x' in result[1] else 10)
+            if value < 0 or value >= 2**63:
+                errors[group+'/'+operation] += 1
+    incomplete['missing_exit'] = len(pending)
+    return dict(events=events, incomplete=incomplete, errors=errors,
+                operations={key:distribution(values) for key,values in sorted(durations.items())},
+                note='Per-thread syscall durations include scheduling and I/O waits; concurrent totals overlap.')
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('directory',type=Path)
     args=parser.parse_args()
     output={}
     for path in args.directory.glob('*-report.txt'):
-        if '-cpu-' in path.name or '-fuse-' in path.name:
+        if any(kind in path.name for kind in ('-cpu-', '-fuse-', '-io-')):
             assert '# Total Lost Samples: 0' in path.read_text(), ('lost samples', path)
     for path in sorted(args.directory.glob('*-fuse.txt')):
         output[path.stem]=fuse(path)
     for path in sorted(args.directory.glob('*-cpu.txt')):
         output[path.stem]=cpu(path)
+    for path in sorted(args.directory.glob('*-io.txt')):
+        output[path.stem]=io_latencies(path)
     (args.directory/'analysis.json').write_text(json.dumps(output,indent=2)+'\n')
-    print(json.dumps({k:v.get('samples',v.get('complete_requests')) for k,v in output.items()},indent=2))
+    print(json.dumps({k:v.get('samples', v.get('complete_requests', v.get('events'))) for k,v in output.items()},indent=2))
 
 
 if __name__=='__main__':
