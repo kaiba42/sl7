@@ -119,6 +119,18 @@ outside the filesystem mutex, validating their mutation epoch before publication
 Catalog commits remain serialized. Set `SL7_SEAL_WORKERS=1` for serial sealing;
 values from 1 through 8 are supported. More workers do not necessarily reduce build
 time; see the [worker comparison](validation/parallel-sealing.md).
+
+For experimental overlap within large files, start the mount with
+`SL7_IMPORT_PIPELINE=1` (default `0`). Files at least 16 MiB use a producer thread
+for reading, chunking, and whole-file hashing while the sealing worker hashes
+chunks, checks for duplicates, compresses, and writes packs. Each worker queues
+at most two batches of 16 chunks (1 MiB of queued payload, plus producer and
+consumer batches). Small files and offline `put` imports remain sequential.
+This consumes additional CPU and does not guarantee faster Cargo builds.
+With `SL7_CACHE_STATS=1`, the unmount report includes `import_pipeline` and
+`pipelined_prepares`; the latter counts attempted preparations, including canceled
+ones. Cancellation closes the queue and joins the producer before returning.
+
 Operations on the publishing inode wait; unrelated reads and native writes can
 continue through the four request workers.
 Normal unmount drains pending sealing. Reads reconstruct concurrently outside the

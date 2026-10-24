@@ -87,6 +87,7 @@ pub(crate) struct PreparedImport {
 pub(crate) struct Packer {
     root: PathBuf,
     db: Connection,
+    import_mode: crate::import_stream::Mode,
 }
 #[cfg(all(feature = "fuse", target_os = "linux"))]
 impl Packer {
@@ -99,7 +100,14 @@ impl Packer {
         Ok(Self {
             root: root.to_path_buf(),
             db,
+            import_mode: crate::import_stream::Mode::from_env()?,
         })
+    }
+    pub(crate) fn pipeline_enabled(&self) -> bool {
+        self.import_mode.enabled()
+    }
+    pub(crate) fn pipeline_prepares(&self) -> u64 {
+        self.import_mode.started()
     }
     pub fn prepare(&self, source: &Path, canceled: impl Fn() -> bool) -> Result<PreparedImport> {
         use std::os::unix::fs::OpenOptionsExt;
@@ -107,7 +115,14 @@ impl Packer {
             .read(true)
             .custom_flags(libc::O_NOATIME)
             .open(source)?;
-        prepare_import(&self.root, &self.db, &file, pack::LIMIT, canceled)
+        prepare_import_mode(
+            &self.root,
+            &self.db,
+            &file,
+            pack::LIMIT,
+            canceled,
+            &self.import_mode,
+        )
     }
 }
 
@@ -668,13 +683,46 @@ fn prepare_import(
     pack_limit: u64,
     canceled: impl Fn() -> bool,
 ) -> Result<PreparedImport> {
+    prepare_import_mode(
+        root,
+        db,
+        file,
+        pack_limit,
+        canceled,
+        &crate::import_stream::Mode::disabled(),
+    )
+}
+fn prepare_import_mode(
+    root: &Path,
+    db: &Connection,
+    file: &File,
+    pack_limit: u64,
+    canceled: impl Fn() -> bool,
+    mode: &crate::import_stream::Mode,
+) -> Result<PreparedImport> {
     let before = file.metadata()?;
     if !before.is_file() {
         return Err(Error::Invalid("source is not a regular file".into()));
     }
+    if mode.start_for(before.len()) {
+        crate::import_stream::with_pipeline(BufReader::new(file), |chunks| {
+            prepare_chunks(root, db, file, pack_limit, canceled, &before, chunks)
+        })
+    } else {
+        let mut chunks = crate::import_stream::Serial::new(BufReader::new(file));
+        prepare_chunks(root, db, file, pack_limit, canceled, &before, &mut chunks)
+    }
+}
+fn prepare_chunks(
+    root: &Path,
+    db: &Connection,
+    file: &File,
+    pack_limit: u64,
+    canceled: impl Fn() -> bool,
+    before: &std::fs::Metadata,
+    chunks: &mut impl crate::import_stream::Chunks,
+) -> Result<PreparedImport> {
     // Quiescent sources only: these checks detect common races, not arbitrary external writers.
-    let mut chunker = chunk::Chunker::new(BufReader::new(file));
-    let mut digest = Sha256::new();
     let mut extents: Vec<(u64, Hash)> = Vec::new();
     let mut seen = HashSet::new();
     let mut locations = Vec::new();
@@ -684,11 +732,10 @@ fn prepare_import(
     let mut offset = 0_u64;
     let mut exists_query =
         db.prepare_cached("SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)")?;
-    while let Some(bytes) = chunker.next_chunk()? {
+    while let Some(bytes) = chunks.next_chunk()? {
         if canceled() {
             return Err(Error::SourceChanged("sealing candidate canceled".into()));
         }
-        digest.update(&bytes);
         let hash = chunk::identity(&bytes);
         let exists: bool = exists_query.query_row([hash.as_slice()], |r| r.get(0))?;
         if !exists && seen.insert(hash) {
@@ -716,6 +763,7 @@ fn prepare_import(
             return Err(Error::Invalid("source exceeds catalog length limit".into()));
         }
     }
+    let digest = chunks.finish()?;
     let after = file.metadata()?;
     if before.len() != after.len() {
         return Err(Error::SourceChanged(format!(
@@ -739,7 +787,6 @@ fn prepare_import(
         locations.extend(locs);
     }
     // Packs and directory entries are durable before any reference is committed.
-    let digest: Hash = digest.finalize().into();
     Ok(PreparedImport {
         size: offset,
         digest,
@@ -996,6 +1043,91 @@ mod tests {
             );
         }
         store.check()?;
+        Ok(())
+    }
+
+    #[test]
+    fn pipelined_imports_match_serial_packs_and_survive_cancellation() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let source = temp.path().join("input");
+        let mut seed = 42_u64;
+        let block: Vec<u8> = (0..256 * 1024)
+            .map(|_| {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                seed as u8
+            })
+            .collect();
+        let original = block.repeat(65);
+        let mut edited = original.clone();
+        let changed = edited.len() / 2 + 123;
+        edited[changed] ^= 1;
+        let mut snapshots = Vec::new();
+        for (index, mode) in [
+            crate::import_stream::Mode::disabled(),
+            crate::import_stream::Mode::enabled_for_test(),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let root = temp.path().join(format!("store-{index}"));
+            let mut store = Store::init(&root)?;
+            let mut reports = Vec::new();
+            for (name, bytes) in [("original", &original), ("edited", &edited)] {
+                fs::write(&source, bytes)?;
+                let prepared = prepare_import_mode(
+                    &root,
+                    &store.db,
+                    &File::open(&source)?,
+                    65536,
+                    || false,
+                    &mode,
+                )?;
+                let report = store.publish_import("main", name, prepared)?;
+                assert_eq!(report.file.sha256, hex(&Sha256::digest(bytes)));
+                assert_eq!(
+                    store.read("main", name, changed as u64 - 32, 64)?,
+                    bytes[changed - 32..changed + 32]
+                );
+                reports.push(serde_json::to_value(report).unwrap());
+            }
+            assert_eq!(mode.started(), if index == 0 { 0 } else { 2 });
+            store.check()?;
+            let mut packs = fs::read_dir(root.join("packs"))?
+                .map(|entry| {
+                    let entry = entry?;
+                    Ok((entry.file_name(), fs::read(entry.path())?))
+                })
+                .collect::<std::io::Result<Vec<_>>>()?;
+            packs.sort();
+            assert!(packs.len() > 1, "pack rollover was not exercised");
+            snapshots.push((reports, packs));
+        }
+        assert_eq!(snapshots[0], snapshots[1]);
+
+        let root = temp.path().join("canceled");
+        let mut store = Store::init(&root)?;
+        let calls = std::cell::Cell::new(0);
+        let mode = crate::import_stream::Mode::enabled_for_test();
+        let result = prepare_import_mode(
+            &root,
+            &store.db,
+            &File::open(&source)?,
+            65536,
+            || {
+                calls.set(calls.get() + 1);
+                calls.get() >= 40
+            },
+            &mode,
+        );
+        assert!(matches!(result, Err(Error::SourceChanged(_))));
+        assert_eq!(mode.started(), 1);
+        assert_eq!(store.check()?.files, 0);
+        assert_eq!(store.stats()?.temporary_bytes, 0);
+        let collected = store.compact()?;
+        assert_eq!(collected.stats.orphan_pack_bytes, 0);
+        assert_eq!(collected.stats.unique_chunks, 0);
         Ok(())
     }
     #[test]

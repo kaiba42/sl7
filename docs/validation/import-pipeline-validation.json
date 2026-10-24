@@ -1,0 +1,67 @@
+{
+  "runtime_base_commit": "5e7efe258906d2cb7aa277dce12e9db3c7cc2753",
+  "source_sha256": {
+    "src/import_stream.rs": "3ad6a13f2ee8c3da66583283ba47c8925394a2f63b4a5ae615753fadcddad49d",
+    "src/lib.rs": "9f6ab499a3caa24df00bb6b632806ea2062c87443918a593f50b9e05da7c143f",
+    "src/store.rs": "be2c3ef15f2d84af1e387c8683202166e1e6002dbd3404260359fd553bd9afb1",
+    "src/staging/background.rs": "9c90e810329346955a54888c6ed7e0b33e96e03b0407a8043371bb4251677a09",
+    "scripts/benchmark-synkro.py": "c6e15f47dfb575a0b4c120bdf160c4c4183e0f215be9ee20565791bd76e4c2f8",
+    "scripts/pipeline-test.py": "04e1d981dec097a2eb5034d197569fe8566508666406fd982497878b4379b4fe"
+  },
+  "binary_sha256": "f3e8169338a80de80b7dc091b1cefd37c14ca506883dd7b6691cfdf7b69af7ac",
+  "platform": "x86_64-unknown-linux-gnu",
+  "node": "middle",
+  "linux_tests": 80,
+  "host_tests": 43,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "large_file_modes": {
+    "off": {
+      "status": "passed",
+      "pipeline": false,
+      "pipelined_prepares": 0,
+      "bytes_per_file": 20971520,
+      "checks": [
+        "cold reconstruction",
+        "mmap outlives descriptor",
+        "mutation then reseal",
+        "fsync then daemon death",
+        "remount recovery",
+        "store integrity and GC"
+      ]
+    },
+    "on": {
+      "status": "passed",
+      "pipeline": true,
+      "pipelined_prepares": 3,
+      "bytes_per_file": 20971520,
+      "checks": [
+        "cold reconstruction",
+        "mmap outlives descriptor",
+        "mutation then reseal",
+        "fsync then daemon death",
+        "remount recovery",
+        "store integrity and GC"
+      ]
+    }
+  },
+  "report_sha256": {
+    "off.json": "b2b4084523ed9e57df68d6a58b31ab73fa54fa5f31a8900a8ca837a468907881",
+    "mounted.json": "91c33873a61dd48b11d99b29b16599a8c603af42bf847018757d4f1820dfce34",
+    "on.json": "61a130ed8a424d0c12ae7072c9cd65d875dab128b6e02dc1417645489c52862e"
+  },
+  "default": "disabled; opt in with SL7_IMPORT_PIPELINE=1",
+  "threshold_bytes": 16777216,
+  "queued_payload_bound_bytes": 1048576,
+  "memory_note": "The queue bound excludes one producer and one consumer batch, chunker read-ahead, extents, compression state and existing store caches.",
+  "design": "Each sealing worker can spawn one scoped producer for reading, chunking and whole-file SHA-256. The existing worker performs chunk hashing, duplicate queries, compression and pack writes. Two queued batches of 16 chunks bound read-ahead. Small files and offline imports stay sequential.",
+  "correctness": "Serial and pipeline imports produce identical manifests, chunk identities and pack bytes, including rollover and edits. Producer I/O errors and panics cannot publish a manifest. Backpressured cancellation and premature finish join without deadlock. Existing source metadata and epoch checks and durable pack-before-catalog ordering remain.",
+  "benchmark": "pending",
+  "profile": "pending"
+}

@@ -28,6 +28,8 @@ pub(super) struct Workers(Vec<JoinHandle<()>>);
 
 #[derive(Default, Serialize)]
 pub(super) struct Stats {
+    import_pipeline: bool,
+    pipelined_prepares: u64,
     workers: usize,
     active_seals: usize,
     max_parallel_seals: usize,
@@ -192,6 +194,9 @@ pub(super) fn start(
             .map_err(|_| io::Error::other("poisoned filesystem state"))?;
         state.wake = Some(Arc::clone(&wake));
         state.seal_stats.workers = connections.len();
+        state.seal_stats.import_pipeline = connections
+            .first()
+            .is_some_and(|(packer, _)| packer.pipeline_enabled());
     }
     let mut workers = Workers(Vec::new());
     for (index, (packer, publisher)) in connections.into_iter().enumerate() {
@@ -349,6 +354,7 @@ fn run(
                 .max(state.seal_stats.active_prepares);
         }
         let started = Instant::now();
+        let pipelines_before = packer.pipeline_prepares();
         let prepared = packer.prepare(&fd_path(&job.pin), || {
             job.epoch.load(Ordering::Relaxed) != job.version
         });
@@ -358,6 +364,7 @@ fn run(
                 return;
             };
             state.seal_stats.active_prepares -= 1;
+            state.seal_stats.pipelined_prepares += packer.pipeline_prepares() - pipelines_before;
         }
         #[cfg(test)]
         if let Some((ready, resume)) = prepare_pause {

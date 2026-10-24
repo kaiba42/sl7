@@ -1,6 +1,7 @@
 //! Shared artifact storage, exact range reconstruction, and optional FUSE mounts.
 mod chunk;
 mod gc;
+mod import_stream;
 pub use gc::GcReport;
 #[cfg(all(feature = "fuse", target_os = "linux"))]
 pub mod live;
