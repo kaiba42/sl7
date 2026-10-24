@@ -158,6 +158,16 @@ The [matched build comparison](validation/compression-costs.md) found essentiall
 unchanged Cargo latency (about 0.4% slower medians) and mixed settling costs.
 The pool stays disabled by default; measured concurrency alone is not a speedup.
 
+Sealing diagnostics also count `chunk_hash_bytes` and
+`canceled_chunk_hash_bytes`, plus canceled preparation time. These measure bytes
+that actually passed through chunk identity hashing; they exclude whole-file and
+pack hashing and producer read-ahead. `canceled_after_reopen` counts cancellation
+with an unchanged mutation epoch but outstanding handles/leases;
+`canceled_after_mutation` takes precedence when the epoch changed. The latter
+includes namespace/metadata changes, not just content writes. Corresponding
+`reopened_chunk_hash_bytes` and `mutated_chunk_hash_bytes` identify how much work
+was discarded, rather than treating every canceled seal as equally expensive.
+
 Operations on the publishing inode wait; unrelated reads and native writes can
 continue through the four request workers.
 Normal unmount drains pending sealing. Reads reconstruct concurrently outside the

@@ -1,0 +1,26 @@
+{
+  "runtime_base_commit": "a33846b7daaf9a0558617aede2fb0d656a5c9f7d",
+  "source_sha256": {
+    "src/import_stream.rs": "4f5c5a1b93de486070409ddb06ee234471238d99e85ff489702a7a3b47d8811c",
+    "src/store.rs": "fcd88662ca23e8b06e16e399820ffed5076c2df9825271830b327c556803a188",
+    "src/staging/background.rs": "36f3865d5fae49f74b328ca403f0600ed45b3b01b31680d3a9e0028020617618"
+  },
+  "binary_sha256": "7ca855f511e594faf34a16f06b2f4435e0cc4c1d3db8ef245f462eca027c55d4",
+  "linux_tests": 85,
+  "host_tests": 47,
+  "python_tests": 11,
+  "strict_clippy": "passed",
+  "mounted_status": "passed",
+  "verified_mounted_chunk_hash_bytes": 20971520,
+  "tests": [
+    "Read-only reopen records a fully hashed discarded preparation.",
+    "Mutation records discarded bytes; dropping the mount still drains the replacement generation.",
+    "Mounted 20 MiB file hashes exactly 20 MiB and records no canceled bytes."
+  ],
+  "limitations": [
+    "Counters observe existing behavior; this change does not optimize sealing.",
+    "Mutation classification includes namespace and metadata changes.",
+    "Preparation time is cumulative elapsed service time, not CPU time or added Cargo latency.",
+    "Bytes count chunk identity hashing, not file/pack hashing or producer prefetch."
+  ]
+}

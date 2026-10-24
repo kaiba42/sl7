@@ -40,6 +40,13 @@ pub(super) struct Stats {
     max_parallel_prepares: usize,
     completed: u64,
     canceled: u64,
+    chunk_hash_bytes: u64,
+    canceled_chunk_hash_bytes: u64,
+    canceled_prepare_seconds: f64,
+    canceled_after_reopen: u64,
+    reopened_chunk_hash_bytes: u64,
+    canceled_after_mutation: u64,
+    mutated_chunk_hash_bytes: u64,
     skipped: u64,
     unchanged_seals_avoided: u64,
     errors: u64,
@@ -112,6 +119,24 @@ impl State {
             "stopping": self.stopping,
             "sealing": self.seal_stats,
         })
+    }
+
+    fn canceled_prepare(&mut self, job: &Job, seconds: f64, bytes: u64) {
+        let stats = &mut self.seal_stats;
+        stats.canceled += 1;
+        stats.canceled_chunk_hash_bytes += bytes;
+        stats.canceled_prepare_seconds += seconds;
+        if let Some(node) = self.nodes.get(&job.ino) {
+            // Prefer mutation when both causes are present. An unchanged epoch
+            // plus open leases/handles distinguishes read-only interference.
+            if node.epoch.load(Ordering::Relaxed) != job.version {
+                stats.canceled_after_mutation += 1;
+                stats.mutated_chunk_hash_bytes += bytes;
+            } else if node.opens != 0 {
+                stats.canceled_after_reopen += 1;
+                stats.reopened_chunk_hash_bytes += bytes;
+            }
+        }
     }
 
     pub(super) fn schedule_seal(&mut self, ino: INodeNo) {
@@ -382,17 +407,20 @@ fn run(
                 .max(state.seal_stats.active_prepares);
         }
         let started = Instant::now();
+        let hash_bytes_before = packer.chunk_hash_bytes();
         let pipelines_before = packer.pipeline_prepares();
         let compressed_before = packer.compression_stats().2;
         let prepared = packer.prepare(&fd_path(&job.pin), || {
             job.epoch.load(Ordering::Relaxed) != job.version
         });
         let elapsed = started.elapsed().as_secs_f64();
+        let hash_bytes = packer.chunk_hash_bytes() - hash_bytes_before;
         {
             let Ok(mut state) = state.lock() else {
                 return;
             };
             state.seal_stats.active_prepares -= 1;
+            state.seal_stats.chunk_hash_bytes += hash_bytes;
             let (_, peak, compressed) = packer.compression_stats();
             state.seal_stats.max_parallel_compression_per_sealer = state
                 .seal_stats
@@ -425,11 +453,11 @@ fn run(
             let prepared = match prepared {
                 Ok(prepared) if valid => Some(prepared),
                 Ok(_) | Err(crate::Error::SourceChanged(_)) => {
-                    state.seal_stats.canceled += 1;
+                    state.canceled_prepare(&job, elapsed, hash_bytes);
                     None
                 }
                 Err(_) if !valid => {
-                    state.seal_stats.canceled += 1;
+                    state.canceled_prepare(&job, elapsed, hash_bytes);
                     None
                 }
                 Err(error) => {
@@ -1243,7 +1271,23 @@ mod tests {
         resume.send(()).unwrap();
         client.join().unwrap();
         concurrent.expect("packing held the filesystem lock");
+        let observed_state = Arc::clone(&fs.state);
         drop(fs); // joins the worker and seals the replacement generation
+        {
+            let state = observed_state.lock().unwrap();
+            assert_eq!(state.seal_stats.canceled_after_mutation, 1);
+            assert_eq!(state.seal_stats.canceled_after_reopen, 0);
+            assert_eq!(
+                state.seal_stats.mutated_chunk_hash_bytes,
+                original.len() as u64
+            );
+            assert_eq!(
+                state.seal_stats.canceled_chunk_hash_bytes,
+                original.len() as u64
+            );
+            assert_eq!(state.seal_stats.chunk_hash_bytes, 2 * original.len() as u64);
+        }
+        drop(observed_state);
         let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
         let file = File::open(root.join("tree/data")).unwrap();
         let mut expected = original;
@@ -1291,6 +1335,11 @@ mod tests {
             s.handle(ino, fh)?.file.read_exact_at(&mut actual, 0)?;
             assert_eq!(actual, bytes);
             assert_eq!(s.seal_stats.canceled, 1);
+            assert_eq!(s.seal_stats.canceled_after_reopen, 1);
+            assert_eq!(s.seal_stats.canceled_after_mutation, 0);
+            assert_eq!(s.seal_stats.reopened_chunk_hash_bytes, bytes.len() as u64);
+            assert_eq!(s.seal_stats.canceled_chunk_hash_bytes, bytes.len() as u64);
+            assert_eq!(s.seal_stats.chunk_hash_bytes, bytes.len() as u64);
             s.release(ino, fh)
         })
         .unwrap();

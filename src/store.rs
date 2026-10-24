@@ -106,6 +106,9 @@ impl Packer {
     pub(crate) fn pipeline_enabled(&self) -> bool {
         self.import_mode.enabled()
     }
+    pub(crate) fn chunk_hash_bytes(&self) -> u64 {
+        self.import_mode.chunk_hash_bytes.get()
+    }
     pub(crate) fn compression_stats(&self) -> (usize, usize, usize) {
         self.import_mode.encoder.borrow().stats()
     }
@@ -711,11 +714,27 @@ fn prepare_import_mode(
     let mut output = crate::compression::Packs::new(root, pack_limit, &mut encoder, before.len());
     if mode.start_for(before.len()) {
         crate::import_stream::with_pipeline(BufReader::new(file), |chunks| {
-            prepare_chunks(db, file, canceled, &before, chunks, &mut output)
+            prepare_chunks(
+                db,
+                file,
+                canceled,
+                &before,
+                chunks,
+                &mut output,
+                &mode.chunk_hash_bytes,
+            )
         })
     } else {
         let mut chunks = crate::import_stream::Serial::new(BufReader::new(file));
-        prepare_chunks(db, file, canceled, &before, &mut chunks, &mut output)
+        prepare_chunks(
+            db,
+            file,
+            canceled,
+            &before,
+            &mut chunks,
+            &mut output,
+            &mode.chunk_hash_bytes,
+        )
     }
 }
 fn prepare_chunks(
@@ -725,6 +744,7 @@ fn prepare_chunks(
     before: &std::fs::Metadata,
     chunks: &mut impl crate::import_stream::Chunks,
     output: &mut crate::compression::Packs<'_>,
+    chunk_hash_bytes: &std::cell::Cell<u64>,
 ) -> Result<PreparedImport> {
     // Quiescent sources only: these checks detect common races, not arbitrary external writers.
     let mut extents: Vec<(u64, Hash)> = Vec::new();
@@ -737,6 +757,7 @@ fn prepare_chunks(
             return Err(Error::SourceChanged("sealing candidate canceled".into()));
         }
         let hash = chunk::identity(&bytes);
+        chunk_hash_bytes.set(chunk_hash_bytes.get().saturating_add(bytes.len() as u64));
         let exists: bool = exists_query.query_row([hash.as_slice()], |r| r.get(0))?;
         let len = bytes.len() as u64;
         if !exists && seen.insert(hash) {

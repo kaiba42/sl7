@@ -20,6 +20,7 @@ pub(crate) struct Mode {
     enabled: bool,
     pub(crate) encoder: RefCell<crate::compression::Encoder>,
     started: Cell<u64>,
+    pub(crate) chunk_hash_bytes: Cell<u64>,
 }
 impl Mode {
     pub(crate) fn disabled() -> Self {
@@ -30,6 +31,7 @@ impl Mode {
             enabled,
             encoder: RefCell::new(crate::compression::Encoder::new(0)),
             started: Cell::new(0),
+            chunk_hash_bytes: Cell::new(0),
         }
     }
     #[cfg(all(feature = "fuse", target_os = "linux"))]
