@@ -1,0 +1,26 @@
+{
+  "runtime_base_commit": "4db4330199a3b29003a9f748ac8f9239c134b66d",
+  "source_sha256": {
+    "src/live.rs": "9e0c0f5f0692e4a8ce658f139e74c7e693ad091e5714fc3cb25f8ef02cad299c",
+    "src/staging.rs": "9e2a100ba66ef247bd49918e3df153efd6bb96b79d50ccc560fa87d90adfe0f9",
+    "src/staging/background.rs": "68ffabd8a0a8e34970b83bc96ad36ff60ea0ab8cf0528c05cefc0161bd86b929"
+  },
+  "binary_sha256": "2a9a8e481167903f4f979aeea6c80cfad606347e19b6ae9cb646ac3bfad15958",
+  "platform": "x86_64-unknown-linux-gnu",
+  "node": "middle",
+  "linux_tests": 73,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "negative_control": "Retaining the catalog writer through the identity pause fails the second-worker progress assertion; the restored implementation passes.",
+  "durability": "Reserve rows in a FULL transaction before assigning the inode xattr; sync the inode before publication. Only reservation holds the catalog permit; native identity I/O and read-only candidate setup can overlap across inodes.",
+  "concurrency": "Two workers; same-inode packing exclusion and epoch validation remain. A paused identity phase permits the other worker to complete durable publication and retirement.",
+  "benchmark": "pending",
+  "profile": "pending",
+  "mounted_report_sha256": "db00881e7359f00984ba612b4e40aa9cf4cec98d147fc21f27466686c1f9af36"
+}

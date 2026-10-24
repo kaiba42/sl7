@@ -296,10 +296,9 @@ impl Live {
             .map(|sealed| self.store.read_file(&sealed.manifest, offset, size))
             .transpose()
     }
-    fn identity(&mut self, file: &File) -> Result<i64> {
-        if let Some((id, _, _)) = self.record(file)? {
-            return Ok(id);
-        }
+    /// Reserve a durable identity row. This is the only catalog-writing part of
+    /// candidate setup; mount workers serialize this call, not inode I/O.
+    pub(crate) fn allocate_identity(&mut self) -> Result<i64> {
         if self.identities.is_empty() {
             let tx = self.store.db.transaction()?;
             let mut identities = Vec::with_capacity(IDENTITY_BATCH);
@@ -317,7 +316,9 @@ impl Live {
         }
         // Consume only a durable row, before making it reachable from an inode.
         // A failed xattr write leaves an orphan; never reuse that reservation.
-        let id = self.identities.pop().unwrap();
+        Ok(self.identities.pop().unwrap())
+    }
+    fn attach_identity(file: &File, id: i64) -> Result<()> {
         let value = id.to_string();
         let path = path_c(&fd_path(file))?;
         // SAFETY: valid C strings and value bytes live for the call. CREATE avoids
@@ -337,12 +338,39 @@ impl Live {
         File::open(fd_path(file))?.sync_all()?;
         #[cfg(test)]
         crate::crash_at("live-identity-synced");
+        Ok(())
+    }
+    #[cfg(test)]
+    fn identity(&mut self, file: &File) -> Result<i64> {
+        self.identity_with(file, Self::allocate_identity)
+    }
+    fn identity_with(
+        &mut self,
+        file: &File,
+        allocate: impl FnOnce(&mut Self) -> Result<i64>,
+    ) -> Result<i64> {
+        if let Some((id, _, _)) = self.record(file)? {
+            return Ok(id);
+        }
+        let id = allocate(self)?;
+        Self::attach_identity(file, id)?;
         Ok(id)
     }
     /// Persist a new identity if needed, then plan the next generation without
     /// writing it. Publication advances the generation atomically with its label
     /// and binding; canceled preparations cannot leave a conflicting label.
     pub(crate) fn begin_seal(&mut self, file: &File) -> Result<Option<SealCandidate>> {
+        self.begin_seal_with(file, Self::allocate_identity)
+    }
+    /// The caller must exclude another seal of this inode. The allocator may
+    /// acquire the catalog writer permit; it must return only a committed row.
+    /// Read-only catalog queries, xattr assignment and inode sync run outside
+    /// that permit. Publication still waits for the inode sync to succeed.
+    pub(crate) fn begin_seal_with(
+        &mut self,
+        file: &File,
+        allocate: impl FnOnce(&mut Self) -> Result<i64>,
+    ) -> Result<Option<SealCandidate>> {
         let native = file.metadata()?;
         if !native.is_file()
             || native.nlink() == 0
@@ -356,7 +384,7 @@ impl Live {
             return Ok(None);
         }
         let metadata = self.metadata(file)?.unwrap_or(Metadata::capture(file)?);
-        let id = self.identity(file)?;
+        let id = self.identity_with(file, allocate)?;
         let generation: i64 = self.store.db.query_row(
             "SELECT generation FROM live_files WHERE id=?1",
             [id],

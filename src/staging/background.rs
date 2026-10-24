@@ -39,6 +39,9 @@ pub(super) struct Stats {
     unchanged_seals_avoided: u64,
     errors: u64,
     candidate_seconds: f64,
+    candidate_catalog_wait_seconds: f64,
+    active_candidates: usize,
+    max_parallel_candidates: usize,
     prepare_seconds: f64,
     publish_seconds: f64,
     max_publish_seconds: f64,
@@ -283,16 +286,42 @@ fn run(
             ino: job.ino,
         };
         let candidate = {
-            let Ok(_writer) = catalog_writer.lock() else {
+            let Ok(mut s) = state.lock() else {
                 return;
             };
+            s.seal_stats.active_candidates += 1;
+            s.seal_stats.max_parallel_candidates = s
+                .seal_stats
+                .max_parallel_candidates
+                .max(s.seal_stats.active_candidates);
+            drop(s);
             let started = Instant::now();
-            let candidate = publisher.begin_seal(&job.pin);
+            let mut catalog_wait = 0.0;
+            let candidate = publisher.begin_seal_with(&job.pin, |publisher| {
+                let waited = Instant::now();
+                let writer = catalog_writer
+                    .lock()
+                    .map_err(|_| crate::Error::Invalid("poisoned catalog writer".into()))?;
+                catalog_wait += waited.elapsed().as_secs_f64();
+                let id = publisher.allocate_identity();
+                drop(writer);
+                #[cfg(test)]
+                {
+                    let pause = state.lock().unwrap().identity_pause.take();
+                    if let Some((ready, resume)) = pause {
+                        let _ = ready.send(());
+                        let _ = resume.recv();
+                    }
+                }
+                id
+            });
             let seconds = started.elapsed().as_secs_f64();
             let Ok(mut state) = state.lock() else {
                 return;
             };
-            state.seal_stats.candidate_seconds += seconds;
+            state.seal_stats.active_candidates -= 1;
+            state.seal_stats.candidate_catalog_wait_seconds += catalog_wait;
+            state.seal_stats.candidate_seconds += seconds - catalog_wait;
             match candidate {
                 Ok(Some(candidate)) => candidate,
                 Ok(None) => {
@@ -584,6 +613,15 @@ mod tests {
 
     #[test]
     fn another_worker_publishes_while_first_candidate_is_paused() {
+        two_workers_progress(false);
+    }
+
+    #[test]
+    fn another_worker_publishes_before_first_identity_sync_finishes() {
+        two_workers_progress(true);
+    }
+
+    fn two_workers_progress(pause_identity: bool) {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("store");
         let fs =
@@ -597,7 +635,11 @@ mod tests {
         let (ready, prepared) = mpsc::sync_channel(1);
         let (resume, paused) = mpsc::sync_channel(1);
         fs.with(|s| {
-            s.seal_pause = Some((ready, paused));
+            if pause_identity {
+                s.identity_pause = Some((ready, paused));
+            } else {
+                s.seal_pause = Some((ready, paused));
+            }
             let ino = s.lookup(INodeNo::ROOT, OsStr::new("first"))?;
             s.entry_attr(ino)?;
             let fh = s.open(ino, libc::O_RDONLY)?;
@@ -606,7 +648,7 @@ mod tests {
         .unwrap();
         prepared.recv_timeout(Duration::from_secs(10)).unwrap();
         let second = fs
-            .with(|s| {
+            .with_read(|s| {
                 let ino = s.lookup(INodeNo::ROOT, OsStr::new("second"))?;
                 s.entry_attr(ino)?;
                 let fh = s.open(ino, libc::O_RDONLY)?;
@@ -617,7 +659,7 @@ mod tests {
         let deadline = Instant::now() + Duration::from_secs(5);
         let progressed = loop {
             let complete = fs
-                .with(|s| {
+                .with_read(|s| {
                     Ok(s.live
                         .as_ref()
                         .unwrap()
@@ -641,6 +683,10 @@ mod tests {
             assert_eq!(s.seal_stats.errors, 0);
             assert_eq!(s.seal_stats.max_parallel_seals, 2);
             assert_eq!(s.seal_stats.active_seals, 0);
+            assert_eq!(s.seal_stats.active_candidates, 0);
+            if pause_identity {
+                assert_eq!(s.seal_stats.max_parallel_candidates, 2);
+            }
             Ok(())
         })
         .unwrap();

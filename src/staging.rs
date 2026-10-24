@@ -74,6 +74,8 @@ struct State {
     #[cfg(test)]
     seal_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
     #[cfg(test)]
+    identity_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
+    #[cfg(test)]
     publish_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
     #[cfg(test)]
     retire_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
@@ -511,6 +513,8 @@ impl StagingFs {
             seal_stats: background::Stats::default(),
             #[cfg(test)]
             seal_pause: None,
+            #[cfg(test)]
+            identity_pause: None,
             #[cfg(test)]
             publish_pause: None,
             #[cfg(test)]
