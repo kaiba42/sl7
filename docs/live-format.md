@@ -27,8 +27,8 @@ Sealing, with no open handles/mappings:
 3. Acquire the catalog-writer permit, then briefly reacquire filesystem state.
    Require the same epoch and zero open handles. Discard stale work; otherwise
    mark this inode as publishing and release filesystem state.
-4. Commit the manifest and binding using SQLite WAL/FULL, then release the catalog
-   permit. The committed seal owns a pinned native descriptor and its logical
+4. Insert the manifest and live binding in one SQLite WAL/FULL transaction, then
+   release the catalog permit. The committed seal owns a pinned native descriptor and its logical
    metadata; it requires no further catalog access.
 5. Keep the inode's publication gate closed while truncating the native file,
    restoring its logical length as a sparse placeholder, restoring atime/mtime,
@@ -38,6 +38,11 @@ Sealing, with no open handles/mappings:
    Error/unwind cleanup also clears the gate; committed bindings retain authority.
    Same-inode mutations wait directly on that gate without holding either lock;
    acquiring the catalog permit alone no longer proves retirement has finished.
+
+Manifest insertion or binding failure rolls back the entire publication. Native
+bytes remain authoritative, and any previously synced packs are GC orphans. This
+replaces two sequential FULL commits with one atomic FULL commit. The synchronous
+seal path used by recovery fixtures exercises the same transaction as the worker.
 
 Hydration, before mutable access:
 
@@ -173,7 +178,8 @@ when native allocation or length differs. If hydration removed the binding,
 synced native bytes are authoritative. Synced data from a killed daemon can be
 read after remount. The store and native tree remain exclusively owned.
 
-Unit subprocesses terminate at seal commit, retirement truncate, hydration
+Unit subprocesses terminate after uncommitted manifest insertion, at seal commit,
+retirement truncate, hydration
 truncate, hydration fsync, hydration commit, and zero-truncate publication
 boundaries. Mounted tests also kill the real
 daemon after acknowledged file/directory fsync, remount, and verify bytes and

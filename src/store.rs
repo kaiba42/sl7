@@ -256,6 +256,25 @@ impl Store {
         name: &str,
         prepared: PreparedImport,
     ) -> Result<ImportReport> {
+        let tx = self.db.transaction()?;
+        let report = Self::insert_import(&tx, view, name, prepared)?;
+        tx.commit()?;
+        #[cfg(test)]
+        crate::crash_at("catalog-committed");
+        Ok(report)
+    }
+    #[cfg(all(feature = "fuse", target_os = "linux"))]
+    pub(crate) fn prepare_native(&self, file: &File) -> Result<PreparedImport> {
+        prepare_import(&self.root, &self.db, file, pack::LIMIT, || false)
+    }
+    /// Insert a prepared manifest into the caller's transaction so its live-inode
+    /// binding can commit atomically with it. Packs are already durable.
+    pub(crate) fn insert_import(
+        tx: &rusqlite::Transaction<'_>,
+        view: &str,
+        name: &str,
+        prepared: PreparedImport,
+    ) -> Result<ImportReport> {
         validate_label("view", view)?;
         validate_label("artifact name", name)?;
         let PreparedImport {
@@ -265,7 +284,6 @@ impl Store {
             locations,
             packs,
         } = prepared;
-        let tx = self.db.transaction()?;
         for (id, size) in &packs {
             tx.execute(
                 "INSERT OR IGNORE INTO packs VALUES(?1,?2)",
@@ -296,9 +314,6 @@ impl Store {
                 statement.execute(params![id, offset, hash.as_slice()])?;
             }
         }
-        tx.commit()?;
-        #[cfg(test)]
-        crate::crash_at("catalog-committed");
         Ok(ImportReport {
             file: FileInfo {
                 id,

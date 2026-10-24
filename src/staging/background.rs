@@ -650,7 +650,8 @@ mod tests {
         let ino = fs.with(|s| {
             let ino = s.lookup(INodeNo::ROOT, OsStr::new("data"))?;
             s.entry_attr(ino)?;
-            // Inject a binding failure after the immutable manifest commits.
+            // Inject failure after manifest insertion but before the atomic
+            // manifest/binding transaction can commit.
             s.live.as_ref().unwrap().store.db.execute_batch(
                 "CREATE TRIGGER fail_bind BEFORE UPDATE OF manifest ON live_files WHEN NEW.manifest IS NOT NULL BEGIN SELECT RAISE(ABORT,'injected binding failure'); END;"
             ).unwrap();
@@ -674,6 +675,9 @@ mod tests {
                     .is_none()
             );
             assert_eq!(fs::read(s.path(ino)?)?, bytes);
+            let stats = s.live.as_ref().unwrap().store.stats().map_err(storage)?;
+            assert_eq!(stats.files, 0, "failed binding left an immutable manifest");
+            assert_eq!(stats.unique_chunks, 0, "failed binding published chunks");
             s.live
                 .as_ref()
                 .unwrap()

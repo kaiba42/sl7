@@ -344,32 +344,36 @@ impl Live {
             metadata,
         }))
     }
-    fn bind_seal(&mut self, candidate: SealCandidate, manifest: i64) -> Result<Metadata> {
-        let changed = self.store.db.execute(
-            "UPDATE live_files SET manifest=?1,metadata=?2 WHERE id=?3 AND generation=?4 AND manifest IS NULL",
-            params![manifest, encode(&candidate.metadata)?, candidate.id, candidate.generation],
-        )?;
-        if changed != 1 {
-            return Err(Error::Invalid("stale seal generation".into()));
-        }
-        #[cfg(test)]
-        crate::crash_at("live-seal-committed");
-        Ok(candidate.metadata)
-    }
     pub(crate) fn publish_seal(
         &mut self,
         file: File,
         candidate: SealCandidate,
         prepared: crate::store::PreparedImport,
     ) -> Result<CommittedSeal> {
-        let report = self.store.publish_import(
+        let tx = self.store.db.transaction()?;
+        let report = Store::insert_import(
+            &tx,
             VIEW,
             &format!("{}-{}", candidate.id, candidate.generation),
             prepared,
         )?;
+        #[cfg(test)]
+        crate::crash_at("live-seal-inserted");
+        let changed = tx.execute(
+            "UPDATE live_files SET manifest=?1,metadata=?2 WHERE id=?3 AND generation=?4 AND manifest IS NULL",
+            params![report.file.id, encode(&candidate.metadata)?, candidate.id, candidate.generation],
+        )?;
+        if changed != 1 {
+            return Err(Error::Invalid("stale seal generation".into()));
+        }
+        // The manifest and its live binding become authoritative together. Any
+        // insertion/binding failure rolls back both and leaves native bytes intact.
+        tx.commit()?;
+        #[cfg(test)]
+        crate::crash_at("live-seal-committed");
         Ok(CommittedSeal {
             file,
-            metadata: self.bind_seal(candidate, report.file.id)?,
+            metadata: candidate.metadata,
         })
     }
     /// Synchronous transition used by offline tests and recovery fixtures.
@@ -377,13 +381,9 @@ impl Live {
         let Some(candidate) = self.begin_seal(file)? else {
             return Ok(false);
         };
-        let report = self.store.put(
-            VIEW,
-            &format!("{}-{}", candidate.id, candidate.generation),
-            &fd_path(file),
-        )?;
-        let metadata = self.bind_seal(candidate, report.file.id)?;
-        Self::retire(file, &metadata)?;
+        let prepared = self.store.prepare_native(&File::open(fd_path(file))?)?;
+        self.publish_seal(file.try_clone()?, candidate, prepared)?
+            .retire()?;
         Ok(true)
     }
     fn retire(file: &File, metadata: &Metadata) -> Result<()> {
@@ -811,6 +811,7 @@ mod tests {
     #[test]
     fn process_death_during_sealing_and_hydration_preserves_bytes() -> Result<()> {
         for stage in [
+            "live-seal-inserted",
             "live-seal-committed",
             "live-retired-truncated",
             "live-hydrate-truncated",
@@ -839,6 +840,15 @@ mod tests {
             let mut live = Live::open(Store::open(&root)?)?;
             live.recover()?;
             let file = File::open(&path)?;
+            if stage == "live-seal-inserted" {
+                // Process death before binding/commit must leave no catalog
+                // manifest or chunks, and must not begin native retirement.
+                assert!(live.sealed(&file)?.is_none());
+                let stats = live.store.stats()?;
+                assert_eq!(stats.files, 0);
+                assert_eq!(stats.unique_chunks, 0);
+                assert_eq!(fs::read(&path)?, bytes());
+            }
             let actual = match live.read(&file, 0, 300_000)? {
                 Some(bytes) => bytes,
                 None => fs::read(&path)?,

@@ -1,0 +1,27 @@
+{
+  "binary_sha256": "a6e0feeab4f4b3c8e52619b387adf378eb64286074c916690068847442e8d27d",
+  "source_sha256": {
+    "src/live.rs": "cb2f7d3625d35c8ccbcf72947bb002a56be7d40cc05e4cbbca684ef68b96ee4a",
+    "src/store.rs": "00d7af986ce7643e25876c9cac9427e2d746204543fa51b8e23f6d4dbb8e8c9e",
+    "src/staging.rs": "f177171d47ea1942534c65c4a09e537441c561e05b841699f113062392053339",
+    "src/staging/namespace.rs": "96de7bf5df1fb13e2c4f33645f5f1de4acbe296989e93c0ddcccdd9660567a15",
+    "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+    "src/staging/reads.rs": "8c363ca8a8e6a552e0b090fd6125dfa3c9ce9f202455ba8c56c50ee70b600991",
+    "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+    "src/staging/background.rs": "e17f82405f8e2e21efcd4940faf5553ec308b68e36083990ea888875d5f9e64a"
+  },
+  "linux_tests": 60,
+  "host_tests": 35,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
+  "durability": "Manifest and live binding commit atomically in one FULL transaction before native retirement. Timestamp sync policy and inode gates are unchanged.",
+  "atomic_seal_test": "Binding failure rolls back manifest and chunks; process death after manifest insertion but before binding/commit preserves native bytes with an empty catalog; post-commit recovery still reconstructs exact bytes.",
+  "benchmark": "pending"
+}
