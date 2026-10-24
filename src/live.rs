@@ -22,6 +22,7 @@ use std::{
 const VIEW: &str = ":sl7-live-v1:";
 const XATTR: &std::ffi::CStr = c"user.sl7.file.v1";
 pub const MIN_SEAL_SIZE: u64 = 64 * 1024;
+const IDENTITY_BATCH: usize = 64;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metadata {
@@ -70,6 +71,9 @@ pub struct Sealed {
 }
 pub struct Live {
     pub(crate) store: Store,
+    // Rows in this pool have already committed. Unused reservations are orphan
+    // rows, reclaimed by offline GC; AUTOINCREMENT prevents their reuse.
+    identities: Vec<i64>,
 }
 pub(crate) struct SealCandidate {
     id: i64,
@@ -232,7 +236,10 @@ impl Live {
             fs::create_dir(&tree)?;
             sync_directory(&store.root)?;
         }
-        Ok(Self { store })
+        Ok(Self {
+            store,
+            identities: Vec::new(),
+        })
     }
     pub fn tree(&self) -> PathBuf {
         self.store.root.join("tree")
@@ -293,10 +300,24 @@ impl Live {
         if let Some((id, _, _)) = self.record(file)? {
             return Ok(id);
         }
-        self.store
-            .db
-            .execute("INSERT INTO live_files DEFAULT VALUES", [])?;
-        let id = self.store.db.last_insert_rowid();
+        if self.identities.is_empty() {
+            let tx = self.store.db.transaction()?;
+            let mut identities = Vec::with_capacity(IDENTITY_BATCH);
+            for _ in 0..IDENTITY_BATCH {
+                tx.execute("INSERT INTO live_files DEFAULT VALUES", [])?;
+                identities.push(tx.last_insert_rowid());
+            }
+            #[cfg(test)]
+            crate::crash_at("live-identities-inserted");
+            tx.commit()?;
+            #[cfg(test)]
+            crate::crash_at("live-identities-reserved");
+            identities.reverse();
+            self.identities = identities;
+        }
+        // Consume only a durable row, before making it reachable from an inode.
+        // A failed xattr write leaves an orphan; never reuse that reservation.
+        let id = self.identities.pop().unwrap();
         let value = id.to_string();
         let path = path_c(&fd_path(file))?;
         // SAFETY: valid C strings and value bytes live for the call. CREATE avoids
@@ -314,6 +335,8 @@ impl Live {
             return Err(std::io::Error::last_os_error().into());
         }
         File::open(fd_path(file))?.sync_all()?;
+        #[cfg(test)]
+        crate::crash_at("live-identity-synced");
         Ok(id)
     }
     /// Persist a new identity if needed, then plan the next generation without
@@ -606,6 +629,9 @@ impl Live {
     /// Quiescent only: owning Store excludes the mounted daemon. No descriptor or
     /// mapping roots can exist in a live session when this offline operation runs.
     pub fn gc(&mut self) -> Result<GcReport> {
+        // This same Live instance may be used again after offline GC. Do not
+        // hand out a reservation after GC has removed its unreferenced row.
+        self.identities.clear();
         let roots = self.scan()?.0;
         let ids: Vec<i64> = self
             .store
@@ -643,6 +669,141 @@ mod tests {
             [identity],
             |r| r.get(0),
         )?)
+    }
+
+    #[test]
+    fn identity_batches_are_unique_across_connections_and_survive_gc_reuse() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let first = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let second = Live::open(first.store.publication_connection()?)?;
+        fn allocate(mut live: Live, prefix: &str) -> Result<(Live, Vec<i64>)> {
+            let mut ids = Vec::new();
+            for index in 0..IDENTITY_BATCH + 3 {
+                let path = live.tree().join(format!("{prefix}-{index}"));
+                fs::write(&path, b"native contents")?;
+                ids.push(live.identity(&File::open(path)?)?);
+            }
+            Ok((live, ids))
+        }
+        let ((mut first, a), (second, b)) = std::thread::scope(|scope| -> Result<_> {
+            let a = scope.spawn(move || allocate(first, "a"));
+            let b = scope.spawn(move || allocate(second, "b"));
+            Ok((a.join().unwrap()?, b.join().unwrap()?))
+        })?;
+        assert_eq!(
+            a.iter().chain(&b).collect::<HashSet<_>>().len(),
+            2 * (IDENTITY_BATCH + 3)
+        );
+        assert_eq!(first.identities.len(), IDENTITY_BATCH - 3);
+        assert_eq!(second.identities.len(), IDENTITY_BATCH - 3);
+        let reserved: i64 =
+            first
+                .store
+                .db
+                .query_row("SELECT count(*) FROM live_files", [], |r| r.get(0))?;
+        assert_eq!(reserved, (4 * IDENTITY_BATCH) as i64);
+        // GC is quiescent: no other connection retains an allocation pool.
+        drop(second);
+        first.gc()?;
+        assert!(first.identities.is_empty());
+        let retained: i64 =
+            first
+                .store
+                .db
+                .query_row("SELECT count(*) FROM live_files", [], |r| r.get(0))?;
+        assert_eq!(retained, (a.len() + b.len()) as i64);
+        for (prefix, ids) in [("a", &a), ("b", &b)] {
+            for (index, expected) in ids.iter().enumerate() {
+                let file = File::open(first.tree().join(format!("{prefix}-{index}")))?;
+                assert_eq!(first.record(&file)?.unwrap().0, *expected);
+            }
+        }
+        let path = first.tree().join("after-gc");
+        fs::write(&path, b"still native")?;
+        let file = File::open(path)?;
+        let next = first.identity(&file)?;
+        assert!(next > reserved, "GC must not recycle reserved identities");
+        assert_eq!(first.record(&file)?.unwrap().0, next);
+        first.store.check()?;
+        Ok(())
+    }
+
+    #[test]
+    fn failed_identity_batch_never_attaches_a_partial_reservation() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut live = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let path = live.tree().join("artifact");
+        fs::write(&path, b"native bytes")?;
+        let file = File::open(&path)?;
+        live.store.db.execute_batch(
+            "CREATE TRIGGER fail_identity_batch BEFORE INSERT ON live_files
+             WHEN (SELECT count(*) FROM live_files)=7
+             BEGIN SELECT RAISE(ABORT, 'injected allocation failure'); END;",
+        )?;
+        assert!(live.identity(&file).is_err());
+        assert!(live.identities.is_empty());
+        assert!(id(&file)?.is_none());
+        assert_eq!(
+            live.store
+                .db
+                .query_row("SELECT count(*) FROM live_files", [], |r| r
+                    .get::<_, i64>(0))?,
+            0
+        );
+        assert_eq!(fs::read(path)?, b"native bytes");
+        live.store
+            .db
+            .execute_batch("DROP TRIGGER fail_identity_batch")?;
+        let identity = live.identity(&file)?;
+        assert_eq!(live.record(&file)?.unwrap().0, identity);
+        assert_eq!(live.identities.len(), IDENTITY_BATCH - 1);
+        Ok(())
+    }
+
+    #[test]
+    fn process_death_during_identity_reservation_keeps_native_bytes_authoritative() -> Result<()> {
+        for stage in [
+            "live-identities-inserted",
+            "live-identities-reserved",
+            "live-identity-synced",
+        ] {
+            let temp = tempfile::tempdir()?;
+            let root = temp.path().join("store");
+            let live = Live::open(Store::init(&root)?)?;
+            let path = live.tree().join("artifact");
+            fs::write(&path, bytes())?;
+            drop(live);
+            let status = std::process::Command::new(std::env::current_exe()?)
+                .args(["--exact", "live::tests::crash_transition_child"])
+                .env("SL7_LIVE_TEST_ROOT", &root)
+                .env("SL7_TEST_CRASH_STAGE", stage)
+                .stdout(std::process::Stdio::null())
+                .status()?;
+            assert_eq!(status.code(), Some(73), "{stage}");
+            let mut live = Live::open(Store::open(&root)?)?;
+            live.recover()?;
+            let file = File::open(&path)?;
+            assert_eq!(fs::read(&path)?, bytes());
+            assert!(live.sealed(&file)?.is_none());
+            assert_eq!(id(&file)?.is_some(), stage == "live-identity-synced");
+            let rows: i64 =
+                live.store
+                    .db
+                    .query_row("SELECT count(*) FROM live_files", [], |r| r.get(0))?;
+            assert_eq!(
+                rows,
+                if stage == "live-identities-inserted" {
+                    0
+                } else {
+                    IDENTITY_BATCH as i64
+                }
+            );
+            live.gc()?;
+            assert!(live.seal(&file)?);
+            assert_eq!(live.read(&file, 0, bytes().len())?.unwrap(), bytes());
+            live.store.check()?;
+        }
+        Ok(())
     }
     #[test]
     fn seal_generation_advances_only_when_publication_commits() -> Result<()> {

@@ -1,0 +1,25 @@
+{
+  "snapshot_base_commit": "069477efd154b5858b31125b84b139da8325e047",
+  "source_sha256": {
+    "src/live.rs": "4df7358dbeeadd0988c33f983050521846f537fd97937a968a6e4042087f1255"
+  },
+  "orbstack": {
+    "platform": "aarch64-unknown-linux-gnu",
+    "binary_sha256": "66893a2a52cea418ef4bfc8173bd3753a524123d8b6bc2cf677d6067751400e6",
+    "image_id": "sha256:1c4c3edda3e7cf04ca7bb7c3c2f6e58b0dfe9a7c9b69ece87a24f4078fd7968c",
+    "linux_tests": 70,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  },
+  "host_tests": 36,
+  "x86_validation": "pending",
+  "benchmark": "pending",
+  "durability": "Identity rows are reserved 64 at a time in one FULL transaction. Each row is durable before attaching its xattr, and the inode remains synced before manifest publication. The schema and publication/retirement ordering are unchanged.",
+  "tests": "Two concurrent connections allocate distinct identities across batch boundaries; offline GC discards unused reservations without recycling IDs and the same Live instance can allocate afterward. Injected partial-batch failure rolls back all rows without attaching an xattr. Process death before commit, after reservation, and after inode sync preserves native bytes and allows GC/reseal. Existing filesystem/Cargo/recovery suites pass."
+}

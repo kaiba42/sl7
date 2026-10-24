@@ -5,6 +5,16 @@ on each tracked regular inode points to an AUTOINCREMENT `live_files` row. Hard
 links retain that identity; native inode-number reuse cannot alias an old row.
 `live_config` versions this extension separately from the immutable v1 catalog.
 
+Each allocating connection reserves 64 identity rows in one FULL-synchronous
+transaction, then assigns them to files as needed. A row is durable before its
+xattr is attached, and that inode is still synced before manifest publication.
+Failed assignments and unused reservations remain unreachable rows for offline
+GC. GC clears the current connection's reservation pool before deleting orphan
+rows; AUTOINCREMENT prevents those identities from being recycled. Mounts use
+one allocation pool per sealing worker, holding at most 64 not-yet-assigned rows
+per allocating connection. Abandoned reservations across sessions
+remain until GC. The schema and identity/xattr durability ordering are unchanged.
+
 Each live row records a generation, optional manifest ID, and optional logical
 size/atime/mtime/ctime snapshot. Internal manifests use reserved view
 `:sl7-live-v1:` and names `<identity>-<generation>`. The next generation is planned
