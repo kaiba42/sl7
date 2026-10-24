@@ -339,31 +339,33 @@ impl Store {
             packs,
         } = prepared;
         let mut new_pack_bytes = 0;
-        for (id, size) in &packs {
-            let inserted = tx.execute(
-                "INSERT OR IGNORE INTO packs VALUES(?1,?2)",
-                params![id, size],
-            )?;
-            if inserted != 0 {
-                new_pack_bytes += size;
+        if !packs.is_empty() {
+            let mut insert = tx.prepare("INSERT OR IGNORE INTO packs VALUES(?1,?2)")?;
+            for (id, size) in &packs {
+                if insert.execute(params![id, size])? != 0 {
+                    new_pack_bytes += size;
+                }
             }
         }
         let mut new_chunks = 0;
-        for loc in &locations {
-            // Another packer may have prepared the same chunk before either
-            // transaction committed. Keep the first durable location; extents
-            // address content, not a particular worker's copy of that content.
-            new_chunks += tx.execute(
+        if !locations.is_empty() {
+            // Compile once for the import, rather than once per novel chunk,
+            // while preserving the caller's atomic publication transaction.
+            let mut insert = tx.prepare(
                 "INSERT INTO chunks VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(hash) DO NOTHING",
-                params![
+            )?;
+            for loc in &locations {
+                // Concurrent preparations can contain the same chunk. Keep the
+                // first durable location; extents address content, not its copy.
+                new_chunks += insert.execute(params![
                     loc.hash.as_slice(),
                     loc.raw_len,
                     loc.pack,
                     loc.offset,
                     loc.stored_len,
                     loc.codec
-                ],
-            )?;
+                ])?;
+            }
         }
         tx.execute(
             "INSERT INTO files(view,name,size,digest) VALUES(?1,?2,?3,?4)",
