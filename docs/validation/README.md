@@ -14,9 +14,12 @@ daemon user and kernel CPU costs. Independent preparation phases overlap, but mo
 improve build latency consistently: four workers regress clean builds in both
 rounds, while two workers slightly shorten the recorded build/observation/drain
 sequence. Canceled candidates, completed seals, and catalog waits all increase.
-Batched identity allocation and the
-[unchanged seal decision cache](seal-check-validation.json) have passed local
-correctness checks; their isolated performance measurements are pending.
+Batched identity allocation, the
+[unchanged seal decision cache](seal-check-validation.json), and
+[buffered pack writes](pack-buffer-validation.json) have passed local correctness
+checks; their isolated Cargo performance measurements are pending. The buffering
+probe reduced pack writes from 3,936 to 63 with identical published bytes; that
+syscall-count result is not an elapsed Cargo speedup.
 
 For native Cargo versus the shorter catalog lock and atomic publication changes,
 see the [build results](publication-costs.md), [HTML tables](publication-costs.html),

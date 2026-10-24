@@ -1,0 +1,54 @@
+{
+  "snapshot_base_commit": "e3f94e2752cae0758e8fd69b7c0a2d7ee472d3f2",
+  "source_sha256": {
+    "src/pack.rs": "1042e7f3493dd9323985d6d663a878e5759d6e94137d40ffdbc74f5a2b39ae3b",
+    "src/store.rs": "f8c36f245d433c97fb2dccc959442bcd9235da5d2476d108e3beb14a3b2118bf"
+  },
+  "orbstack": {
+    "platform": "aarch64-unknown-linux-gnu",
+    "binary_sha256": "b5abddb0470cdbc71824fcade4c152114432b9e1c6511bddd53d1ffa53652dfa",
+    "image_id": "sha256:b5357efaa02a18f7735dbf0d0dc6d0f062271f78a566ff2fdd65c1c5feb5a678",
+    "linux_tests": 72,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  },
+  "host_tests": 36,
+  "x86_validation": "pending",
+  "benchmark": "pending",
+  "durability": "A bounded 64 KiB buffer coalesces each active pack writer. finish explicitly flushes before syncing the file, then persists and syncs the directory before catalog publication. Pack bytes, hashes, schema and ordering are unchanged.",
+  "tests": "The pack-synced process-death case now requires the abandoned temporary pack to match a complete published reference byte for byte, including a tail smaller than the buffer. Existing corruption, failed publication, rollover, GC, mounted Cargo and recovery suites pass.",
+  "syscall_probe": {
+    "features": "default (no FUSE), release; shared pack writer",
+    "source_kind": "public Rust standard-library rlib from the container toolchain",
+    "source_sha256": "0e80edd7245f7b5cd51a4bb25f9ac23d80d9e3125d921fbee7404893be3af1b3",
+    "source_bytes": 12124282,
+    "baseline_binary_sha256": "e8871ca58c189935998fc1fe9c6eb04f115a69aa9b8bf10839fdb0b48a8135a8",
+    "candidate_binary_sha256": "bc70075c3bdc5f5fb7961e79a37f5a6a555d7804d45ab22a6a250ad3b698b303",
+    "baseline_calls": 3936,
+    "candidate_calls": 63,
+    "reduction_percent": 98.39939024390245,
+    "pack_ids": [
+      "69b9b850dc8d3f505b39645ac5873291b7c8dca714ed13f820092e6b7087c6bc"
+    ],
+    "pack_bytes": 3852184,
+    "integrity": {
+      "files": 1,
+      "logical_bytes": 12124282,
+      "unique_chunks": 787,
+      "unique_raw_bytes": 11698298,
+      "compressed_payload_bytes": 3813613,
+      "referenced_pack_bytes": 3852184,
+      "catalog_bytes": 245760,
+      "orphan_pack_bytes": 0,
+      "temporary_bytes": 0,
+      "total_file_bytes": 4097944
+    },
+    "limitation": "Public standard-library artifact in an empty store. Counts under strace, not elapsed Cargo performance. Published pack bytes and source hashes match exactly."
+  }
+}

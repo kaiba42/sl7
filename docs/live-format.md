@@ -36,7 +36,10 @@ Sealing, with no open handles/mappings:
    generation. A new identity and its xattr still become durable before publication.
    Planning the next generation requires only a read on the worker connection.
 2. Chunk native bytes and prepare immutable packs outside filesystem state. Pack
-   data and directory entries are synced before the manifest commits.
+   writers coalesce header and payload writes in a bounded 64 KiB buffer per
+   active writer. The buffer is flushed before syncing the file; pack data and
+   directory entries are synced before the manifest commits. Buffering changes
+   neither record bytes nor content hashes.
 3. Acquire the catalog-writer permit, then briefly reacquire filesystem state.
    Require the same epoch and zero open handles. Discard stale work; otherwise
    mark this inode as publishing and release filesystem state.

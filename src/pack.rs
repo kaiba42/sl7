@@ -6,7 +6,7 @@ use crate::{
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::{BufWriter, Read, Write},
     os::unix::fs::FileExt,
     path::Path,
 };
@@ -24,7 +24,7 @@ pub struct Location {
     pub codec: u8,
 }
 pub struct Writer {
-    temp: NamedTempFile,
+    temp: BufWriter<NamedTempFile>,
     digest: Sha256,
     pub size: u64,
     locations: Vec<Location>,
@@ -33,7 +33,7 @@ impl Writer {
     pub fn new(root: &Path) -> Result<Self> {
         let temp = NamedTempFile::new_in(root.join("tmp"))?;
         let mut this = Self {
-            temp,
+            temp: BufWriter::with_capacity(64 * 1024, temp),
             digest: Sha256::new(),
             size: 0,
             locations: vec![],
@@ -71,12 +71,16 @@ impl Writer {
         Ok(())
     }
     pub fn finish(mut self, root: &Path) -> Result<(String, u64, Vec<Location>)> {
-        self.temp.as_file().sync_all()?;
+        // The complete buffered tail must reach the file before its durability
+        // barrier. Neither hashing nor persist may stand in for this flush.
+        self.temp.flush()?;
+        self.temp.get_ref().as_file().sync_all()?;
         #[cfg(test)]
         crate::crash_at("pack-synced");
         let id = hex(&self.digest.finalize());
         let destination = root.join("packs").join(&id);
-        match self.temp.persist_noclobber(&destination) {
+        let temp = self.temp.into_inner().map_err(|e| e.into_error())?;
+        match temp.persist_noclobber(&destination) {
             Ok(_) => (),
             Err(e) if e.error.kind() == std::io::ErrorKind::AlreadyExists => {
                 verify_pack(root, &id)?

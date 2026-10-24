@@ -1025,6 +1025,23 @@ mod tests {
                 .stdout(std::process::Stdio::null())
                 .status()?;
             assert_eq!(status.code(), Some(73), "did not reach {stage}");
+            if stage == "pack-synced" {
+                // Process exit skips BufWriter's destructor. Even this tiny
+                // pack's tail must already match a complete published pack.
+                let abandoned =
+                    fs::read_dir(root.join("tmp"))?.collect::<std::io::Result<Vec<_>>>()?;
+                assert_eq!(abandoned.len(), 1);
+                let reference_root = temp.path().join("reference");
+                let mut reference = Store::init(&reference_root)?;
+                reference.put("main", "new", &temp.path().join("new-input"))?;
+                let published = fs::read_dir(reference_root.join("packs"))?
+                    .collect::<std::io::Result<Vec<_>>>()?;
+                assert_eq!(published.len(), 1);
+                assert_eq!(
+                    fs::read(abandoned[0].path())?,
+                    fs::read(published[0].path())?
+                );
+            }
             let store = Store::open(&root)?;
             assert_eq!(
                 store.read("main", "old", 0, 100)?,
