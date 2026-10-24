@@ -122,6 +122,10 @@ Normal unmount drains pending sealing. Reads reconstruct concurrently outside th
 global filesystem lock, using independent catalog connections and shared bounded
 caches. Same-inode mutations wait for active reads; writable opens hydrate sealed
 files before mutation. Hard links share an inode; separate files keep separate identities.
+Reopening a file preserves its kernel page-cache contents, avoiding reconstruction
+of unchanged pages on every open. Writes and truncation through the mount remain
+coherent. Kernel cache memory is reclaimable and separate from SL7's userspace
+cache budgets.
 See [the live format and recovery protocol](live-format.md).
 
 `live-stats` separates logical bytes, native allocated blocks, and content-store

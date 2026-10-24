@@ -114,6 +114,15 @@ a userspace descriptor does not permit sealing while its mmap remains. Cached I/
 provides same-inode coherence; writeback-cache is not negotiated. Hydration occurs
 before mutable access; sealing requires zero open handles and in-flight read leases.
 
+Live-mount file opens return `FOPEN_KEEP_CACHE`: reopening an artifact preserves
+its kernel page-cache contents. All logical writes, truncations, and namespace
+changes go through this mount; the kernel maintains their cache coherence.
+Background sealing and hydration preserve logical bytes and timestamps, so they
+do not invalidate those pages. External writes to the private backing tree are
+unsupported. Native staging mounts retain their conservative open behavior.
+Kernel pages are reclaimable system cache, separate from SL7's bounded userspace
+payload and extent caches. Writeback caching remains disabled.
+
 Recovery scans unique native regular inodes before mounting. A committed manifest
 wins over partially hydrated/retired bytes; recovery finishes sparse retirement
 when native allocation or length differs. If hydration removed the binding,

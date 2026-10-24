@@ -442,6 +442,17 @@ impl State {
 }
 
 impl StagingFs {
+    fn file_cache_flags(&self) -> FopenFlags {
+        if self.readers.is_some() {
+            // The live tree is private: all content changes arrive through this
+            // mount, where the kernel maintains write/truncate/mmap coherence.
+            // Sealing and hydration change representation, not logical bytes.
+            // Reopening an artifact must not discard its verified kernel pages.
+            FopenFlags::FOPEN_KEEP_CACHE
+        } else {
+            FopenFlags::empty()
+        }
+    }
     pub fn new(backing: &Path) -> io::Result<Self> {
         let owner = File::open(backing)?;
         if !owner.metadata()?.is_dir() {
@@ -817,13 +828,13 @@ impl Filesystem for StagingFs {
                 Ok((s.entry_attr(ino)?, fh))
             },
         ) {
-            Ok((a, fh)) => reply.created(&TTL, &a, Generation(0), fh, FopenFlags::empty()),
+            Ok((a, fh)) => reply.created(&TTL, &a, Generation(0), fh, self.file_cache_flags()),
             Err(e) => reply.error(e),
         }
     }
     fn open(&self, _req: &Request, ino: INodeNo, flags: OpenFlags, reply: ReplyOpen) {
         match self.open_handle(ino, flags.0) {
-            Ok(fh) => reply.opened(fh, FopenFlags::empty()),
+            Ok(fh) => reply.opened(fh, self.file_cache_flags()),
             Err(e) => reply.error(e),
         }
     }
