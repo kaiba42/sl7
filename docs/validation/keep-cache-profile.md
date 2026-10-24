@@ -42,6 +42,12 @@ The compressed raw artifact was copied and checked against its remote SHA-256.
 
 The kernel lacks FUSE request tracepoints, so the harness records their absence
 and continues with daemon-only CPU and syscall profiling. The analyzer supports
-both labeled and pretty-printed perf syscall returns, with five parser tests.
+both labeled and pretty-printed perf syscall returns, with six parser tests.
 Instrumented timings are retained in [JSON](keep-cache-profile.json); use the
 separate matched benchmark for performance comparisons.
+
+A subsequent analysis of the same saved traces finds a maximum of **one**
+foreground tracked syscall in flight in both edited builds. Their cumulative
+durations equal the union of their intervals: these writes and syncs did not
+overlap across request threads. This observation excludes reads and syscalls not
+recorded in the I/O trace.

@@ -150,6 +150,7 @@ def io_latencies(path):
     pending = {}
     durations = defaultdict(list)
     descriptors = defaultdict(Counter)
+    intervals = defaultdict(list)
     errors = Counter()
     incomplete = Counter()
     events = Counter()
@@ -176,6 +177,7 @@ def io_latencies(path):
             started, expected, group = pending.pop(tid)
             assert expected == operation and timestamp >= started
             durations[group+'/'+operation].append(timestamp-started)
+            intervals[group].append((started, timestamp))
             result = re.search(r'\bret[:=]\s*(-?(?:0x)?[0-9a-fA-F]+)\b', detail)
             if result is None:
                 # perf's syscall pretty-printer emits a bare return value.
@@ -185,8 +187,25 @@ def io_latencies(path):
             if value < 0 or value >= 2**63:
                 errors[group+'/'+operation] += 1
     incomplete['missing_exit'] = len(pending)
+    overlap = {}
+    for group, calls in intervals.items():
+        active = peak = 0
+        busy = 0.0
+        previous = None
+        events_in_time = sorted((time, delta) for start, end in calls if end > start
+                                for time, delta in ((start, 1), (end, -1)))
+        for timestamp, delta in events_in_time:
+            if active:
+                busy += timestamp-previous
+            active += delta
+            peak = max(peak, active)
+            previous = timestamp
+        assert active == 0
+        overlap[group] = dict(max_concurrent_syscalls=peak, union_seconds=busy,
+                              sum_seconds=sum(end-start for start,end in calls))
     return dict(events=events, incomplete=incomplete, errors=errors,
                 descriptor_calls=dict(descriptors),
+                overlap=overlap,
                 operations={key:distribution(values) for key,values in sorted(durations.items())},
                 note='Per-thread syscall durations include scheduling and I/O waits; concurrent totals overlap.')
 

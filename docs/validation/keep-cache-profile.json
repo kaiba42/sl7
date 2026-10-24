@@ -1796,6 +1796,18 @@
           "27": 2
         }
       },
+      "overlap": {
+        "foreground": {
+          "max_concurrent_syscalls": 1,
+          "union_seconds": 6.026355229318142,
+          "sum_seconds": 6.026355229318142
+        },
+        "background": {
+          "max_concurrent_syscalls": 1,
+          "union_seconds": 3.8694095192477107,
+          "sum_seconds": 3.8694095192477107
+        }
+      },
       "operations": {
         "background/fsync": {
           "count": 78,
@@ -1882,6 +1894,18 @@
           "6744": 1,
           "7859": 1,
           "27": 2
+        }
+      },
+      "overlap": {
+        "foreground": {
+          "max_concurrent_syscalls": 1,
+          "union_seconds": 8.240420958958566,
+          "sum_seconds": 8.240420958958566
+        },
+        "background": {
+          "max_concurrent_syscalls": 1,
+          "union_seconds": 4.221658661030233,
+          "sum_seconds": 4.221658661030233
         }
       },
       "operations": {

@@ -27,7 +27,8 @@ SOURCE = Path('/bench/source')
 BINARY = Path(os.environ.get('SL7_PROFILE_BINARY', '/sl7/target/release/sl7'))
 REVISION = 'ec6d4c53b8fdf4321de220a922f7efce67788d40'
 SYSCALLS = ['openat', 'close', 'read', 'pread64', 'write', 'pwrite64',
-            'lseek', 'fsync', 'fdatasync', 'getxattr', 'ftruncate', 'futex']
+            'lseek', 'fsync', 'fdatasync', 'getxattr', 'ftruncate', 'futex',
+            'link', 'linkat', 'unlink', 'unlinkat', 'rename', 'renameat', 'renameat2']
 
 
 def main():
@@ -164,11 +165,19 @@ def main():
                            cpu_sampling=sample, fuse_tracing=trace and fuse_trace_available,
                            syscall_counting=trace, io_tracing=trace,
                            profiler_stop_seconds=profiler_stop_seconds)
+                row['catalog_descriptors_after'] = {}
+                for descriptor in Path(f'/proc/{daemon.pid}/fd').iterdir():
+                    try:
+                        name = Path(os.readlink(descriptor)).name
+                    except FileNotFoundError:
+                        continue
+                    if name in ('catalog.sqlite', 'catalog.sqlite-wal', 'catalog.sqlite-shm'):
+                        row['catalog_descriptors_after'][descriptor.name] = name
                 report['stages'].append(row)
                 save()
                 print(json.dumps(row), flush=True)
 
-            build('clean', sample=True)
+            build('clean', sample=True, trace=True)
             build('unchanged', fresh=True)
             build('edit-1-control', edit=1)
             build('edit-2-profile', edit=2, sample=True, trace=True)

@@ -46,6 +46,16 @@ fuser-0 1 1.100000000: syscalls:sys_exit_pwrite64: ret: 0x1000
 fuser-0 1 2.0: syscalls:sys_exit_pwrite64: ret: 0
 ''')
 
+    def test_counts_overlapping_foreground_syscalls(self):
+        result = self.parse('''fuser-0 1 0.1: syscalls:sys_enter_pwrite64: fd: 3
+fuser-1 2 0.2: syscalls:sys_enter_pwrite64: fd: 4
+fuser-0 1 0.4: syscalls:sys_exit_pwrite64: 0x10
+fuser-1 2 0.8: syscalls:sys_exit_pwrite64: 0x10
+''')
+        self.assertEqual(result['overlap']['foreground']['max_concurrent_syscalls'], 2)
+        self.assertAlmostEqual(result['overlap']['foreground']['sum_seconds'], .9)
+        self.assertAlmostEqual(result['overlap']['foreground']['union_seconds'], .7)
+
     def test_rejects_lost_exit_inside_trace(self):
         with self.assertRaises(AssertionError):
             self.parse('''fuser-0 1 1.0: syscalls:sys_enter_fsync: fd: 3
