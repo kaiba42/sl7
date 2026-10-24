@@ -80,6 +80,51 @@ pub(crate) struct MetadataUpdate {
     identity: i64,
     value: String,
 }
+/// Restricted connection for namespace timestamps. Content publication APIs are
+/// deliberately unavailable on the NORMAL-synchronous connection.
+pub(crate) struct MetadataWriter {
+    live: Live,
+}
+impl MetadataWriter {
+    pub(crate) fn new(store: Store) -> Result<Self> {
+        let live = Live::open(store)?;
+        // This optional table is compatible with existing v1 stores and older
+        // readers. A changed row forces a real WAL frame for an explicit barrier.
+        live.store.db.execute_batch(
+            "CREATE TABLE IF NOT EXISTS live_sync(
+                id INTEGER PRIMARY KEY CHECK(id=1),
+                epoch INTEGER NOT NULL CHECK(epoch IN (0,1)));
+             INSERT OR IGNORE INTO live_sync VALUES(1,0);",
+        )?;
+        live.store.db.pragma_update(None, "synchronous", "NORMAL")?;
+        Ok(Self { live })
+    }
+    pub(crate) fn commit_metadata_changes(&mut self, updates: &[MetadataUpdate]) -> Result<()> {
+        self.live.commit_metadata_changes(updates)
+    }
+    pub(crate) fn sync(&mut self) -> Result<()> {
+        let db = &self.live.store.db;
+        db.pragma_update(None, "synchronous", "FULL")?;
+        let result = db
+            .execute("UPDATE live_sync SET epoch=1-epoch WHERE id=1", [])
+            .map_err(Error::from)
+            .and_then(|changed| {
+                if changed == 1 {
+                    Ok(())
+                } else {
+                    Err(Error::Corrupt(
+                        "missing catalog synchronization barrier".into(),
+                    ))
+                }
+            });
+        // Restore the connection even after an I/O/commit error. If restoration
+        // fails, retaining FULL is conservative and the caller still gets error.
+        let restored = db.pragma_update(None, "synchronous", "NORMAL");
+        result?;
+        restored?;
+        Ok(())
+    }
+}
 // Persistent identity, optional manifest id, optional logical metadata JSON.
 type InodeRecord = (i64, Option<i64>, Option<String>);
 
@@ -568,6 +613,73 @@ mod tests {
         (0..300_000)
             .map(|i| ((i * 17 + i / 251) % 253) as u8)
             .collect()
+    }
+    #[test]
+    fn namespace_timestamps_use_explicit_full_barriers() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let mut live = Live::open(Store::init(&temp.path().join("store"))?)?;
+        let mut writer = MetadataWriter::new(live.store.publication_connection()?)?;
+        let mode = |db: &rusqlite::Connection| -> Result<i64> {
+            Ok(db.pragma_query_value(None, "synchronous", |row| row.get(0))?)
+        };
+        assert_eq!(mode(&live.store.db)?, 2);
+        assert_eq!(mode(&live.store.publication_connection()?.db)?, 2);
+        assert_eq!(mode(&writer.live.store.db)?, 1);
+        let path = live.tree().join("artifact");
+        fs::write(&path, bytes())?;
+        let file = File::open(&path)?;
+        live.seal(&file)?;
+        // An actual namespace edit must be visible immediately through another
+        // connection, while preserving the sealed manifest and original mtime.
+        let before = live.metadata(&file)?.unwrap();
+        fs::hard_link(&path, live.tree().join("alias"))?;
+        let native = Metadata::capture(&file)?;
+        let update = live.prepare_metadata_change(&file, false, false)?.unwrap();
+        writer.commit_metadata_changes(&[update])?;
+        let after = live.metadata(&file)?.unwrap();
+        assert_eq!(
+            (after.ctime, after.ctime_ns),
+            (native.ctime, native.ctime_ns)
+        );
+        assert_eq!(
+            (after.mtime, after.mtime_ns),
+            (before.mtime, before.mtime_ns)
+        );
+        assert_eq!(live.read(&file, 0, 300_000)?.unwrap(), bytes());
+
+        // The trigger observes the connection mode *during* the barrier write,
+        // so the test fails if FULL is omitted or restored before the commit.
+        writer.live.store.db.execute_batch(
+            "CREATE TEMP TRIGGER require_full BEFORE UPDATE ON live_sync
+             WHEN (SELECT synchronous FROM pragma_synchronous) != 2
+             BEGIN SELECT RAISE(ABORT, 'barrier must be FULL'); END;",
+        )?;
+        for expected in [1_i64, 0, 1] {
+            writer.sync()?;
+            let epoch: i64 =
+                live.store
+                    .db
+                    .query_row("SELECT epoch FROM live_sync WHERE id=1", [], |r| r.get(0))?;
+            assert_eq!(epoch, expected);
+            assert_eq!(mode(&writer.live.store.db)?, 1);
+        }
+        writer.live.store.db.execute_batch(
+            "CREATE TEMP TRIGGER reject_barrier BEFORE UPDATE ON live_sync
+             BEGIN SELECT RAISE(ABORT, 'injected barrier failure'); END;",
+        )?;
+        assert!(writer.sync().is_err());
+        assert_eq!(mode(&writer.live.store.db)?, 1);
+        writer
+            .live
+            .store
+            .db
+            .execute_batch("DROP TRIGGER reject_barrier; DELETE FROM live_sync;")?;
+        assert!(
+            writer.sync().is_err(),
+            "missing barrier cannot report success"
+        );
+        assert_eq!(mode(&writer.live.store.db)?, 1);
+        Ok(())
     }
     #[test]
     fn seal_hydrate_modify_and_collect() -> Result<()> {

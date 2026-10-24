@@ -1,0 +1,26 @@
+{
+  "binary_sha256": "ec54cdb8b54c5e31a8db454d1cb2c9274f6a1314af4859e20f01961ed4c53999",
+  "source_sha256": {
+    "src/live.rs": "78c7c79f87cc706072cb282ae13fc4827fb5bdce4be0683851a5f400ab04b330",
+    "src/staging.rs": "9c155b549db8e64f6c55663ff4a118f88468c3a7c844e66da472b42393a72402",
+    "src/staging/namespace.rs": "96de7bf5df1fb13e2c4f33645f5f1de4acbe296989e93c0ddcccdd9660567a15",
+    "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+    "src/staging/reads.rs": "8c363ca8a8e6a552e0b090fd6125dfa3c9ce9f202455ba8c56c50ee70b600991",
+    "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+    "src/staging/background.rs": "8a44abc0938527178cd23a9668d064d7b7ac015f9df13cc3e8e8e67005d3490f"
+  },
+  "linux_tests": 59,
+  "host_tests": 35,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
+  "durability": "Namespace timestamp commits use WAL/NORMAL; file and directory fsync perform a nonempty FULL catalog transaction before native sync; content publication remains FULL",
+  "barrier_tests": "FULL mode enforced by SQL trigger; file/directory/datasync boundaries; injected failure propagation and reservation release; sealed namespace metadata survives daemon kill after fsync",
+  "benchmark": "pending"
+}

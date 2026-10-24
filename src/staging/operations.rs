@@ -82,6 +82,27 @@ impl StagingFs {
         datasync: bool,
     ) -> std::result::Result<(), Errno> {
         self.native_io(ino, fh, false, |file| {
+            if let Some(metadata) = &self.metadata_writer {
+                let started = Instant::now();
+                let writer = self.catalog_writer.lock().map_err(|_| error(libc::EIO))?;
+                let waited = started.elapsed().as_secs_f64();
+                let started = Instant::now();
+                let result = metadata
+                    .lock()
+                    .map_err(|_| error(libc::EIO))?
+                    .sync()
+                    .map_err(storage);
+                let seconds = started.elapsed().as_secs_f64();
+                drop(writer);
+                self.with_read(|s| {
+                    s.seal_stats.catalog_wait_seconds += waited;
+                    s.seal_stats.catalog_syncs += 1;
+                    s.seal_stats.catalog_sync_seconds += seconds;
+                    Ok(())
+                })
+                .map_err(|_| error(libc::EIO))?;
+                result?;
+            }
             if datasync {
                 file.sync_data()
             } else {
@@ -116,6 +137,85 @@ mod tests {
             })
             .unwrap();
         (temp, fs, handles)
+    }
+
+    #[test]
+    fn file_and_directory_sync_flush_catalog_and_propagate_failures() {
+        let (_temp, fs, [(a, ah), (b, bh)]) = fixture();
+        let dh = fs
+            .with(|s| {
+                let file = open_native(
+                    &s.path(INodeNo::ROOT)?,
+                    libc::O_RDONLY | libc::O_DIRECTORY,
+                    0,
+                )?;
+                s.add_handle(INodeNo::ROOT, file, Some(Vec::new()))
+            })
+            .unwrap();
+        let epoch = || {
+            fs.with_read(|s| {
+                s.live
+                    .as_ref()
+                    .unwrap()
+                    .store
+                    .db
+                    .query_row("SELECT epoch FROM live_sync WHERE id=1", [], |r| {
+                        r.get::<_, i64>(0)
+                    })
+                    .map_err(|e| storage(e.into()))
+            })
+            .unwrap()
+        };
+        for (ino, fh, datasync) in [(a, ah, false), (a, ah, true), (INodeNo::ROOT, dh, false)] {
+            let before = epoch();
+            fs.sync_handle(ino, fh, datasync).unwrap();
+            assert_eq!(epoch(), 1 - before);
+        }
+        fs.with(|s| {
+            s.live
+                .as_ref()
+                .unwrap()
+                .store
+                .db
+                .execute_batch(
+                    "CREATE TRIGGER reject_barrier BEFORE UPDATE ON live_sync
+                 BEGIN SELECT RAISE(ABORT, 'injected barrier failure'); END;",
+                )
+                .map_err(|e| storage(e.into()))
+        })
+        .unwrap();
+        for (ino, fh) in [(a, ah), (INodeNo::ROOT, dh)] {
+            assert_eq!(fs.sync_handle(ino, fh, false), Err(Errno::EIO));
+            fs.with_read(|s| {
+                assert_eq!(s.seal_stats.active_native_io, 0);
+                assert!(!s.nodes[&ino].exclusive_io);
+                assert_eq!(s.nodes[&ino].readers, 0);
+                Ok(())
+            })
+            .unwrap();
+        }
+        fs.write_handle(a, ah, 0, b"retry").unwrap();
+        fs.write_handle(b, bh, 0, b"other").unwrap();
+        assert_eq!(fs.read_handle(a, ah, 0, 5).unwrap(), b"retry");
+        fs.with(|s| {
+            s.live
+                .as_ref()
+                .unwrap()
+                .store
+                .db
+                .execute_batch("DROP TRIGGER reject_barrier")
+                .map_err(|e| storage(e.into()))?;
+            assert_eq!(s.seal_stats.catalog_syncs, 5);
+            Ok(())
+        })
+        .unwrap();
+        fs.sync_handle(a, ah, false).unwrap();
+        fs.with_read(|s| {
+            s.release(a, ah)?;
+            s.release(b, bh)?;
+            s.release(INodeNo::ROOT, dh)
+        })
+        .unwrap();
     }
 
     #[test]

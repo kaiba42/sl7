@@ -151,6 +151,38 @@ def run(work):
     empty = h.snapshot("transition-fixtures-cleaned")
     assert empty["files"] == 0 and empty["content"]["unique_chunks"] == 0
 
+    # Namespace timestamps on a sealed inode use the catalog. Explicit file and
+    # directory fsync must cover those changes before acknowledging success.
+    # Killing only the daemon tests recovery, not machine power-loss ordering.
+    with h.mounted(expect_kill=True) as daemon:
+        path = h.mount / "main/catalog-synced"
+        path.write_bytes(payload)
+        h.sealed("main/catalog-synced")
+        alias = h.mount / "main/catalog-alias"
+        os.link(path, alias)
+        path.rename(h.mount / "main/catalog-renamed")
+        (h.mount / "main/catalog-renamed").unlink()
+        expected = alias.stat()
+        assert expected.st_nlink == 1
+        assert (h.store / "tree/main/catalog-alias").stat().st_blocks == 0
+        with alias.open("rb") as file:
+            os.fsync(file.fileno())
+        parent = os.open(h.mount / "main", os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(parent)
+        finally:
+            os.close(parent)
+        daemon.kill()
+        daemon.wait(timeout=5)
+    with h.mounted():
+        alias = h.mount / "main/catalog-alias"
+        actual = alias.stat()
+        assert (actual.st_ctime_ns, actual.st_mtime_ns, actual.st_nlink) == (
+            expected.st_ctime_ns, expected.st_mtime_ns, expected.st_nlink)
+        assert alias.read_bytes() == payload
+        alias.unlink()
+    h.snapshot("synced-catalog-daemon-restart")
+
     with h.mounted(expect_kill=True) as daemon:
         fd = os.open(h.mount / "main/crash-synced", os.O_CREAT | os.O_RDWR, 0o600)
         try:

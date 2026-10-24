@@ -76,7 +76,7 @@ pub struct StagingFs {
     publication_done: Arc<Condvar>,
     worker: Option<std::thread::JoinHandle<()>>,
     readers: Option<reads::Readers>,
-    metadata_writer: Option<Mutex<crate::live::Live>>,
+    metadata_writer: Option<Mutex<crate::live::MetadataWriter>>,
     _owner: Owner,
 }
 struct Owner(File);
@@ -509,7 +509,7 @@ impl StagingFs {
         let mut fs = Self::new(&live.tree())?;
         live.recover()?;
         fs.readers = Some(reads::Readers::new(&live.store)?);
-        fs.metadata_writer = Some(Mutex::new(crate::live::Live::open(
+        fs.metadata_writer = Some(Mutex::new(crate::live::MetadataWriter::new(
             live.store.publication_connection()?,
         )?));
         let packer = crate::store::Packer::new(&live.store.root)?;

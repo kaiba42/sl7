@@ -81,7 +81,25 @@ reserve affected inodes under state, then commit on a separate catalog connectio
 outside state. Reads can overlap these metadata-only commits, including reads of
 the affected inode. Same-inode mutations wait; release/forget cannot remove pins
 until commit and reply-attribute capture complete. Rename updates share one
-transaction. Successful replies still wait for the FULL-synchronous commit.
+transaction. Successful replies wait for a SQLite WAL/NORMAL commit, which makes
+the timestamps visible immediately without a disk barrier on every namespace
+operation. This restricted writer can update timestamps but cannot publish or
+remove content mappings. Content transitions and chmod/utime retain WAL/FULL.
+
+File and directory fsync (including datasync) acquire the catalog-writer permit
+outside filesystem state, temporarily select FULL on the timestamp connection,
+and commit a changed `live_sync` barrier row before syncing the native descriptor.
+That nonempty FULL transaction flushes earlier WAL commits, including timestamps
+from completed namespace operations; a passive checkpoint or empty transaction
+would not establish this guarantee. A barrier failure is returned to the caller,
+and the inode reservation is released on error. The additive one-row table is
+compatible with existing v1 stores and older readers.
+
+Unsynced namespace timestamps can roll back after machine failure or power loss.
+They survive an application crash under SQLite's WAL guarantees. This replaces
+the previous eager per-operation timestamp durability with explicit fsync
+boundaries; it does not relax manifest/pack publication or retirement ordering.
+See [SQLite's synchronization guarantees](https://www.sqlite.org/pragma.html#pragma_synchronous).
 Foreground hydration, truncation, chmod/utime, and other short namespace/metadata
 callbacks still use state.
 
@@ -151,7 +169,9 @@ read after remount. The store and native tree remain exclusively owned.
 Unit subprocesses terminate at seal commit, retirement truncate, hydration
 truncate, hydration fsync, hydration commit, and zero-truncate publication
 boundaries. Mounted tests also kill the real
-daemon after acknowledged file/directory fsync, remount, and verify bytes. These
+daemon after acknowledged file/directory fsync, remount, and verify bytes and
+sealed-file namespace timestamps. Tests also inject catalog-barrier errors,
+require FULL during its write, and verify file/directory error propagation. These
 exercise process failure, not arbitrary power cuts or faulty storage.
 
 ## Collection
