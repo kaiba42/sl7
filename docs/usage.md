@@ -171,7 +171,11 @@ Diagnostics include `deferred_preparations`, `reused_preparations`,
 `reused_source_bytes`, `evicted_preparations`, `stale_preparations`, and current
 and peak retained metadata bytes. Reused bytes count attempts that skip hashing,
 not necessarily successfully published bytes. This is experimental; reducing
-hashing does not by itself establish a Cargo latency improvement.
+hashing does not by itself establish a Cargo latency improvement. The
+[matched comparison](validation/prepared-reuse-costs.md) measured 2.1% lower
+clean-build medians and essentially unchanged edit medians, with two larger edit
+slowdowns alongside increased catalog waits. Only two of six paired edits were
+faster.
 
 Sealing diagnostics also count `chunk_hash_bytes` and
 `canceled_chunk_hash_bytes`, plus canceled preparation time. These measure bytes

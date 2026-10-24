@@ -1,6 +1,17 @@
 # Validation and performance
 
-The latest [compression-worker comparison](compression-costs.md) and
+The latest [completed-preparation reuse comparison](prepared-reuse-costs.md) and
+[HTML tables](prepared-reuse-costs.html) measure native Cargo and the same SL7
+binary with reuse off/on. Clean medians were 150.24s, 171.91s and 168.25s;
+edit medians were 4.32s, 6.28s and 6.31s. Reuse reduced hashing, but only two of
+six paired edits were faster. The slower edits coincided with higher catalog
+waits; reuse remains opt-in. All 48 Cargo commands, 32 artifact-graph comparisons
+and four integrity checks passed. [CPU profiles](prepared-reuse-costs-profile.md)
+separate user/kernel work and document the build-then-run measurement scope.
+[Correctness validation](prepared-reuse-validation.json) covers both modes,
+reader safety, mutation invalidation, cache bounds and all five mounted suites.
+
+The earlier [compression-worker comparison](compression-costs.md) and
 [HTML tables](compression-costs.html) measure native Cargo, serial compression,
 and two persistent compression workers per sealer. Clean-build medians were
 149.42s, 168.52s, and 169.14s; edit medians were 4.03s, 6.18s, and 6.21s.

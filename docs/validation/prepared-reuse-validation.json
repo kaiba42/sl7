@@ -65,13 +65,16 @@
     "Both entry and metadata capacity limits evict; evicted entries re-prepare correctly.",
     "Oversized results fall back; shutdown preserves native bytes with a reader open."
   ],
-  "benchmark": "pending",
-  "profile": "pending",
+  "benchmark": "passed",
+  "profile": "passed",
   "test_fix": "The legacy discarded-work test explicitly selects reuse-disabled mode; enabled behavior has separate assertions.",
   "log_sha256": {
     "linux-final.log": "e6302800e548f8426fd7df7c8c91b88d6283450caaa8e5e4bab4192901011b02",
     "host-final.log": "bf2ff21d97f5261317a94c4c71bd53efeb3518de33877bd615c18bd0b4e56a2d",
     "mounted.json": "20b248ef0495d19aa0d0f6c9e09f69f712e9dcec9dbfbdf746917dda31a81bfa",
     "status.json": "073ac48ea62452223c52668462d107317de1d85432150615cdb381c667fac446"
-  }
+  },
+  "profile_report": "prepared-reuse-costs-profile.json",
+  "implementation_commit": "15fb0607fc5ee11ed7c9d22c6c137ca4d5c416c2",
+  "comparison_report": "prepared-reuse-costs.json"
 }
