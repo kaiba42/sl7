@@ -2,7 +2,8 @@
 
 The [same-binary worker comparison](parallel-sealing.md) and
 [HTML tables](parallel-sealing.html) measure native Cargo and one, two, and four
-sealing workers. Independent preparation phases overlap, but more workers do not
+sealing workers; the [follow-up profile](parallel-sealing-profile.md) separates
+daemon user and kernel CPU costs. Independent preparation phases overlap, but more workers do not
 improve build latency consistently: four workers regress clean builds in both
 rounds, while two workers slightly shorten the recorded build/observation/drain
 sequence. Canceled candidates, completed seals, and catalog waits all increase.

@@ -3414,7 +3414,9 @@
           "selfhost": "passed"
         }
       },
-      "comparison_report": "parallel-sealing.json"
+      "comparison_report": "parallel-sealing.json",
+      "profile": "passed",
+      "profile_report": "parallel-sealing-profile.json"
     }
   },
   "limitations": [
