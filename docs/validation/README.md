@@ -1,6 +1,21 @@
 # Validation and performance
 
-The latest [completed-preparation reuse comparison](prepared-reuse-costs.md) and
+The latest [catalog statement comparison](catalog-statements-costs.md) and
+[HTML tables](catalog-statements-costs.html) measure native Cargo and SL7 before
+and after reusing INSERT statements. Clean medians were 149.24s, 169.41s and
+170.36s; edit medians were 4.48s, 6.48s and 5.99s. Only three of six paired edits
+were faster. [CPU profiles](catalog-statements-costs-profile.md) confirm lower SQL
+parsing and publication CPU, but build and settling times remain mixed. All 48
+Cargo commands, 32 artifact-graph comparisons and four integrity checks passed.
+[Correctness validation](catalog-statements-validation.json) includes 90 Linux
+tests, 47 host tests, strict Clippy and all five mounted suites.
+
+The separate [native-I/O lifetime experiment](passthrough-lifetime.md) passed
+four actual FUSE mapping cases on ext4, including a child-held mapping after the
+parent unmaps. The native overlayfs control failed to block leases while mapped.
+This is scoped feasibility evidence; production passthrough remains disabled.
+
+The earlier [completed-preparation reuse comparison](prepared-reuse-costs.md) and
 [HTML tables](prepared-reuse-costs.html) measure native Cargo and the same SL7
 binary with reuse off/on. Clean medians were 150.24s, 171.91s and 168.25s;
 edit medians were 4.32s, 6.28s and 6.31s. Reuse reduced hashing, but only two of

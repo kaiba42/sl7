@@ -59,12 +59,15 @@
     "Crash-point tests preserve atomic visibility and previously committed data.",
     "All mounted suites cover reconstruction, permissions, mapping lifetimes, remount, clean/rebuild and GC."
   ],
-  "benchmark": "pending",
-  "profile": "pending",
+  "benchmark": "passed",
+  "profile": "passed",
   "log_sha256": {
     "linux.log": "5e1f31069bac131aa2af03222f66398522544ed09c9377afc91cf1d9e1daa2b0",
     "host.log": "6a72909e1be0b4e68e66b1a4192091e8711b7435bf22443dc4f2deb84a5e820b",
     "mounted.json": "a2a3ff8dfcf02be51ce16b0ee59ed121ece4929424365fde6879c07e3c14f6cc",
     "status.json": "86ecfc1122e5dad9dcedc2bf301ea7a50dbceddd468dac7bb59cf2e82b04eb8f"
-  }
+  },
+  "profile_report": "catalog-statements-costs-profile.json",
+  "implementation_commit": "f22566967c05f55e64b70e82e0be70037550d8fb",
+  "comparison_report": "catalog-statements-costs.json"
 }
