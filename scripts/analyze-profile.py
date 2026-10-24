@@ -154,15 +154,25 @@ def io_latencies(path):
     errors = Counter()
     incomplete = Counter()
     events = Counter()
+    last_event = {}
+    duplicates = Counter()
     for line in path.read_text().splitlines():
         if not line.strip() or line.startswith('#'):
             continue
         match = pattern.match(line)
         assert match, ('unparsed I/O event', line)
         comm, tid, timestamp, phase, operation, detail = match.groups()
-        timestamp = float(timestamp)
         group = ('foreground' if comm.startswith('fuser-') else
                  'background' if comm == 'sl7-pack' or comm.startswith('sl7-pack-') else comm)
+        # perf can emit an identical sample twice. Only collapse a byte-equivalent
+        # parsed event at the exact recorded timestamp, adjacent for this TID.
+        # Conflicting or otherwise unpaired events remain errors below.
+        event = (comm, timestamp, phase, operation, detail)
+        if last_event.get(tid) == event:
+            duplicates[group+'/'+operation+'/'+phase] += 1
+            continue
+        last_event[tid] = event
+        timestamp = float(timestamp)
         events[phase] += 1
         if phase == 'enter':
             assert tid not in pending, ('overlapping syscalls in one thread', tid)
@@ -204,7 +214,7 @@ def io_latencies(path):
         assert active == 0
         overlap[group] = dict(max_concurrent_syscalls=peak, union_seconds=busy,
                               sum_seconds=sum(end-start for start,end in calls))
-    return dict(events=events, incomplete=incomplete, errors=errors,
+    return dict(events=events, exact_duplicate_events=duplicates, incomplete=incomplete, errors=errors,
                 descriptor_calls=dict(descriptors),
                 overlap=overlap,
                 operations={key:distribution(values) for key,values in sorted(durations.items())},

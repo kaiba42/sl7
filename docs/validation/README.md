@@ -1,6 +1,12 @@
 # Initial implementation validation
 
-For explicit catalog barriers and the latest native/before/after comparison, see
+For native Cargo versus the shorter catalog lock and atomic publication changes,
+see the [build results](publication-costs.md), [HTML tables](publication-costs.html),
+and [re-profile findings](publication-costs-profile.md). These measurements precede
+the worker pool; its [correctness checks](parallel-validation.json) have passed,
+and its performance comparison is pending.
+
+For explicit catalog barriers and the preceding native/before/after comparison, see
 the [build results](catalog-barrier.md), [HTML tables](catalog-barrier.html),
 and [re-profile findings](catalog-barrier-profile.md). This change trades eager
 namespace timestamp durability for explicit file/directory fsync boundaries;

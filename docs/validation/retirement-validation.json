@@ -22,5 +22,7 @@
   "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
   "durability": "Content manifest and binding remain FULL-durable before native retirement. The catalog permit is released after binding; the inode gate excludes mutations until retirement completes. Timestamp sync policy is unchanged.",
   "retirement_test": "Paused retirement blocks same-inode writes and hardlinks while another sealed inode hydrates, writes, and fsyncs; both mutation paths are observed waiting at the inode gate.",
-  "benchmark": "pending"
+  "benchmark": "passed",
+  "comparison_report": "publication-costs.json",
+  "implementation_commit": "da7c1691fa159dd4b3022aa55c95c9bc63bd45c9"
 }

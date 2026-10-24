@@ -23,5 +23,9 @@
   "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
   "durability": "Manifest and live binding commit atomically in one FULL transaction before native retirement. Timestamp sync policy and inode gates are unchanged.",
   "atomic_seal_test": "Binding failure rolls back manifest and chunks; process death after manifest insertion but before binding/commit preserves native bytes with an empty catalog; post-commit recovery still reconstructs exact bytes.",
-  "benchmark": "pending"
+  "benchmark": "passed",
+  "comparison_report": "publication-costs.json",
+  "implementation_commit": "a3af884513d571fba67433b2443712a7828cbaf7",
+  "profile": "passed",
+  "profile_report": "publication-costs-profile.json"
 }
