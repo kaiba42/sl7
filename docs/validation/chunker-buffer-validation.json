@@ -1,0 +1,45 @@
+{
+  "runtime_base_commit": "40f34e887920e0687282e157b64ed6d239743f19",
+  "source_archive_commit": "924cf1c689ec0a3f9a6bd2b09cc5167d5a07b2f9",
+  "source_sha256": {
+    "src/chunk.rs": "85e40e340274bb0f664c065c2f51431658c127020f487089e05cf952191d2f45"
+  },
+  "binary_sha256": "dbc69b9784f54321089272df885948132f7cb6be7b01daeb39ec89b038b9d52f",
+  "baseline_binary_sha256": "f3e8169338a80de80b7dc091b1cefd37c14ca506883dd7b6691cfdf7b69af7ac",
+  "platform": "x86_64-unknown-linux-gnu",
+  "node": "top",
+  "linux_tests": 81,
+  "host_tests": 44,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "large_file_pipeline": {
+    "status": "passed",
+    "pipelined_prepares": 3,
+    "checks": [
+      "cold reconstruction",
+      "mmap outlives descriptor",
+      "mutation then reseal",
+      "fsync then daemon death",
+      "remount recovery",
+      "store integrity and GC"
+    ]
+  },
+  "reports_sha256": {
+    "large.json": "b7a9cc0e7b51d2f84d2f835fc1b2a4badb60f9ab340d3ea4187fcd567feb48fa",
+    "import.json": "2891d2f4a228f63a6b8e180c4ee8f94fb86c229e46b288a52b4ee32c680509e6",
+    "mounted.json": "2d3085e6f284304a0ac74a3fae3f03f5f931fa73f8695760304ee5306e7ef1db"
+  },
+  "import_parity": "passed: 12 integrity checks, identical import reports and pack hashes across both binaries",
+  "read_ahead_bytes": 131072,
+  "max_chunk_bytes": 32768,
+  "design": "Keep a bounded 128 KiB buffer with start/end cursors; compact only when fewer than 32 KiB remain. The existing scalar mask selection sees at most 32 KiB, preserving chunk identities and pack format. No new threads.",
+  "correctness": "Golden version-1 boundaries, fragmented and interrupted reads, full reconstructed bytes, pack/manifest parity, pipeline cancellation/error/panic tests and all mounted lifecycle suites pass.",
+  "benchmark": "pending",
+  "profile": "pending"
+}

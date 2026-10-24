@@ -14,6 +14,8 @@ pub fn identity(data: &[u8]) -> Hash {
 pub struct Chunker<R> {
     reader: R,
     pending: Vec<u8>,
+    start: usize,
+    end: usize,
     eof: bool,
     gear: [u64; 256],
 }
@@ -29,33 +31,40 @@ impl<R: Read> Chunker<R> {
         });
         Self {
             reader,
-            pending: Vec::with_capacity(MAX),
+            // Keep several chunks of read-ahead so consuming a chunk usually
+            // advances a cursor instead of moving the unread suffix. Boundary
+            // selection still sees at most MAX bytes, preserving the format.
+            pending: vec![0; MAX * 4],
+            start: 0,
+            end: 0,
             eof: false,
             gear,
         }
     }
     pub fn next_chunk(&mut self) -> std::io::Result<Option<Vec<u8>>> {
-        while self.pending.len() < MAX && !self.eof {
-            let old = self.pending.len();
-            self.pending.resize(MAX, 0);
-            match self.reader.read(&mut self.pending[old..]) {
-                Ok(n) => {
-                    self.pending.truncate(old + n);
-                    self.eof = n == 0;
+        if self.end - self.start < MAX && !self.eof {
+            self.pending.copy_within(self.start..self.end, 0);
+            self.end -= self.start;
+            self.start = 0;
+            while self.end < MAX && !self.eof {
+                match self.reader.read(&mut self.pending[self.end..]) {
+                    Ok(n) => {
+                        self.end += n;
+                        self.eof = n == 0;
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => (),
+                    Err(e) => return Err(e),
                 }
-                Err(e) if e.kind() == std::io::ErrorKind::Interrupted => self.pending.truncate(old),
-                Err(e) => return Err(e),
             }
         }
-        if self.pending.is_empty() {
+        let available = &self.pending[self.start..self.end.min(self.start + MAX)];
+        if available.is_empty() {
             return Ok(None);
         }
-        let mut end = self.pending.len();
+        let mut end = available.len();
         let mut hash = 0_u64;
-        for i in (TARGET / 4)..self.pending.len() {
-            hash = hash
-                .wrapping_shl(1)
-                .wrapping_add(self.gear[self.pending[i] as usize]);
+        for (i, &byte) in available.iter().enumerate().skip(TARGET / 4) {
+            hash = hash.wrapping_shl(1).wrapping_add(self.gear[byte as usize]);
             let mask = if i < TARGET {
                 TARGET * 2 - 1
             } else {
@@ -66,8 +75,8 @@ impl<R: Read> Chunker<R> {
                 break;
             }
         }
-        let output = self.pending[..end].to_vec();
-        self.pending.drain(..end);
+        let output = available[..end].to_vec();
+        self.start += end;
         Ok(Some(output))
     }
 }
@@ -101,9 +110,44 @@ mod tests {
     fn boundaries_ignore_io_fragmentation_and_reassemble() {
         let data = bytes(300_001);
         let normal = chunks(Cursor::new(&data));
+        // Version-1 scalar splitter boundaries. Read-ahead/refill changes must
+        // keep existing chunk identities, not merely reassemble the same file.
+        assert_eq!(
+            normal.iter().map(Vec::len).collect::<Vec<_>>(),
+            vec![
+                13751, 9411, 15442, 12281, 13839, 6932, 8205, 9429, 12729, 4964, 11615, 9166, 5093,
+                3457, 2895, 10241, 3119, 10569, 18794, 12238, 9670, 5085, 4589, 10241, 7540, 8746,
+                10227, 3548, 4050, 7113, 15054, 14910, 4044, 1014,
+            ]
+        );
         assert_eq!(normal, chunks(Short(Cursor::new(&data))));
         assert_eq!(normal.concat(), data);
         assert!(normal.iter().all(|c| c.len() <= MAX));
+    }
+    #[test]
+    fn interrupted_refills_preserve_bytes_and_boundaries() {
+        struct Interrupted<R> {
+            reader: R,
+            interrupt: bool,
+        }
+        impl<R: Read> Read for Interrupted<R> {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                self.interrupt = !self.interrupt;
+                if self.interrupt {
+                    Err(std::io::ErrorKind::Interrupted.into())
+                } else {
+                    self.reader.read(bytes)
+                }
+            }
+        }
+        let data = bytes(MAX * 9 + 7);
+        let expected = chunks(Cursor::new(&data));
+        let actual = chunks(Interrupted {
+            reader: Short(Cursor::new(&data)),
+            interrupt: false,
+        });
+        assert_eq!(actual, expected);
+        assert_eq!(actual.concat(), data);
     }
     #[test]
     fn insertion_recovers_shared_regions() {

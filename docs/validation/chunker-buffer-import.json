@@ -1,0 +1,329 @@
+{
+  "status": "passed",
+  "input_bytes": 186672416,
+  "public_rlib_sha256": "96c3ac946bdb5c09c8eb7036e495e89d2d773b30b2606b6c0323944cd9e858fe",
+  "original_sha256": "d8381f3b0f6ddc0dd272547293f4e3c4ba094bf2cf7b7221c5a70e00935f3258",
+  "edited_sha256": "04df4d893daa18a8588749189b29f34c9fd4217fb794204aa82c9feee9543e2e",
+  "binaries": {
+    "baseline": "f3e8169338a80de80b7dc091b1cefd37c14ca506883dd7b6691cfdf7b69af7ac",
+    "candidate": "dbc69b9784f54321089272df885948132f7cb6be7b01daeb39ec89b038b9d52f"
+  },
+  "rows": [
+    {
+      "round": 1,
+      "mode": "baseline",
+      "stage": "original",
+      "wall_seconds": 0.3537324443459511,
+      "user_seconds": 0.278266,
+      "kernel_seconds": 0.04552
+    },
+    {
+      "round": 1,
+      "mode": "baseline",
+      "stage": "edited",
+      "wall_seconds": 0.32590491976588964,
+      "user_seconds": 0.25586799999999993,
+      "kernel_seconds": 0.03956099999999999
+    },
+    {
+      "round": 1,
+      "mode": "candidate",
+      "stage": "original",
+      "wall_seconds": 0.3373036030679941,
+      "user_seconds": 0.25867799999999996,
+      "kernel_seconds": 0.04750499999999999
+    },
+    {
+      "round": 1,
+      "mode": "candidate",
+      "stage": "edited",
+      "wall_seconds": 0.3104033600538969,
+      "user_seconds": 0.24284400000000006,
+      "kernel_seconds": 0.038824000000000025
+    },
+    {
+      "round": 2,
+      "mode": "candidate",
+      "stage": "original",
+      "wall_seconds": 0.3403225941583514,
+      "user_seconds": 0.26548000000000016,
+      "kernel_seconds": 0.043974999999999986
+    },
+    {
+      "round": 2,
+      "mode": "candidate",
+      "stage": "edited",
+      "wall_seconds": 0.3103355234488845,
+      "user_seconds": 0.23728999999999978,
+      "kernel_seconds": 0.04264399999999996
+    },
+    {
+      "round": 2,
+      "mode": "baseline",
+      "stage": "original",
+      "wall_seconds": 0.349088734947145,
+      "user_seconds": 0.2769079999999997,
+      "kernel_seconds": 0.040968000000000004
+    },
+    {
+      "round": 2,
+      "mode": "baseline",
+      "stage": "edited",
+      "wall_seconds": 0.3240777039900422,
+      "user_seconds": 0.25959299999999974,
+      "kernel_seconds": 0.03382700000000005
+    },
+    {
+      "round": 3,
+      "mode": "baseline",
+      "stage": "original",
+      "wall_seconds": 0.34661923721432686,
+      "user_seconds": 0.26812099999999983,
+      "kernel_seconds": 0.047654000000000085
+    },
+    {
+      "round": 3,
+      "mode": "baseline",
+      "stage": "edited",
+      "wall_seconds": 0.32099947426468134,
+      "user_seconds": 0.25192499999999995,
+      "kernel_seconds": 0.0387289999999999
+    },
+    {
+      "round": 3,
+      "mode": "candidate",
+      "stage": "original",
+      "wall_seconds": 0.346012351103127,
+      "user_seconds": 0.2824200000000001,
+      "kernel_seconds": 0.03703500000000004
+    },
+    {
+      "round": 3,
+      "mode": "candidate",
+      "stage": "edited",
+      "wall_seconds": 0.31436485797166824,
+      "user_seconds": 0.24859600000000004,
+      "kernel_seconds": 0.03580899999999998
+    },
+    {
+      "round": 4,
+      "mode": "candidate",
+      "stage": "original",
+      "wall_seconds": 0.3410508129745722,
+      "user_seconds": 0.27236500000000063,
+      "kernel_seconds": 0.037744
+    },
+    {
+      "round": 4,
+      "mode": "candidate",
+      "stage": "edited",
+      "wall_seconds": 0.3103951932862401,
+      "user_seconds": 0.24603799999999953,
+      "kernel_seconds": 0.03401299999999985
+    },
+    {
+      "round": 4,
+      "mode": "baseline",
+      "stage": "original",
+      "wall_seconds": 0.34868367947638035,
+      "user_seconds": 0.2774909999999995,
+      "kernel_seconds": 0.040078999999999976
+    },
+    {
+      "round": 4,
+      "mode": "baseline",
+      "stage": "edited",
+      "wall_seconds": 0.31830210518091917,
+      "user_seconds": 0.25732400000000055,
+      "kernel_seconds": 0.034724999999999895
+    },
+    {
+      "round": 5,
+      "mode": "baseline",
+      "stage": "original",
+      "wall_seconds": 0.3459925474599004,
+      "user_seconds": 0.2708710000000014,
+      "kernel_seconds": 0.04478000000000004
+    },
+    {
+      "round": 5,
+      "mode": "baseline",
+      "stage": "edited",
+      "wall_seconds": 0.3234974034130573,
+      "user_seconds": 0.2527469999999994,
+      "kernel_seconds": 0.03991099999999981
+    },
+    {
+      "round": 5,
+      "mode": "candidate",
+      "stage": "original",
+      "wall_seconds": 0.33917771745473146,
+      "user_seconds": 0.26450700000000005,
+      "kernel_seconds": 0.04362400000000011
+    },
+    {
+      "round": 5,
+      "mode": "candidate",
+      "stage": "edited",
+      "wall_seconds": 0.31348648574203253,
+      "user_seconds": 0.24269499999999944,
+      "kernel_seconds": 0.04061200000000009
+    },
+    {
+      "round": 6,
+      "mode": "candidate",
+      "stage": "original",
+      "wall_seconds": 0.3454530006274581,
+      "user_seconds": 0.2618280000000013,
+      "kernel_seconds": 0.048686999999999925
+    },
+    {
+      "round": 6,
+      "mode": "candidate",
+      "stage": "edited",
+      "wall_seconds": 0.31081114429980516,
+      "user_seconds": 0.24096999999999902,
+      "kernel_seconds": 0.039820999999999884
+    },
+    {
+      "round": 6,
+      "mode": "baseline",
+      "stage": "original",
+      "wall_seconds": 0.3491376247256994,
+      "user_seconds": 0.2625820000000001,
+      "kernel_seconds": 0.05577799999999988
+    },
+    {
+      "round": 6,
+      "mode": "baseline",
+      "stage": "edited",
+      "wall_seconds": 0.32457220274955034,
+      "user_seconds": 0.26091399999999965,
+      "kernel_seconds": 0.0337430000000003
+    }
+  ],
+  "reports": [
+    {
+      "file": {
+        "id": 1,
+        "view": "original",
+        "name": "artifact",
+        "size": 186672416,
+        "sha256": "d8381f3b0f6ddc0dd272547293f4e3c4ba094bf2cf7b7221c5a70e00935f3258"
+      },
+      "new_chunks": 804,
+      "new_pack_bytes": 3833737,
+      "references": 12977
+    },
+    {
+      "file": {
+        "id": 2,
+        "view": "edited",
+        "name": "artifact",
+        "size": 186672416,
+        "sha256": "04df4d893daa18a8588749189b29f34c9fd4217fb794204aa82c9feee9543e2e"
+      },
+      "new_chunks": 1,
+      "new_pack_bytes": 4167,
+      "references": 12977
+    }
+  ],
+  "pack_hashes": [
+    [
+      "77f366fbba2cadd56e2c57c734d7316d15e9c1d306157307c5cde1b2b208e780",
+      "77f366fbba2cadd56e2c57c734d7316d15e9c1d306157307c5cde1b2b208e780"
+    ],
+    [
+      "d5e095992c936c23ba74d26a0fd875d16d2acc0d71e83f7cf8903ea397b67c5a",
+      "d5e095992c936c23ba74d26a0fd875d16d2acc0d71e83f7cf8903ea397b67c5a"
+    ]
+  ],
+  "integrity_checks": 12,
+  "exact_pack_and_manifest_parity": true,
+  "summary": [
+    {
+      "stage": "original",
+      "baseline": {
+        "wall_seconds": {
+          "median": 0.34888620721176267,
+          "min": 0.3459925474599004,
+          "max": 0.3537324443459511
+        },
+        "user_seconds": {
+          "median": 0.27388950000000056,
+          "min": 0.2625820000000001,
+          "max": 0.278266
+        },
+        "kernel_seconds": {
+          "median": 0.04515000000000002,
+          "min": 0.040078999999999976,
+          "max": 0.05577799999999988
+        }
+      },
+      "candidate": {
+        "wall_seconds": {
+          "median": 0.3406867035664618,
+          "min": 0.3373036030679941,
+          "max": 0.346012351103127
+        },
+        "user_seconds": {
+          "median": 0.2649935000000001,
+          "min": 0.25867799999999996,
+          "max": 0.2824200000000001
+        },
+        "kernel_seconds": {
+          "median": 0.04379950000000005,
+          "min": 0.03703500000000004,
+          "max": 0.048686999999999925
+        }
+      },
+      "wall_reduction_percent": 2.3501942684492683,
+      "faster_paired_rounds": 6
+    },
+    {
+      "stage": "edited",
+      "baseline": {
+        "wall_seconds": {
+          "median": 0.32378755370154977,
+          "min": 0.31830210518091917,
+          "max": 0.32590491976588964
+        },
+        "user_seconds": {
+          "median": 0.25659600000000027,
+          "min": 0.25192499999999995,
+          "max": 0.26091399999999965
+        },
+        "kernel_seconds": {
+          "median": 0.0367269999999999,
+          "min": 0.0337430000000003,
+          "max": 0.03991099999999981
+        }
+      },
+      "candidate": {
+        "wall_seconds": {
+          "median": 0.31060725217685103,
+          "min": 0.3103355234488845,
+          "max": 0.31436485797166824
+        },
+        "user_seconds": {
+          "median": 0.24276949999999975,
+          "min": 0.23728999999999978,
+          "max": 0.24859600000000004
+        },
+        "kernel_seconds": {
+          "median": 0.039322499999999955,
+          "min": 0.03401299999999985,
+          "max": 0.04264399999999996
+        }
+      },
+      "wall_reduction_percent": 4.070663425453236,
+      "faster_paired_rounds": 6
+    }
+  ],
+  "limitations": [
+    "Public Rust standard-library archive repeated sixteen times, plus a one-byte edit.",
+    "Warm caches, six reversed-order rounds on Oaktown top.",
+    "CLI import measurement; does not establish Cargo latency improvement.",
+    "Both imports are sequential; the background pipeline is not used by the put command."
+  ]
+}
