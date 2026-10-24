@@ -18,8 +18,30 @@
     }
   },
   "host_tests": 36,
-  "x86_validation": "pending",
+  "x86_validation": "passed",
   "benchmark": "pending",
   "durability": "Identity rows are reserved 64 at a time in one FULL transaction. Each row is durable before attaching its xattr, and the inode remains synced before manifest publication. The schema and publication/retirement ordering are unchanged.",
-  "tests": "Two concurrent connections allocate distinct identities across batch boundaries; offline GC discards unused reservations without recycling IDs and the same Live instance can allocate afterward. Injected partial-batch failure rolls back all rows without attaching an xattr. Process death before commit, after reservation, and after inode sync preserves native bytes and allows GC/reseal. Existing filesystem/Cargo/recovery suites pass."
+  "tests": "Two concurrent connections allocate distinct identities across batch boundaries; offline GC discards unused reservations without recycling IDs and the same Live instance can allocate afterward. Injected partial-batch failure rolls back all rows without attaching an xattr. Process death before commit, after reservation, and after inode sync preserves native bytes and allows GC/reseal. Existing filesystem/Cargo/recovery suites pass.",
+  "implementation_commit": "d15f94009f41c4f82d35bc71b4afbe52575d0343",
+  "x86_64": {
+    "binary_sha256": "4aabddc3bb096068973f524a8ac8cf465bc91bedc1a9b82291abf974a5bdbdb2",
+    "source_sha256": {
+      "src/staging.rs": "78d2c3cb0a71467d805b271d166a98a48a50940feece2eafbdac25ee842a74db",
+      "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+      "src/live.rs": "4df7358dbeeadd0988c33f983050521846f537fd97937a968a6e4042087f1255",
+      "src/store.rs": "246c87ab53ef71de670070c3b26792eca5e445018d0866a24833886bee39a9f3",
+      "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+      "src/staging/background.rs": "7d37a9a5baef74908b19c6f8bba1df725c16c21e4314e13f97ec431b2945186b",
+      "src/staging/reads.rs": "cb218bc20f1517c103a264994534d5f5a56a751a8527ea40da17773ed8e2481f"
+    },
+    "linux_tests": 70,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  }
 }
