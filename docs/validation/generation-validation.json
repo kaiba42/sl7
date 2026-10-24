@@ -21,8 +21,29 @@
   },
   "host_tests": 35,
   "cache_test_correction": "OrbStack native directories report nlink=1 before and after mkdir; compare mounted/native link counts and require immediate parent mtime coherence instead of assuming +1.",
-  "x86_validation": "pending",
+  "x86_validation": "passed",
   "benchmark": "pending",
   "durability": "Generation, manifest and live binding commit atomically in one FULL transaction; durable identity/xattr assignment is unchanged.",
-  "tests": "Canceled and failed publications do not consume generations; stale candidates roll back; legacy orphan labels do not collide; exhausted counters remain integers; process death before/after commit preserves generation and content ordering."
+  "tests": "Canceled and failed publications do not consume generations; stale candidates roll back; legacy orphan labels do not collide; exhausted counters remain integers; process death before/after commit preserves generation and content ordering.",
+  "implementation_commit": "d3f1138bdcab8074ec92341828aa62c41a9a5013",
+  "x86_64": {
+    "binary_sha256": "a9086ab7d331b140453cad6d7f9a4209f7ebf992ec102b6009a34c77a2970954",
+    "source_sha256": {
+      "src/staging.rs": "f177171d47ea1942534c65c4a09e537441c561e05b841699f113062392053339",
+      "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+      "src/live.rs": "0bfc9842cd5a4948b1983764e9a030bf532bdc5d4a0ff03155086e134d296a97",
+      "src/store.rs": "00d7af986ce7643e25876c9cac9427e2d746204543fa51b8e23f6d4dbb8e8c9e",
+      "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+      "src/staging/background.rs": "9db060e3653062636cec32af252665a841c46cd641115241783878f1bad7b0cd"
+    },
+    "linux_tests": 63,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  }
 }

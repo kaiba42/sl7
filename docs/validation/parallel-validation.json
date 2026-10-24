@@ -26,9 +26,30 @@
   "host_tests": 36,
   "default_workers": 2,
   "worker_limit": 8,
-  "x86_validation": "pending",
+  "x86_validation": "passed",
   "benchmark": "pending",
   "durability": "Sealing catalog commits remain serialized and FULL; only durable manifests allow native retirement. Per-inode gates prevent overlapping candidates for the same inode.",
   "tests": "A paused prepared candidate does not block another worker from publishing; overlapping preparations of identical chunks both publish and reconstruct correctly; existing cancellation, read leases, retirement, crash, remount and self-hosted Cargo tests pass.",
-  "instrumentation": "Counters separate active seal jobs from active preparation phases; the profiler groups per-worker threads and measures overlapping background syscalls. Same-binary benchmark supports explicit 1/2/4-worker cases."
+  "instrumentation": "Counters separate active seal jobs from active preparation phases; the profiler groups per-worker threads and measures overlapping background syscalls. Same-binary benchmark supports explicit 1/2/4-worker cases.",
+  "implementation_commit": "04f45b58bbbd6b26af0098aefa3ce822e6d87be0",
+  "x86_64": {
+    "binary_sha256": "8c60d171ab6008840999d19386de3cde40d3322aeeaa2d035e5064748e303ec0",
+    "source_sha256": {
+      "src/staging.rs": "01ca3fa1b69e6616cbc37f9983110884d838a6dc68d3ba31c5c6ee7eeb156a73",
+      "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+      "src/live.rs": "0bfc9842cd5a4948b1983764e9a030bf532bdc5d4a0ff03155086e134d296a97",
+      "src/store.rs": "246c87ab53ef71de670070c3b26792eca5e445018d0866a24833886bee39a9f3",
+      "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+      "src/staging/background.rs": "fa201ce989e2751e3b773bcfd63c986e2e823fb508b760f2f05de284d846a5d9"
+    },
+    "linux_tests": 66,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  }
 }
