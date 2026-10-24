@@ -1,0 +1,25 @@
+{
+  "binary_sha256": "f6574ece34298325483972d2b3392ff4c24efe5685bbc13367172a8bc5ce66e7",
+  "source_sha256": {
+    "src/staging.rs": "3c9f8e2f1168367c7e7dc54541fd26088db0787a30b1a0df05a859e817c4568c",
+    "src/staging/background.rs": "8c21895beddb27db91b138a471b85d082487cc28e575bd48cc0b3ae7221cf717",
+    "src/staging/reads.rs": "8c363ca8a8e6a552e0b090fd6125dfa3c9ce9f202455ba8c56c50ee70b600991",
+    "src/staging/operations.rs": "a8d3b4314b2b068ea430016230455bd7ebafae7fcc82823b882d225064ce3db7"
+  },
+  "linux_tests": 56,
+  "host_tests": 35,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "concurrency_tests": [
+    "unrelated native I/O proceeds while same-inode reads and writes wait",
+    "reservation survives release/forget and error paths",
+    "unlink waits for active write and open descriptor survives unlink"
+  ],
+  "benchmark": "pending"
+}

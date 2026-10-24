@@ -71,9 +71,12 @@ bypass the new target's read lease. Reads of unrelated inodes continue.
 Open readers prevent retirement until their last release. New opens of an inode
 being published wait on its condition variable without holding filesystem state.
 Background candidate setup, packing, publication, and sparse retirement also run
-outside state. Foreground hydration, writes, fsync, and namespace/metadata callbacks
-still hold state; this is concurrent read reconstruction, not fully independent
-mutation execution.
+outside state. Native positioned writes and file/directory synchronization also
+run outside state. Their inode reservations retain the descriptor and block
+same-inode file mutations until completion, including error paths. Unrelated
+native I/O and reads can overlap. Hydration and catalog preparation still occur
+under state before a write reservation is released to execute native I/O.
+Foreground namespace/metadata callbacks still hold state.
 
 Catalog-writing mutations acquire a separate writer permit **before** filesystem
 state. Mutations of already-native inodes without a logical metadata override
@@ -192,6 +195,6 @@ There is no online control socket, multi-daemon writer protocol, or native macOS
 writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
 permission transitions remain outside qualification. Catalog-writing foreground transitions still serialize with publication through
-the writer permit. Foreground hydration and writes still hold filesystem state;
-independent READ callbacks reconstruct outside it. The four-request-worker limit
+the writer permit. Foreground hydration and namespace metadata commits still hold
+filesystem state; reads, native writes, and synchronization run outside it. The four-request-worker limit
 can still constrain progress when several mutations are waiting.

@@ -4,6 +4,7 @@
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
 use fuser::*;
 mod background;
+mod operations;
 mod reads;
 use std::{
     collections::{HashMap, VecDeque},
@@ -31,6 +32,7 @@ const LIVE_TTL: Duration = Duration::from_secs(1);
 struct Inode {
     pin: Arc<File>,
     readers: u64,
+    exclusive_io: bool,
     waiting_mutations: u64,
     identity: (u64, u64),
     references: u64,
@@ -270,6 +272,7 @@ impl State {
             Inode {
                 pin: Arc::new(file),
                 readers: 0,
+                exclusive_io: false,
                 waiting_mutations: 0,
                 identity: key,
                 references: 0,
@@ -652,14 +655,7 @@ impl StagingFs {
         offset: u64,
         data: &[u8],
     ) -> std::result::Result<(), Errno> {
-        self.with_mutation(
-            |_| Ok(vec![ino]),
-            |s| {
-                s.hydrate(ino)?;
-                s.mutated(ino)?;
-                s.handle(ino, fh)?.file.write_all_at(data, offset)
-            },
-        )
+        self.native_io(ino, fh, true, |file| file.write_all_at(data, offset))
     }
 }
 
@@ -930,14 +926,7 @@ impl Filesystem for StagingFs {
         datasync: bool,
         reply: ReplyEmpty,
     ) {
-        match self.with_read(|s| {
-            let file = &s.handle(ino, fh)?.file;
-            if datasync {
-                file.sync_data()
-            } else {
-                file.sync_all()
-            }
-        }) {
+        match self.sync_handle(ino, fh, datasync) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }
@@ -1177,7 +1166,7 @@ impl Filesystem for StagingFs {
         _datasync: bool,
         reply: ReplyEmpty,
     ) {
-        match self.with_read(|s| s.handle(ino, fh)?.file.sync_all()) {
+        match self.sync_handle(ino, fh, false) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
         }

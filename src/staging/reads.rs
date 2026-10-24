@@ -112,7 +112,7 @@ impl StagingFs {
             while state
                 .nodes
                 .get(&ino)
-                .is_some_and(|n| n.waiting_mutations != 0)
+                .is_some_and(|n| n.waiting_mutations != 0 || n.exclusive_io)
             {
                 blocked = true;
                 state = self.publication_done.wait(state).map_err(|_| Errno::EIO)?;
