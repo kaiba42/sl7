@@ -40,6 +40,12 @@ def daemon_cpu_breakdown(pid):
 
 
 def main():
+    cache_setting = os.environ.get('SL7_PROFILE_BUILDID_CACHE', '1')
+    if cache_setting not in {'0', '1'}:
+        raise ValueError('SL7_PROFILE_BUILDID_CACHE must be 0 or 1')
+    # Keep build IDs in perf.data while optionally avoiding executable copies in
+    # perf's global cache. Large mapped artifact sets can make that costly.
+    record_command = ['perf', 'record'] + (['--no-buildid-cache'] if cache_setting == '0' else [])
     ROOT.mkdir(parents=True, exist_ok=True)
     cgroup = benchmark.process_cgroup()
     cpu_max = (cgroup/'cpu.max').read_text().strip()
@@ -60,6 +66,7 @@ def main():
     report = dict(revision=REVISION, rustc=subprocess.check_output(['rustc', '-Vv'], text=True),
                   kernel=subprocess.check_output(['uname', '-r'], text=True).strip(),
                   perf=subprocess.check_output(['perf', '--version'], text=True).strip(),
+                  perf_buildid_cache=cache_setting == '1',
                   sl7_sha256=hashlib.sha256(BINARY.read_bytes()).hexdigest(),
                   profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
@@ -109,11 +116,11 @@ def main():
                     profilers.append((kind, process))
 
                 if sample:
-                    start_profiler('cpu', ['perf', 'record', '-e', 'cpu-clock:u', '-F', '99',
+                    start_profiler('cpu', record_command + ['-e', 'cpu-clock:u', '-F', '99',
                         '--call-graph', 'dwarf,8192', '-p', str(daemon.pid),
                         '-o', str(ROOT/f'{stage}-cpu.data')])
                 if trace and fuse_trace_available:
-                    command = ['perf', 'record', '-a', '-m', '1024', '-o', str(ROOT/f'{stage}-fuse.data')]
+                    command = record_command + ['-a', '-m', '1024', '-o', str(ROOT/f'{stage}-fuse.data')]
                     for event in ['send', 'sent', 'end']:
                         command += ['-e', f'fuse:fuse_request_{event}', '--filter', f'connection == {connection}']
                     start_profiler('fuse', command)
@@ -121,7 +128,7 @@ def main():
                     start_profiler('syscalls', ['perf', 'stat', '-x', ',', '-p', str(daemon.pid),
                         '-e', ','.join(f'syscalls:sys_enter_{s}' for s in SYSCALLS),
                         '-o', str(ROOT/f'{stage}-syscalls.csv')])
-                    command = ['perf', 'record', '-m', '1024', '-p', str(daemon.pid),
+                    command = record_command + ['-m', '1024', '-p', str(daemon.pid),
                                '-o', str(ROOT/f'{stage}-io.data')]
                     for name in ('fsync', 'fdatasync', 'pwrite64'):
                         for phase in ('enter', 'exit'):
