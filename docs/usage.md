@@ -126,6 +126,9 @@ Reopening a file preserves its kernel page-cache contents, avoiding reconstructi
 of unchanged pages on every open. Writes and truncation through the mount remain
 coherent. Kernel cache memory is reclaimable and separate from SL7's userspace
 cache budgets.
+Successful name lookups and attributes are cached in the kernel for one second.
+Changes through the mount remain immediately visible; allocated block counts
+changed by background sealing can take that interval to refresh in `stat`.
 See [the live format and recovery protocol](live-format.md).
 
 `live-stats` separates logical bytes, native allocated blocks, and content-store

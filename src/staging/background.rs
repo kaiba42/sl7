@@ -28,6 +28,8 @@ pub(super) struct Stats {
     pub(super) max_request_state_seconds: f64,
     pub(super) catalog_wait_seconds: f64,
     pub(super) publication_open_wait_seconds: f64,
+    pub(super) lookup_operations: u64,
+    pub(super) getattr_operations: u64,
     pub(super) read_operations: u64,
     pub(super) active_reads: usize,
     pub(super) max_parallel_reads: usize,

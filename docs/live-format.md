@@ -123,6 +123,15 @@ unsupported. Native staging mounts retain their conservative open behavior.
 Kernel pages are reclaimable system cache, separate from SL7's bounded userspace
 payload and extent caches. Writeback caching remains disabled.
 
+The live mount also gives successful name lookups and attributes a one-second
+kernel validity interval. Mutations through the mount invalidate the affected
+kernel metadata; they do not wait for that interval to expire. Background
+retirement can change allocated blocks without a client mutation, so `stat`'s
+block count can lag by up to that interval. Logical size and preserved timestamps
+do not change during retirement. Native staging retains zero metadata validity.
+`lookup_operations` and `getattr_operations` count requests reaching the daemon,
+allowing mounted tests and builds to verify cache effectiveness.
+
 Recovery scans unique native regular inodes before mounting. A committed manifest
 wins over partially hydrated/retired bytes; recovery finishes sparse retirement
 when native allocation or length differs. If hydration removed the binding,

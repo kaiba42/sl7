@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import random
 import runpy
+import time
 
 from mount_helpers import isolated_test_directory
 
@@ -17,15 +18,19 @@ def run(work):
     h = Harness(work)
     payload = random.Random(2718).randbytes(1024 * 1024)
     with h.mounted():
-        (h.mount/'artifact').write_bytes(payload)
+        path = h.mount/'artifact'
+        with path.open('wb', buffering=0) as writer:
+            writer.write(payload)
+            assert path.stat().st_blocks > 0
         h.sealed('artifact')
+        # Background retirement changes allocation, not logical metadata. Its
+        # cached block count must expire within the documented short timeout.
+        deadline = time.monotonic() + 3
+        while path.stat().st_blocks != 0:
+            assert time.monotonic() < deadline, 'allocation attributes did not expire'
+            time.sleep(.02)
 
-    def reads(count):
-        start = len(h.log.read_text())
-        with h.mounted():
-            for _ in range(count):
-                # Close each descriptor: retention must survive a fresh open.
-                assert (h.mount/'artifact').read_bytes() == payload
+    def counters(start):
         lines = h.log.read_text()[start:].splitlines()
         stats = {}
         for kind in ('sealing_stats', 'cache_stats'):
@@ -34,6 +39,15 @@ def run(work):
             assert len(rows) == 1, (kind, lines)
             stats[kind] = rows[0]
         assert stats['sealing_stats']['errors'] == 0
+        return stats
+
+    def reads(count):
+        start = len(h.log.read_text())
+        with h.mounted():
+            for _ in range(count):
+                # Close each descriptor: retention must survive a fresh open.
+                assert (h.mount/'artifact').read_bytes() == payload
+        stats = counters(start)
         return dict(read_operations=stats['sealing_stats']['read_operations'],
                     reconstructed_bytes=stats['cache_stats']['requested_bytes'])
 
@@ -45,6 +59,62 @@ def run(work):
         'reopen discarded cached pages', single, repeated)
     assert repeated['reconstructed_bytes'] <= single['reconstructed_bytes'] + 8192, (
         'reopen reconstructed cached bytes', single, repeated)
+
+    def attributes(count):
+        start = len(h.log.read_text())
+        with h.mounted():
+            started = time.monotonic()
+            for _ in range(count):
+                assert (h.mount/'artifact').stat().st_size == len(payload)
+            elapsed = time.monotonic() - started
+        stats = counters(start)['sealing_stats']
+        # Make sure the probe itself fits within one validity interval.
+        assert elapsed < .5, ('metadata probe exceeded its time window', elapsed)
+        return dict(lookups=stats['lookup_operations'], getattrs=stats['getattr_operations'],
+                    elapsed_seconds=elapsed)
+
+    single_stat, repeated_stat = attributes(1), attributes(128)
+    for key in ('lookups', 'getattrs'):
+        assert repeated_stat[key] <= single_stat[key] + 2, (
+            'metadata cache did not retain attributes', key, single_stat, repeated_stat)
+
+    with h.mounted():
+        directory = h.mount/'metadata'
+        directory.mkdir()
+        stamp = 1_600_000_000_123_456_789
+        os.utime(directory, ns=(stamp, stamp))
+        parent_links = directory.stat().st_nlink
+        assert directory.stat().st_mtime_ns == stamp
+        child = directory/'child'
+        child.write_bytes(b'initial')
+        assert directory.stat().st_mtime_ns != stamp
+        ino = child.stat().st_ino
+        child.chmod(0o640)
+        assert child.stat().st_mode & 0o777 == 0o640
+        os.utime(child, ns=(stamp, stamp))
+        assert child.stat().st_mtime_ns == stamp
+        with child.open('r+b', buffering=0) as writer:
+            writer.write(b'changed')
+            os.fsync(writer.fileno())
+        assert child.stat().st_mtime_ns != stamp
+        alias = directory/'link'
+        os.link(child, alias)
+        assert child.stat().st_nlink == alias.stat().st_nlink == 2
+        alias.unlink()
+        assert child.stat().st_nlink == 1
+        moved = directory/'moved'
+        child.rename(moved)
+        assert not child.exists() and moved.stat().st_ino == ino
+        child.write_bytes(b'replaced')
+        replacement_ino = child.stat().st_ino
+        child.replace(moved)
+        assert moved.stat().st_ino == replacement_ino and moved.read_bytes() == b'replaced'
+        subdir = directory/'subdir'
+        assert not subdir.exists()
+        subdir.mkdir()
+        assert directory.stat().st_nlink == parent_links + 1
+        subdir.rmdir()
+        assert not subdir.exists() and directory.stat().st_nlink == parent_links
 
     expected = bytearray(payload)
     replacement = bytes(b ^ 0xFF for b in payload)
@@ -105,6 +175,10 @@ def run(work):
         assert (h.mount/'alias').read_bytes() == replacement
     h.sl7('check')
     return dict(status='passed', single_open=single, eight_opens=repeated,
+                single_stat=single_stat, repeated_stat=repeated_stat,
+                metadata_coherence=['chmod', 'utime', 'write mtime', 'parent mtime',
+                                    'link count', 'rename replacement', 'mkdir/rmdir',
+                                    'background allocation expiry'],
                 coherence=['same-size write with restored mtime', 'mmap writes',
                            'hard-link alias', 'rename replacement with live mapping',
                            'truncate and regrow', 'create existing', 'truncate on open',

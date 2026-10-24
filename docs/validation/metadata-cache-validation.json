@@ -1,0 +1,59 @@
+{
+  "binary_sha256": "fc5319262af9580ec09a2469ec03c97fa86889ef9b634ea31b5669c5ead0d78c",
+  "staging_sha256": "0ba4d5976bf0b8a1083faf3a88a9a5d6820b83254534939fcf506bc3c49dec34",
+  "background_sha256": "dfcc8ba38f22c55197b6990db778b96721a1f6d647a077d58b8e0268b39d5853",
+  "linux_tests": 53,
+  "host_tests": 35,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "cache": {
+    "status": "passed",
+    "single_open": {
+      "read_operations": 8,
+      "reconstructed_bytes": 1048576
+    },
+    "eight_opens": {
+      "read_operations": 8,
+      "reconstructed_bytes": 1048576
+    },
+    "single_stat": {
+      "lookups": 1,
+      "getattrs": 1,
+      "elapsed_seconds": 0.0001760665327310562
+    },
+    "repeated_stat": {
+      "lookups": 1,
+      "getattrs": 1,
+      "elapsed_seconds": 0.0010437462478876114
+    },
+    "metadata_coherence": [
+      "chmod",
+      "utime",
+      "write mtime",
+      "parent mtime",
+      "link count",
+      "rename replacement",
+      "mkdir/rmdir",
+      "background allocation expiry"
+    ],
+    "coherence": [
+      "same-size write with restored mtime",
+      "mmap writes",
+      "hard-link alias",
+      "rename replacement with live mapping",
+      "truncate and regrow",
+      "create existing",
+      "truncate on open",
+      "sealing and hydration",
+      "remount"
+    ]
+  },
+  "zero_ttl_negative_control": "failed attribute-retention assertion as expected",
+  "benchmark": "pending"
+}

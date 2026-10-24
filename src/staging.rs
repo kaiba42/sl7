@@ -27,6 +27,7 @@ use std::{
 };
 
 const TTL: Duration = Duration::ZERO;
+const LIVE_TTL: Duration = Duration::from_secs(1);
 struct Inode {
     pin: Arc<File>,
     readers: u64,
@@ -442,6 +443,16 @@ impl State {
 }
 
 impl StagingFs {
+    fn metadata_ttl(&self) -> Duration {
+        if self.readers.is_some() {
+            // Namespace and logical metadata mutations go through this mount;
+            // the kernel invalidates their affected entries and attributes.
+            // Bound visibility lag for background allocation changes to 1s.
+            LIVE_TTL
+        } else {
+            TTL
+        }
+    }
     fn file_cache_flags(&self) -> FopenFlags {
         if self.readers.is_some() {
             // The live tree is private: all content changes arrive through this
@@ -682,16 +693,20 @@ impl Filesystem for StagingFs {
     }
     fn lookup(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEntry) {
         match self.with_read(|s| {
+            s.seal_stats.lookup_operations += 1;
             let ino = s.lookup(parent, name)?;
             s.entry_attr(ino)
         }) {
-            Ok(a) => reply.entry(&TTL, &a, Generation(0)),
+            Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
             Err(e) => reply.error(e),
         }
     }
     fn getattr(&self, _req: &Request, ino: INodeNo, _fh: Option<FileHandle>, reply: ReplyAttr) {
-        match self.with_read(|s| s.attr(ino)) {
-            Ok(a) => reply.attr(&TTL, &a),
+        match self.with_read(|s| {
+            s.seal_stats.getattr_operations += 1;
+            s.attr(ino)
+        }) {
+            Ok(a) => reply.attr(&self.metadata_ttl(), &a),
             Err(e) => reply.error(e),
         }
     }
@@ -761,7 +776,7 @@ impl Filesystem for StagingFs {
                 s.attr(ino)
             },
         ) {
-            Ok(a) => reply.attr(&TTL, &a),
+            Ok(a) => reply.attr(&self.metadata_ttl(), &a),
             Err(e) => reply.error(e),
         }
     }
@@ -782,7 +797,7 @@ impl Filesystem for StagingFs {
             let ino = s.register(pin(&path)?)?;
             s.entry_attr(ino)
         }) {
-            Ok(a) => reply.entry(&TTL, &a, Generation(0)),
+            Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
             Err(e) => reply.error(e),
         }
     }
@@ -828,7 +843,13 @@ impl Filesystem for StagingFs {
                 Ok((s.entry_attr(ino)?, fh))
             },
         ) {
-            Ok((a, fh)) => reply.created(&TTL, &a, Generation(0), fh, self.file_cache_flags()),
+            Ok((a, fh)) => reply.created(
+                &self.metadata_ttl(),
+                &a,
+                Generation(0),
+                fh,
+                self.file_cache_flags(),
+            ),
             Err(e) => reply.error(e),
         }
     }
@@ -1024,7 +1045,7 @@ impl Filesystem for StagingFs {
                 s.entry_attr(ino)
             },
         ) {
-            Ok(a) => reply.entry(&TTL, &a, Generation(0)),
+            Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
             Err(e) => reply.error(e),
         }
     }
@@ -1042,7 +1063,7 @@ impl Filesystem for StagingFs {
             let ino = s.register(pin(&path)?)?;
             s.entry_attr(ino)
         }) {
-            Ok(a) => reply.entry(&TTL, &a, Generation(0)),
+            Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
             Err(e) => reply.error(e),
         }
     }
