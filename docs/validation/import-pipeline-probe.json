@@ -1,0 +1,466 @@
+{
+  "status": "passed",
+  "kind": "Public standard-library artifact repeated sixteen times, with one changed byte; existing chunks preseeded. This is a CLI import microbenchmark, not Cargo timing.",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "binary_sha256": "6e842ad058621fca9c2ffcef6988c23287b09e0fffc28344a9986ce4b4ab5663",
+  "baseline_binary_sha256": "bc70075c3bdc5f5fb7961e79a37f5a6a555d7804d45ab22a6a250ad3b698b303",
+  "public_rlib_sha256": "0e80edd7245f7b5cd51a4bb25f9ac23d80d9e3125d921fbee7404893be3af1b3",
+  "original_sha256": "2f4eaa63d42dc4874c414f74388f23378ca65a62562418a9ca9d690cbdab7f60",
+  "edited_sha256": "3dabde5d16aaba3856314513a8a71405f9de98bb2039b52916a49629db4311df",
+  "input_bytes": 193988512,
+  "rows": [
+    {
+      "round": 1,
+      "mode": -1,
+      "pipeline": false,
+      "wall_seconds": 0.28216863999841735,
+      "user_seconds": 0.23550299999999996,
+      "kernel_seconds": 0.034073,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 1,
+      "mode": 0,
+      "pipeline": false,
+      "wall_seconds": 0.2691251439973712,
+      "user_seconds": 0.23592900000000006,
+      "kernel_seconds": 0.01599499999999998,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 1,
+      "mode": 1,
+      "pipeline": true,
+      "wall_seconds": 0.2293690090009477,
+      "user_seconds": 0.254159,
+      "kernel_seconds": 0.045905,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 1,
+      "mode": 2,
+      "pipeline": true,
+      "wall_seconds": 0.18835186399519444,
+      "user_seconds": 0.22797800000000024,
+      "kernel_seconds": 0.020355000000000012,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 2,
+      "mode": 2,
+      "pipeline": true,
+      "wall_seconds": 0.1952125200041337,
+      "user_seconds": 0.22715499999999977,
+      "kernel_seconds": 0.018091999999999997,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 2,
+      "mode": 1,
+      "pipeline": true,
+      "wall_seconds": 0.22477425300166942,
+      "user_seconds": 0.26971100000000003,
+      "kernel_seconds": 0.04083300000000001,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 2,
+      "mode": 0,
+      "pipeline": false,
+      "wall_seconds": 0.2554036250076024,
+      "user_seconds": 0.23155899999999985,
+      "kernel_seconds": 0.006014999999999993,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 2,
+      "mode": -1,
+      "pipeline": false,
+      "wall_seconds": 0.24792081900523044,
+      "user_seconds": 0.2243429999999993,
+      "kernel_seconds": 0.007977000000000012,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 3,
+      "mode": -1,
+      "pipeline": false,
+      "wall_seconds": 0.2523354129953077,
+      "user_seconds": 0.21872199999999964,
+      "kernel_seconds": 0.011985000000000023,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 3,
+      "mode": 0,
+      "pipeline": false,
+      "wall_seconds": 0.25343259300279897,
+      "user_seconds": 0.22320399999999907,
+      "kernel_seconds": 0.012954000000000021,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 3,
+      "mode": 1,
+      "pipeline": true,
+      "wall_seconds": 0.22007850000227336,
+      "user_seconds": 0.25918600000000147,
+      "kernel_seconds": 0.03702700000000003,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 3,
+      "mode": 2,
+      "pipeline": true,
+      "wall_seconds": 0.18977153599553276,
+      "user_seconds": 0.227271,
+      "kernel_seconds": 0.01778599999999997,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 4,
+      "mode": 2,
+      "pipeline": true,
+      "wall_seconds": 0.19201543599774595,
+      "user_seconds": 0.23177100000000017,
+      "kernel_seconds": 0.014231999999999911,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 4,
+      "mode": 1,
+      "pipeline": true,
+      "wall_seconds": 0.21391361800488085,
+      "user_seconds": 0.2681149999999999,
+      "kernel_seconds": 0.02838799999999997,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 4,
+      "mode": 0,
+      "pipeline": false,
+      "wall_seconds": 0.24866404999920633,
+      "user_seconds": 0.22210799999999864,
+      "kernel_seconds": 0.01507499999999995,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 4,
+      "mode": -1,
+      "pipeline": false,
+      "wall_seconds": 0.2457493749971036,
+      "user_seconds": 0.21539800000000042,
+      "kernel_seconds": 0.016797000000000173,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 5,
+      "mode": -1,
+      "pipeline": false,
+      "wall_seconds": 0.2466620189952664,
+      "user_seconds": 0.2210499999999982,
+      "kernel_seconds": 0.012002999999999986,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 5,
+      "mode": 0,
+      "pipeline": false,
+      "wall_seconds": 0.24840509799832944,
+      "user_seconds": 0.21978499999999812,
+      "kernel_seconds": 0.017217999999999956,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 5,
+      "mode": 1,
+      "pipeline": true,
+      "wall_seconds": 0.21893965399067383,
+      "user_seconds": 0.2662339999999972,
+      "kernel_seconds": 0.03251700000000013,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 5,
+      "mode": 2,
+      "pipeline": true,
+      "wall_seconds": 0.18582463900384028,
+      "user_seconds": 0.22729500000000158,
+      "kernel_seconds": 0.01810299999999998,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 6,
+      "mode": 2,
+      "pipeline": true,
+      "wall_seconds": 0.19222484700731002,
+      "user_seconds": 0.23615900000000067,
+      "kernel_seconds": 0.014947000000000044,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 6,
+      "mode": 1,
+      "pipeline": true,
+      "wall_seconds": 0.2143038170033833,
+      "user_seconds": 0.2614529999999995,
+      "kernel_seconds": 0.03704699999999983,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 6,
+      "mode": 0,
+      "pipeline": false,
+      "wall_seconds": 0.2514450190064963,
+      "user_seconds": 0.2235219999999991,
+      "kernel_seconds": 0.014968000000000092,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    },
+    {
+      "round": 6,
+      "mode": -1,
+      "pipeline": false,
+      "wall_seconds": 0.24884879498858936,
+      "user_seconds": 0.2261969999999991,
+      "kernel_seconds": 0.008967999999999865,
+      "new_chunks": 1,
+      "new_pack_bytes": 2206,
+      "references": 12785,
+      "pack_ids": [
+        "0d2616463675ca47a6eb29e6a90eb566a4683edebc150ea9c1dfd896f26ab6fc",
+        "bb8660d760ae7ed5341021bcbe05a3931c1dbfd810939b0d7e6ed569d0f841a5"
+      ]
+    }
+  ],
+  "summary": {
+    "-1": {
+      "wall_seconds": 0.2483848069969099,
+      "user_seconds": 0.22269649999999874,
+      "kernel_seconds": 0.011994000000000005,
+      "total_cpu_seconds": 0.23268649999999874,
+      "wall_min_seconds": 0.2457493749971036,
+      "wall_max_seconds": 0.28216863999841735
+    },
+    "0": {
+      "wall_seconds": 0.25243880600464763,
+      "user_seconds": 0.2233629999999991,
+      "kernel_seconds": 0.015021500000000021,
+      "total_cpu_seconds": 0.23737849999999922,
+      "wall_min_seconds": 0.24840509799832944,
+      "wall_max_seconds": 0.2691251439973712
+    },
+    "1": {
+      "wall_seconds": 0.2195090769964736,
+      "user_seconds": 0.26384349999999834,
+      "kernel_seconds": 0.03703699999999993,
+      "total_cpu_seconds": 0.2986254999999983,
+      "wall_min_seconds": 0.21391361800488085,
+      "wall_max_seconds": 0.2293690090009477
+    },
+    "2": {
+      "wall_seconds": 0.19089348599663936,
+      "user_seconds": 0.2276365000000009,
+      "kernel_seconds": 0.017938999999999983,
+      "total_cpu_seconds": 0.24570050000000082,
+      "wall_min_seconds": 0.18582463900384028,
+      "wall_max_seconds": 0.1952125200041337
+    }
+  },
+  "all_reports_and_packs_identical": true,
+  "integrity_checks": 24,
+  "max_queued_raw_bytes": 1048576,
+  "base_commit": "5e7efe258906d2cb7aa277dce12e9db3c7cc2753",
+  "prototype_sources_sha256": {
+    "src/lib.rs": "9f6ab499a3caa24df00bb6b632806ea2062c87443918a593f50b9e05da7c143f",
+    "src/store.rs": "e57ebb63f1993caa02b676d259e5a2be95884424694311debc74f297d195b1c2",
+    "src/import_stream.rs": "a78b81fe9aa7a3d34446fcb926c0e04162b7f04b598a81dfab817b55e64c3c47"
+  },
+  "reproduction_files_sha256": {
+    "experiments/import-pipeline/base-commit": "9f29a158281a6ff9a5642dd50664c8575290525dc2f2d2ff7c67392f39fdc286",
+    "experiments/import-pipeline/changes.patch": "10d8315e598d484f98f9e9d5efe2958754f30721f064cf4b9ce9ba963ec5999c",
+    "experiments/import-pipeline/Dockerfile": "20e10361b7b3ce76439a9368844bf1813aa1d658b65f3db996be9c2730549093",
+    "experiments/import-pipeline/run.sh": "27c4e10659d40c8259bb9ff4825a2616f2419f519d4b91980677a0cdfc55847e",
+    "experiments/import-pipeline/README.md": "b852eb65e03832c714851dc37dd1d960f982ba456639379a6fe23fff89ab2936",
+    "experiments/import-pipeline/probe.py": "8e8e32a662fa406a9d4fc3d4ccdf4ead1b7fc73d37b88670002c82db3dbf910e"
+  },
+  "mode_names": {
+    "-1": "committed baseline",
+    "0": "prototype serial",
+    "1": "individual chunk messages",
+    "2": "sixteen-chunk messages"
+  },
+  "batched_faster_pairs": 6,
+  "limitations": [
+    "ARM64 Docker microbenchmark on the local machine, not x86 Cargo build evidence.",
+    "Six counterbalanced warm-cache rounds; no statistical significance claim.",
+    "One public artifact repeated sixteen times; the measured edit adds one novel chunk.",
+    "Producer/consumer in-flight batches are additional to the one-MiB queued-byte bound.",
+    "Cancellation, producer error and FUSE lifecycle behavior are not qualified by this experiment."
+  ],
+  "reproduction": {
+    "status": "passed",
+    "same_executables": true,
+    "integrity_checks": 24,
+    "raw_log_sha256": "5f9810a836fb5fe0beb7eacb043902417fa6bdbf46f18ab9a3d763042aea0eb2",
+    "summary": {
+      "-1": {
+        "wall_seconds": 0.26688886999181705,
+        "user_seconds": 0.22423350000000047,
+        "kernel_seconds": 0.01900450000000009
+      },
+      "0": {
+        "wall_seconds": 0.25225419150228845,
+        "user_seconds": 0.22481799999999996,
+        "kernel_seconds": 0.01740300000000017
+      },
+      "1": {
+        "wall_seconds": 0.21607627749472158,
+        "user_seconds": 0.26422850000000064,
+        "kernel_seconds": 0.03742699999999999
+      },
+      "2": {
+        "wall_seconds": 0.195356438489398,
+        "user_seconds": 0.23255750000000042,
+        "kernel_seconds": 0.022671499999999983
+      }
+    }
+  }
+}

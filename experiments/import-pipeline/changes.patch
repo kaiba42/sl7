@@ -1,0 +1,179 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1,6 +1,7 @@
+ //! Shared artifact storage, exact range reconstruction, and optional FUSE mounts.
+ mod chunk;
+ mod gc;
++mod import_stream;
+ pub use gc::GcReport;
+ #[cfg(all(feature = "fuse", target_os = "linux"))]
+ pub mod live;
+--- a/src/store.rs
++++ b/src/store.rs
+@@ -13,7 +13,7 @@
+ use std::{
+     collections::HashSet,
+     fs::{self, File, OpenOptions},
+-    io::{BufReader, Write},
++    io::Write,
+     path::{Path, PathBuf},
+     sync::Arc,
+ };
+@@ -672,9 +672,21 @@
+     if !before.is_file() {
+         return Err(Error::Invalid("source is not a regular file".into()));
+     }
+-    // Quiescent sources only: these checks detect common races, not arbitrary external writers.
+-    let mut chunker = chunk::Chunker::new(BufReader::new(file));
+-    let mut digest = Sha256::new();
++    let pipeline = matches!(std::env::var("SL7_PIPELINE").as_deref(), Ok("1" | "2"))
++        && before.len() >= 16 * 1024 * 1024;
++    crate::import_stream::with_chunks(file, pipeline, |chunks| {
++        prepare_chunks(root, db, file, pack_limit, canceled, &before, chunks)
++    })
++}
++fn prepare_chunks(
++    root: &Path,
++    db: &Connection,
++    file: &File,
++    pack_limit: u64,
++    canceled: impl Fn() -> bool,
++    before: &std::fs::Metadata,
++    chunks: &mut dyn crate::import_stream::Chunks,
++) -> Result<PreparedImport> {
+     let mut extents: Vec<(u64, Hash)> = Vec::new();
+     let mut seen = HashSet::new();
+     let mut locations = Vec::new();
+@@ -684,11 +696,10 @@
+     let mut offset = 0_u64;
+     let mut exists_query =
+         db.prepare_cached("SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)")?;
+-    while let Some(bytes) = chunker.next_chunk()? {
++    while let Some(bytes) = chunks.next_chunk()? {
+         if canceled() {
+             return Err(Error::SourceChanged("sealing candidate canceled".into()));
+         }
+-        digest.update(&bytes);
+         let hash = chunk::identity(&bytes);
+         let exists: bool = exists_query.query_row([hash.as_slice()], |r| r.get(0))?;
+         if !exists && seen.insert(hash) {
+@@ -716,6 +727,7 @@
+             return Err(Error::Invalid("source exceeds catalog length limit".into()));
+         }
+     }
++    let digest = chunks.finish()?;
+     let after = file.metadata()?;
+     if before.len() != after.len() {
+         return Err(Error::SourceChanged(format!(
+@@ -739,7 +751,6 @@
+         locations.extend(locs);
+     }
+     // Packs and directory entries are durable before any reference is committed.
+-    let digest: Hash = digest.finalize().into();
+     Ok(PreparedImport {
+         size: offset,
+         digest,
+--- /dev/null
++++ b/src/import_stream.rs
+@@ -0,0 +1,101 @@
++use crate::{
++    Error, Result,
++    chunk::{Chunker, Hash},
++};
++use sha2::{Digest, Sha256};
++use std::{fs::File, io::BufReader, sync::mpsc, thread};
++
++pub(crate) trait Chunks {
++    fn next_chunk(&mut self) -> Result<Option<Vec<u8>>>;
++    fn finish(&mut self) -> Result<Hash>;
++}
++struct Serial<'a> {
++    chunks: Chunker<BufReader<&'a File>>,
++    digest: Sha256,
++}
++impl Chunks for Serial<'_> {
++    fn next_chunk(&mut self) -> Result<Option<Vec<u8>>> {
++        let bytes = self.chunks.next_chunk()?;
++        if let Some(bytes) = &bytes {
++            self.digest.update(bytes);
++        }
++        Ok(bytes)
++    }
++    fn finish(&mut self) -> Result<Hash> {
++        Ok(std::mem::take(&mut self.digest).finalize().into())
++    }
++}
++struct Pipelined<'a> {
++    receiver: mpsc::Receiver<Vec<Vec<u8>>>,
++    pending: std::vec::IntoIter<Vec<u8>>,
++    producer: Option<thread::ScopedJoinHandle<'a, Result<Hash>>>,
++}
++impl Chunks for Pipelined<'_> {
++    fn next_chunk(&mut self) -> Result<Option<Vec<u8>>> {
++        if let Some(bytes) = self.pending.next() {
++            return Ok(Some(bytes));
++        }
++        self.pending = self.receiver.recv().unwrap_or_default().into_iter();
++        Ok(self.pending.next())
++    }
++    fn finish(&mut self) -> Result<Hash> {
++        self.producer
++            .take()
++            .unwrap()
++            .join()
++            .map_err(|_| Error::Invalid("chunk producer panicked".into()))?
++    }
++}
++pub(crate) fn with_chunks<T>(
++    file: &File,
++    pipeline: bool,
++    consume: impl FnOnce(&mut dyn Chunks) -> Result<T>,
++) -> Result<T> {
++    if !pipeline {
++        return consume(&mut Serial {
++            chunks: Chunker::new(BufReader::new(file)),
++            digest: Sha256::new(),
++        });
++    }
++    eprintln!("sl7: chunk pipeline enabled");
++    thread::scope(|scope| {
++        let batch_size = if std::env::var("SL7_PIPELINE").as_deref() == Ok("2") {
++            16
++        } else {
++            1
++        };
++        let (sender, receiver) = mpsc::sync_channel(32 / batch_size);
++        let producer = scope.spawn(move || {
++            let mut chunks = Chunker::new(BufReader::new(file));
++            let mut digest = Sha256::new();
++            let mut batch = Vec::with_capacity(batch_size);
++            while let Some(bytes) = chunks.next_chunk()? {
++                digest.update(&bytes);
++                batch.push(bytes);
++                if batch.len() == batch_size {
++                    if sender
++                        .send(std::mem::replace(
++                            &mut batch,
++                            Vec::with_capacity(batch_size),
++                        ))
++                        .is_err()
++                    {
++                        return Err(Error::SourceChanged("chunk consumer stopped".into()));
++                    }
++                }
++            }
++            if !batch.is_empty() && sender.send(batch).is_err() {
++                return Err(Error::SourceChanged("chunk consumer stopped".into()));
++            }
++            Ok(digest.finalize().into())
++        });
++        let mut stream = Pipelined {
++            receiver,
++            pending: Vec::new().into_iter(),
++            producer: Some(producer),
++        };
++        // On any consumer error, stream drops its receiver before scope joins.
++        // A blocked producer then exits; bounded backpressure cannot deadlock.
++        consume(&mut stream)
++    })
++}
