@@ -4,6 +4,7 @@ import argparse
 import bisect
 from collections import Counter, defaultdict
 import heapq
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -150,6 +151,7 @@ def io_latencies(path):
     pending = {}
     durations = defaultdict(list)
     descriptors = defaultdict(Counter)
+    sync_descriptors = defaultdict(lambda: defaultdict(list))
     intervals = defaultdict(list)
     errors = Counter()
     incomplete = Counter()
@@ -181,13 +183,16 @@ def io_latencies(path):
             raw_fd = descriptor[1]
             fd = int(raw_fd, 16 if raw_fd.startswith('0x') else 10)
             descriptors[group+'/'+operation][str(fd)] += 1
-            pending[tid] = (timestamp, operation, group)
+            pending[tid] = (timestamp, operation, group, str(fd))
         elif tid not in pending:
             incomplete['missing_enter'] += 1
         else:
-            started, expected, group = pending.pop(tid)
+            started, expected, group, fd = pending.pop(tid)
             assert expected == operation and timestamp >= started
-            durations[group+'/'+operation].append(timestamp-started)
+            elapsed = timestamp-started
+            durations[group+'/'+operation].append(elapsed)
+            if operation in ('fsync', 'fdatasync'):
+                sync_descriptors[group+'/'+operation][fd].append(elapsed)
             intervals[group].append((started, timestamp))
             result = re.search(r'\bret[:=]\s*(-?(?:0x)?[0-9a-fA-F]+)\b', detail)
             if result is None:
@@ -216,6 +221,9 @@ def io_latencies(path):
                               sum_seconds=sum(end-start for start,end in calls))
     return dict(events=events, exact_duplicate_events=duplicates, incomplete=incomplete, errors=errors,
                 descriptor_calls=dict(descriptors),
+                sync_descriptors={key:{fd:distribution(values) for fd,values in sorted(fds.items(), key=lambda x:int(x[0]))}
+                                  for key,fds in sorted(sync_descriptors.items())},
+                descriptor_note='Sync distributions include complete calls only. Descriptor numbers can be reused; a post-trace path snapshot does not establish descriptor identity throughout the recording.',
                 overlap=overlap,
                 operations={key:distribution(values) for key,values in sorted(durations.items())},
                 note='Per-thread syscall durations include scheduling and I/O waits; concurrent totals overlap.')
@@ -225,7 +233,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('directory',type=Path)
     args=parser.parse_args()
-    output={}
+    output={'_analyzer': {'sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}}
     for path in args.directory.glob('*-report.txt'):
         if any(kind in path.name for kind in ('-cpu-', '-fuse-', '-io-')):
             assert '# Total Lost Samples: 0' in path.read_text(), ('lost samples', path)
@@ -236,7 +244,7 @@ def main():
     for path in sorted(args.directory.glob('*-io.txt')):
         output[path.stem]=io_latencies(path)
     (args.directory/'analysis.json').write_text(json.dumps(output,indent=2)+'\n')
-    print(json.dumps({k:v.get('samples', v.get('complete_requests', v.get('events'))) for k,v in output.items()},indent=2))
+    print(json.dumps({k:v.get('samples', v.get('complete_requests', v.get('events'))) for k,v in output.items() if not k.startswith('_')},indent=2))
 
 
 if __name__=='__main__':

@@ -45,6 +45,28 @@ class IoTraceTests(unittest.TestCase):
         self.assertEqual(result["operations"]["background/fsync"]["count"], 3)
         self.assertEqual(result["overlap"]["background"]["max_concurrent_syscalls"], 2)
         self.assertFalse(result["errors"])
+        self.assertEqual(result['sync_descriptors']['background/fsync']['5']['count'], 1)
+        self.assertAlmostEqual(result['sync_descriptors']['background/fsync']['5']['sum_seconds'], .3)
+
+    def test_sync_descriptors_keep_complete_calls_and_separate_operations(self):
+        result = self.analyze([
+            'sl7-pack-0 10 1.0: syscalls:sys_enter_fsync: fd: 0x5',
+            'sl7-pack-1 11 1.1: syscalls:sys_enter_fsync: fd: 5',
+            'sl7-pack-0 10 1.2: syscalls:sys_exit_fsync: ret: 0',
+            'sl7-pack-1 11 1.4: syscalls:sys_exit_fsync: ret: 0',
+            'fuser-0 12 1.5: syscalls:sys_enter_fdatasync: fd: 5',
+            'fuser-0 12 1.6: syscalls:sys_exit_fdatasync: ret: 0',
+            'fuser-0 12 1.7: syscalls:sys_enter_pwrite64: fd: 5',
+            'fuser-0 12 1.8: syscalls:sys_exit_pwrite64: ret: 32',
+            'sl7-pack-0 10 1.9: syscalls:sys_enter_fsync: fd: 5',
+        ])
+        syncs = result['sync_descriptors']
+        self.assertEqual(set(syncs), {'background/fsync', 'foreground/fdatasync'})
+        self.assertEqual(syncs['background/fsync']['5']['count'], 2)
+        self.assertAlmostEqual(syncs['background/fsync']['5']['sum_seconds'], .5)
+        self.assertAlmostEqual(syncs['foreground/fdatasync']['5']['sum_seconds'], .1)
+        self.assertEqual(result['descriptor_calls']['background/fsync']['5'], 3)
+        self.assertEqual(result['incomplete']['missing_exit'], 1)
 
     def test_conflicting_entry_is_not_silently_discarded(self):
         with self.assertRaisesRegex(AssertionError, "overlapping syscalls"):
