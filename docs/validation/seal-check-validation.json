@@ -19,8 +19,30 @@
     }
   },
   "host_tests": 36,
-  "x86_validation": "pending",
+  "x86_validation": "passed",
   "benchmark": "pending",
   "durability": "Only in-memory scheduling changes. A completed seal or unchanged eligibility decision is cached for the captured inode epoch. Every mutation invalidates the cached decision; cancellation and errors never mark an inode checked. Catalog commits, inode syncs, publication and retirement ordering are unchanged.",
-  "tests": "Repeated read-only opens of both freshly sealed and previously sealed files schedule no new candidates; writing revokes the decision and the updated bytes reseal and pass integrity checks. A successful seal absorbs a read-only close queued during preparation. Existing concurrent mutation cancellation, open-reader retirement, crash/recovery and mounted Cargo suites pass."
+  "tests": "Repeated read-only opens of both freshly sealed and previously sealed files schedule no new candidates; writing revokes the decision and the updated bytes reseal and pass integrity checks. A successful seal absorbs a read-only close queued during preparation. Existing concurrent mutation cancellation, open-reader retirement, crash/recovery and mounted Cargo suites pass.",
+  "implementation_commit": "bcd8da2f495cc1415a4a98200cc956c1d82024f8",
+  "x86_64": {
+    "binary_sha256": "2c0e052189e8242760418b7d37aa003983a071f17c46e2da9a49f018d8fce0e1",
+    "source_sha256": {
+      "src/staging.rs": "8cfd3c30259e0ce359dba06a23e644bbc07aa8d01664b9915598b1b57f08de1f",
+      "src/staging/operations.rs": "aeeefa5eb9e41a0891f44abea16601ee8108a66c421e12a8170ac68888d57217",
+      "src/live.rs": "4df7358dbeeadd0988c33f983050521846f537fd97937a968a6e4042087f1255",
+      "src/store.rs": "246c87ab53ef71de670070c3b26792eca5e445018d0866a24833886bee39a9f3",
+      "scripts/live-test.py": "6e4a2bce6f1fba9cd5ad341c51809154bbaff0170872e1c5905e024a5b22c185",
+      "src/staging/background.rs": "0ab2a44c045a2c38fbe46568c588f47c187e2fdc77a898a74581fdb8d9ead028",
+      "src/staging/reads.rs": "cb218bc20f1517c103a264994534d5f5a56a751a8527ea40da17773ed8e2481f"
+    },
+    "linux_tests": 72,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  }
 }
