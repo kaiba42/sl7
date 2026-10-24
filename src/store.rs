@@ -84,6 +84,39 @@ pub(crate) struct PreparedImport {
 }
 
 #[cfg(all(feature = "fuse", target_os = "linux"))]
+impl PreparedImport {
+    pub(crate) fn source_bytes(&self) -> u64 {
+        self.size
+    }
+    /// Retained heap capacities, including per-location and pack name strings.
+    pub(crate) fn heap_bytes(&self) -> usize {
+        self.extents
+            .capacity()
+            .saturating_mul(std::mem::size_of::<(u64, Hash)>())
+            .saturating_add(
+                self.locations
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<pack::Location>()),
+            )
+            .saturating_add(
+                self.packs
+                    .capacity()
+                    .saturating_mul(std::mem::size_of::<(String, u64)>()),
+            )
+            .saturating_add(
+                self.locations
+                    .iter()
+                    .fold(0usize, |n, x| n.saturating_add(x.pack.capacity())),
+            )
+            .saturating_add(
+                self.packs
+                    .iter()
+                    .fold(0usize, |n, (name, _)| n.saturating_add(name.capacity())),
+            )
+    }
+}
+
+#[cfg(all(feature = "fuse", target_os = "linux"))]
 pub(crate) struct Packer {
     root: PathBuf,
     db: Connection,

@@ -6,6 +6,7 @@ use fuser::*;
 mod background;
 mod namespace;
 mod operations;
+mod prepared;
 mod reads;
 #[cfg(test)]
 use std::sync::mpsc::SyncSender;
@@ -67,6 +68,8 @@ struct State {
     next_inode: u64,
     next_handle: u64,
     seal_queue: VecDeque<INodeNo>,
+    prepared_cache: prepared::Cache,
+    discarded_preparations: Vec<prepared::Entry>,
     wake: Option<Arc<Condvar>>,
     stopping: bool,
     worker_failed: bool,
@@ -210,6 +213,14 @@ impl State {
             })
             .map_err(|_| error(libc::EOVERFLOW))?;
         self.nodes.get_mut(&ino).unwrap().seal_checked = false;
+        if let Some(entry) = self.prepared_cache.take(ino) {
+            self.seal_stats.stale_preparations += 1;
+            // Request wrappers free these vectors immediately after unlocking.
+            // Removing the cache pin now prevents unlinked native files from
+            // lingering until a later cache eviction or unmount.
+            self.discarded_preparations.push(entry);
+            self.refresh_prepared_stats();
+        }
         Ok(())
     }
     fn truncate_zero(&mut self, ino: INodeNo) -> io::Result<()> {
@@ -458,6 +469,7 @@ impl State {
     }
     fn reclaim(&mut self, ino: INodeNo) {
         if ino != INodeNo::ROOT
+            && !self.prepared_cache.contains(ino)
             && self.nodes.get(&ino).is_some_and(|n| {
                 n.references == 0
                     && n.opens == 0
@@ -508,6 +520,8 @@ impl StagingFs {
             next_inode: 1,
             next_handle: 1,
             seal_queue: VecDeque::new(),
+            prepared_cache: prepared::Cache::new(false),
+            discarded_preparations: Vec::new(),
             wake: None,
             stopping: false,
             worker_failed: false,
@@ -545,7 +559,16 @@ impl StagingFs {
                 ));
             }
         };
+        let prepared_cache = prepared::Cache::from_env()?;
         let mut fs = Self::deduplicating_with_workers(store, count)?;
+        {
+            let mut state = fs
+                .state
+                .lock()
+                .map_err(|_| crate::Error::Invalid("poisoned filesystem state".into()))?;
+            state.prepared_cache = prepared_cache;
+            state.refresh_prepared_stats();
+        }
         fs.status_enabled = status_enabled;
         Ok(fs)
     }
@@ -603,6 +626,9 @@ impl StagingFs {
         state.seal_stats.request_state_seconds += seconds;
         state.seal_stats.max_request_state_seconds =
             state.seal_stats.max_request_state_seconds.max(seconds);
+        let discarded = std::mem::take(&mut state.discarded_preparations);
+        drop(state);
+        drop(discarded);
         result
     }
     fn with_mutation<T>(
@@ -696,6 +722,10 @@ impl StagingFs {
             state.seal_stats.request_state_seconds += seconds;
             state.seal_stats.max_request_state_seconds =
                 state.seal_stats.max_request_state_seconds.max(seconds);
+            let discarded = std::mem::take(&mut state.discarded_preparations);
+            drop(state);
+            drop(writer);
+            drop(discarded);
             return result;
         }
     }

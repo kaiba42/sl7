@@ -34,6 +34,15 @@ pub(super) struct Stats {
     compressed_chunks_on_workers: usize,
     pipelined_prepares: u64,
     workers: usize,
+    reuse_prepared: bool,
+    retained_preparations: usize,
+    retained_preparation_bytes: usize,
+    max_retained_preparation_bytes: usize,
+    deferred_preparations: u64,
+    reused_preparations: u64,
+    reused_source_bytes: u64,
+    evicted_preparations: u64,
+    pub(super) stale_preparations: u64,
     active_seals: usize,
     max_parallel_seals: usize,
     active_prepares: usize,
@@ -96,9 +105,39 @@ struct Job {
     pin: File,
     epoch: Arc<AtomicU64>,
     version: u64,
+    reuse_prepared: bool,
+    cached: Option<prepared::Entry>,
 }
 
 impl State {
+    pub(super) fn refresh_prepared_stats(&mut self) {
+        self.seal_stats.reuse_prepared = self.prepared_cache.enabled;
+        self.seal_stats.retained_preparations = self.prepared_cache.len();
+        self.seal_stats.retained_preparation_bytes = self.prepared_cache.bytes;
+        self.seal_stats.max_retained_preparation_bytes = self
+            .seal_stats
+            .max_retained_preparation_bytes
+            .max(self.prepared_cache.bytes);
+    }
+    fn can_defer(&self, job: &Job, footprint: usize) -> bool {
+        !self.stopping
+            && self.prepared_cache.admits(footprint)
+            && self
+                .nodes
+                .get(&job.ino)
+                .is_some_and(|n| n.opens != 0 && n.epoch.load(Ordering::Relaxed) == job.version)
+    }
+    fn defer(&mut self, ino: INodeNo, entry: prepared::Entry) -> Vec<(INodeNo, prepared::Entry)> {
+        let evicted = self.prepared_cache.insert(ino, entry);
+        self.seal_stats.deferred_preparations += 1;
+        self.seal_stats.evicted_preparations += evicted.len() as u64;
+        for (ino, _) in &evicted {
+            self.reclaim(*ino);
+        }
+        self.refresh_prepared_stats();
+        evicted
+    }
+
     pub(super) fn runtime_status(&self) -> serde_json::Value {
         // Queue overflow is stored on the inode, not in seal_queue. A worker
         // blocked on I/O is still active even if it consumes no CPU ticks.
@@ -202,11 +241,23 @@ impl State {
                         .seal_stats
                         .max_parallel_seals
                         .max(self.seal_stats.active_seals);
+                    let cached = self.prepared_cache.take(ino);
+                    if let Some(entry) = &cached {
+                        if entry.version == version {
+                            self.seal_stats.reused_preparations += 1;
+                            self.seal_stats.reused_source_bytes += entry.import.source_bytes();
+                        } else {
+                            self.seal_stats.stale_preparations += 1;
+                        }
+                    }
+                    self.refresh_prepared_stats();
                     return Some(Job {
                         ino,
                         pin,
                         epoch,
                         version,
+                        reuse_prepared: self.prepared_cache.enabled,
+                        cached,
                     });
                 }
                 Err(error) => {
@@ -311,7 +362,7 @@ fn run(
     wake: Arc<Condvar>,
 ) {
     loop {
-        let job = {
+        let mut job = {
             let Ok(mut state) = state.lock() else {
                 return;
             };
@@ -343,97 +394,114 @@ fn run(
             done: Arc::clone(&publication_done),
             ino: job.ino,
         };
-        let candidate = {
-            let Ok(mut s) = state.lock() else {
-                return;
-            };
-            s.seal_stats.active_candidates += 1;
-            s.seal_stats.max_parallel_candidates = s
-                .seal_stats
-                .max_parallel_candidates
-                .max(s.seal_stats.active_candidates);
-            drop(s);
-            let started = Instant::now();
-            let mut catalog_wait = 0.0;
-            let candidate = publisher.begin_seal_with(&job.pin, |publisher| {
-                let waited = Instant::now();
-                let writer = catalog_writer
-                    .lock()
-                    .map_err(|_| crate::Error::Invalid("poisoned catalog writer".into()))?;
-                catalog_wait += waited.elapsed().as_secs_f64();
-                let id = publisher.allocate_identity();
-                drop(writer);
-                #[cfg(test)]
-                {
-                    let pause = state.lock().unwrap().identity_pause.take();
-                    if let Some((ready, resume)) = pause {
-                        let _ = ready.send(());
-                        let _ = resume.recv();
+        // Taking the entry under state only moves ownership. A stale entry's
+        // potentially large metadata vectors are dropped here, outside state.
+        let cached = job
+            .cached
+            .take()
+            .filter(|entry| entry.version == job.version);
+        let (candidate, prepared, elapsed, hash_bytes) = if let Some(entry) = cached {
+            (entry.candidate, Ok(entry.import), 0.0, 0)
+        } else {
+            let candidate = {
+                let Ok(mut s) = state.lock() else {
+                    return;
+                };
+                s.seal_stats.active_candidates += 1;
+                s.seal_stats.max_parallel_candidates = s
+                    .seal_stats
+                    .max_parallel_candidates
+                    .max(s.seal_stats.active_candidates);
+                drop(s);
+                let started = Instant::now();
+                let mut catalog_wait = 0.0;
+                let candidate = publisher.begin_seal_with(&job.pin, |publisher| {
+                    let waited = Instant::now();
+                    let writer = catalog_writer
+                        .lock()
+                        .map_err(|_| crate::Error::Invalid("poisoned catalog writer".into()))?;
+                    catalog_wait += waited.elapsed().as_secs_f64();
+                    let id = publisher.allocate_identity();
+                    drop(writer);
+                    #[cfg(test)]
+                    {
+                        let pause = state.lock().unwrap().identity_pause.take();
+                        if let Some((ready, resume)) = pause {
+                            let _ = ready.send(());
+                            let _ = resume.recv();
+                        }
+                    }
+                    id
+                });
+                let seconds = started.elapsed().as_secs_f64();
+                let Ok(mut state) = state.lock() else {
+                    return;
+                };
+                state.seal_stats.active_candidates -= 1;
+                state.seal_stats.candidate_catalog_wait_seconds += catalog_wait;
+                state.seal_stats.candidate_seconds += seconds - catalog_wait;
+                match candidate {
+                    Ok(Some(candidate)) => candidate,
+                    Ok(None) => {
+                        state.seal_stats.skipped += 1;
+                        state.checked_seal(job.ino, job.version);
+                        continue;
+                    }
+                    Err(error) => {
+                        state.seal_stats.errors += 1;
+                        eprintln!("sl7: sealing inode {}: {error}", u64::from(job.ino));
+                        continue;
                     }
                 }
-                id
-            });
-            let seconds = started.elapsed().as_secs_f64();
-            let Ok(mut state) = state.lock() else {
-                return;
             };
-            state.seal_stats.active_candidates -= 1;
-            state.seal_stats.candidate_catalog_wait_seconds += catalog_wait;
-            state.seal_stats.candidate_seconds += seconds - catalog_wait;
-            match candidate {
-                Ok(Some(candidate)) => candidate,
-                Ok(None) => {
-                    state.seal_stats.skipped += 1;
-                    state.checked_seal(job.ino, job.version);
-                    continue;
-                }
-                Err(error) => {
-                    state.seal_stats.errors += 1;
-                    eprintln!("sl7: sealing inode {}: {error}", u64::from(job.ino));
-                    continue;
-                }
+            #[cfg(test)]
+            let prepare_pause = state.lock().unwrap().seal_pause.take();
+            {
+                let Ok(mut state) = state.lock() else {
+                    return;
+                };
+                state.seal_stats.active_prepares += 1;
+                state.seal_stats.max_parallel_prepares = state
+                    .seal_stats
+                    .max_parallel_prepares
+                    .max(state.seal_stats.active_prepares);
             }
+            let started = Instant::now();
+            let hash_bytes_before = packer.chunk_hash_bytes();
+            let pipelines_before = packer.pipeline_prepares();
+            let compressed_before = packer.compression_stats().2;
+            let prepared = packer.prepare(&fd_path(&job.pin), || {
+                job.epoch.load(Ordering::Relaxed) != job.version
+            });
+            let elapsed = started.elapsed().as_secs_f64();
+            let hash_bytes = packer.chunk_hash_bytes() - hash_bytes_before;
+            {
+                let Ok(mut state) = state.lock() else {
+                    return;
+                };
+                state.seal_stats.active_prepares -= 1;
+                state.seal_stats.chunk_hash_bytes += hash_bytes;
+                let (_, peak, compressed) = packer.compression_stats();
+                state.seal_stats.max_parallel_compression_per_sealer = state
+                    .seal_stats
+                    .max_parallel_compression_per_sealer
+                    .max(peak);
+                state.seal_stats.compressed_chunks_on_workers += compressed - compressed_before;
+                state.seal_stats.pipelined_prepares +=
+                    packer.pipeline_prepares() - pipelines_before;
+            }
+            #[cfg(test)]
+            if let Some((ready, resume)) = prepare_pause {
+                let _ = ready.send(());
+                let _ = resume.recv();
+            }
+            (candidate, prepared, elapsed, hash_bytes)
         };
-        #[cfg(test)]
-        let prepare_pause = state.lock().unwrap().seal_pause.take();
-        {
-            let Ok(mut state) = state.lock() else {
-                return;
-            };
-            state.seal_stats.active_prepares += 1;
-            state.seal_stats.max_parallel_prepares = state
-                .seal_stats
-                .max_parallel_prepares
-                .max(state.seal_stats.active_prepares);
-        }
-        let started = Instant::now();
-        let hash_bytes_before = packer.chunk_hash_bytes();
-        let pipelines_before = packer.pipeline_prepares();
-        let compressed_before = packer.compression_stats().2;
-        let prepared = packer.prepare(&fd_path(&job.pin), || {
-            job.epoch.load(Ordering::Relaxed) != job.version
-        });
-        let elapsed = started.elapsed().as_secs_f64();
-        let hash_bytes = packer.chunk_hash_bytes() - hash_bytes_before;
-        {
-            let Ok(mut state) = state.lock() else {
-                return;
-            };
-            state.seal_stats.active_prepares -= 1;
-            state.seal_stats.chunk_hash_bytes += hash_bytes;
-            let (_, peak, compressed) = packer.compression_stats();
-            state.seal_stats.max_parallel_compression_per_sealer = state
-                .seal_stats
-                .max_parallel_compression_per_sealer
-                .max(peak);
-            state.seal_stats.compressed_chunks_on_workers += compressed - compressed_before;
-            state.seal_stats.pipelined_prepares += packer.pipeline_prepares() - pipelines_before;
-        }
-        #[cfg(test)]
-        if let Some((ready, resume)) = prepare_pause {
-            let _ = ready.send(());
-            let _ = resume.recv();
-        }
+        let footprint = if job.reuse_prepared {
+            prepared.as_ref().map_or(0, prepared::Entry::footprint)
+        } else {
+            0
+        };
         // All catalog writers acquire this permit before filesystem state.
         // Waiters therefore never pin the state mutex behind SQLite commits.
         let Ok(writer) = catalog_writer.lock() else {
@@ -441,7 +509,7 @@ fn run(
         };
         #[cfg(test)]
         let pause;
-        let prepared = {
+        let (prepared, evicted) = {
             let Ok(mut state) = state.lock() else {
                 return;
             };
@@ -450,8 +518,21 @@ fn run(
             let valid = state.nodes.get(&job.ino).is_some_and(|node| {
                 node.opens == 0 && node.epoch.load(Ordering::Relaxed) == job.version
             });
+            let mut evicted = Vec::new();
             let prepared = match prepared {
-                Ok(prepared) if valid => Some(prepared),
+                Ok(prepared) if valid => Some((candidate, prepared)),
+                Ok(prepared) if state.can_defer(&job, footprint) => {
+                    evicted = state.defer(
+                        job.ino,
+                        prepared::Entry {
+                            version: job.version,
+                            candidate,
+                            import: prepared,
+                            footprint,
+                        },
+                    );
+                    None
+                }
                 Ok(_) | Err(crate::Error::SourceChanged(_)) => {
                     state.canceled_prepare(&job, elapsed, hash_bytes);
                     None
@@ -481,11 +562,14 @@ fn run(
             state.seal_stats.publication_state_seconds += seconds;
             state.seal_stats.max_publication_state_seconds =
                 state.seal_stats.max_publication_state_seconds.max(seconds);
-            prepared
+            (prepared, evicted)
         };
-        let Some(prepared) = prepared else {
+        let Some((candidate, prepared)) = prepared else {
+            drop(writer);
+            drop(evicted);
             continue;
         };
+        drop(evicted);
         #[cfg(test)]
         if let Some((ready, resume)) = pause {
             let _ = ready.send(());
@@ -557,6 +641,15 @@ pub(super) fn stop(state: &Mutex<State>, workers: Workers) {
             }
         }
     }
+    let discarded = state.lock().ok().map(|mut state| {
+        let entries = state.prepared_cache.drain();
+        for (ino, _) in &entries {
+            state.reclaim(*ino);
+        }
+        state.refresh_prepared_stats();
+        (entries, std::mem::take(&mut state.discarded_preparations))
+    });
+    drop(discarded);
     if std::env::var_os("SL7_CACHE_STATS").is_some() {
         if let Ok(state) = state.lock() {
             if let Ok(stats) = serde_json::to_string(&state.seal_stats) {
@@ -1303,7 +1396,10 @@ mod tests {
     fn reader_opened_during_packing_prevents_retirement() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("store");
-        let fs = StagingFs::deduplicating(crate::Store::init(&root).unwrap()).unwrap();
+        // This exercises discarded-work accounting with reuse disabled. The
+        // retained-preparation tests below explicitly enable the other mode.
+        let fs =
+            StagingFs::deduplicating_with_workers(crate::Store::init(&root).unwrap(), 2).unwrap();
         let bytes = vec![77; 128 * 1024];
         fs::write(root.join("tree/data"), &bytes).unwrap();
         let (ready, prepared) = mpsc::sync_channel(1);
@@ -1357,5 +1453,255 @@ mod tests {
             Ok(())
         })
         .unwrap();
+    }
+    fn reuse_fixture(limit: usize) -> (tempfile::TempDir, StagingFs) {
+        let temp = tempfile::tempdir().unwrap();
+        let fs = StagingFs::deduplicating_with_workers(
+            crate::Store::init(&temp.path().join("store")).unwrap(),
+            1,
+        )
+        .unwrap();
+        fs.with_read(|s| {
+            s.prepared_cache = prepared::Cache::new(true);
+            s.prepared_cache.limit = limit;
+            s.refresh_prepared_stats();
+            Ok(())
+        })
+        .unwrap();
+        (temp, fs)
+    }
+
+    fn reopen_completed_preparation(
+        fs: &StagingFs,
+        name: &str,
+        bytes: &[u8],
+    ) -> (INodeNo, FileHandle) {
+        let (ready, packed) = mpsc::sync_channel(1);
+        let (resume, paused) = mpsc::sync_channel(1);
+        let ino = fs
+            .with(|s| {
+                fs::write(s.child(INodeNo::ROOT, OsStr::new(name))?, bytes)?;
+                let ino = s.lookup(INodeNo::ROOT, OsStr::new(name))?;
+                s.entry_attr(ino)?;
+                s.seal_pause = Some((ready, paused));
+                let fh = s.open(ino, libc::O_RDONLY)?;
+                s.release(ino, fh)?;
+                Ok(ino)
+            })
+            .unwrap();
+        packed.recv_timeout(Duration::from_secs(10)).unwrap();
+        let reader = fs.open_handle(ino, libc::O_RDONLY);
+        resume.send(()).unwrap();
+        let reader = reader.unwrap();
+        idle(fs);
+        assert_eq!(fs.read_handle(ino, reader, 0, bytes.len()).unwrap(), bytes);
+        fs.with_read(|s| {
+            assert!(
+                s.live
+                    .as_ref()
+                    .unwrap()
+                    .sealed(s.inode(ino)?)
+                    .unwrap()
+                    .is_none()
+            );
+            assert_eq!(s.runtime_status()["quiescent"], false);
+            Ok(())
+        })
+        .unwrap();
+        (ino, reader)
+    }
+
+    #[test]
+    fn retained_preparation_waits_for_reader_and_avoids_rehashing() {
+        let (temp, fs) = reuse_fixture(16 * 1024 * 1024);
+        let bytes = vec![63; 128 * 1024];
+        let (ino, reader) = reopen_completed_preparation(&fs, "data", &bytes);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.retained_preparations, 1);
+            assert_eq!(s.seal_stats.deferred_preparations, 1);
+            assert_eq!(s.seal_stats.canceled, 0);
+            assert_eq!(s.seal_stats.chunk_hash_bytes, bytes.len() as u64);
+            assert!(s.seal_stats.retained_preparation_bytes > 0);
+            // Drop lookup references before closing: the cached inode must stay
+            // identified until its queued preparation is reused.
+            s.forget(ino, 1);
+            s.release(ino, reader)
+        })
+        .unwrap();
+        idle(&fs);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.reused_preparations, 1);
+            assert_eq!(s.seal_stats.reused_source_bytes, bytes.len() as u64);
+            assert_eq!(s.seal_stats.chunk_hash_bytes, bytes.len() as u64);
+            assert_eq!(s.seal_stats.completed, 1);
+            assert_eq!(s.seal_stats.retained_preparations, 0);
+            assert_eq!(s.seal_stats.retained_preparation_bytes, 0);
+            Ok(())
+        })
+        .unwrap();
+        drop(fs);
+        let root = temp.path().join("store");
+        let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
+        assert_eq!(
+            live.read(&File::open(root.join("tree/data")).unwrap(), 0, bytes.len())
+                .unwrap()
+                .unwrap(),
+            bytes
+        );
+        live.store.check().unwrap();
+    }
+
+    #[test]
+    fn mutation_discards_retained_preparation_before_writing() {
+        let (temp, fs) = reuse_fixture(16 * 1024 * 1024);
+        let mut bytes = vec![64; 128 * 1024];
+        let (ino, reader) = reopen_completed_preparation(&fs, "data", &bytes);
+        let writer = fs.open_handle(ino, libc::O_RDWR).unwrap();
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.stale_preparations, 1);
+            assert_eq!(s.seal_stats.retained_preparations, 0);
+            assert!(s.discarded_preparations.is_empty());
+            Ok(())
+        })
+        .unwrap();
+        fs.write_handle(ino, writer, 0, b"changed").unwrap();
+        bytes[..7].copy_from_slice(b"changed");
+        fs.with_read(|s| {
+            s.release(ino, writer)?;
+            s.release(ino, reader)
+        })
+        .unwrap();
+        idle(&fs);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.reused_preparations, 0);
+            assert_eq!(s.seal_stats.chunk_hash_bytes, 2 * bytes.len() as u64);
+            Ok(())
+        })
+        .unwrap();
+        drop(fs);
+        let root = temp.path().join("store");
+        let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
+        assert_eq!(
+            live.read(&File::open(root.join("tree/data")).unwrap(), 0, bytes.len())
+                .unwrap()
+                .unwrap(),
+            bytes
+        );
+        live.store.check().unwrap();
+    }
+
+    #[test]
+    fn unlink_releases_retained_inode_without_waiting_for_eviction() {
+        let (temp, fs) = reuse_fixture(16 * 1024 * 1024);
+        let bytes = vec![65; 128 * 1024];
+        let (ino, reader) = reopen_completed_preparation(&fs, "data", &bytes);
+        fs.with_namespace_mutation(
+            |_| Ok(vec![ino]),
+            |s| {
+                fs::remove_file(s.child(INodeNo::ROOT, OsStr::new("data"))?)?;
+                Ok(((), vec![ino]))
+            },
+            |_, ()| Ok(()),
+        )
+        .unwrap();
+        assert_eq!(fs.read_handle(ino, reader, 0, bytes.len()).unwrap(), bytes);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.retained_preparations, 0);
+            assert_eq!(s.seal_stats.stale_preparations, 1);
+            assert!(s.discarded_preparations.is_empty());
+            s.forget(ino, 1);
+            s.release(ino, reader)?;
+            assert!(!s.nodes.contains_key(&ino));
+            Ok(())
+        })
+        .unwrap();
+        drop(fs);
+        let mut live =
+            crate::live::Live::open(crate::Store::open(&temp.path().join("store")).unwrap())
+                .unwrap();
+        assert_eq!(live.gc().unwrap().stats.unique_chunks, 0);
+    }
+
+    #[test]
+    fn retained_metadata_is_bounded_by_entries_and_bytes() {
+        for byte_limit in [false, true] {
+            let (temp, fs) = reuse_fixture(16 * 1024 * 1024);
+            let bytes = vec![66; 128 * 1024];
+            let mut handles = Vec::new();
+            for index in 0..6 {
+                handles.push(reopen_completed_preparation(
+                    &fs,
+                    &format!("file-{index}"),
+                    &bytes,
+                ));
+                fs.with_read(|s| {
+                    if index == 0 && byte_limit {
+                        s.prepared_cache.limit = 2 * s.seal_stats.retained_preparation_bytes;
+                    }
+                    assert!(s.seal_stats.retained_preparations <= 4);
+                    assert!(s.seal_stats.retained_preparation_bytes <= s.prepared_cache.limit);
+                    Ok(())
+                })
+                .unwrap();
+            }
+            let retained = if byte_limit { 2 } else { 4 };
+            fs.with_read(|s| {
+                assert_eq!(s.seal_stats.retained_preparations, retained);
+                assert_eq!(s.seal_stats.evicted_preparations, 6 - retained as u64);
+                for (ino, reader) in handles {
+                    s.release(ino, reader)?;
+                }
+                Ok(())
+            })
+            .unwrap();
+            idle(&fs);
+            fs.with_read(|s| {
+                assert_eq!(s.seal_stats.reused_preparations, retained as u64);
+                assert_eq!(
+                    s.seal_stats.chunk_hash_bytes,
+                    (12 - retained as u64) * bytes.len() as u64
+                );
+                assert_eq!(s.seal_stats.completed, 6);
+                Ok(())
+            })
+            .unwrap();
+            drop(fs);
+            crate::Store::open(&temp.path().join("store"))
+                .unwrap()
+                .check()
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn oversized_preparation_falls_back_and_shutdown_preserves_open_native_file() {
+        let bytes = vec![67; 128 * 1024];
+        let (_temp, fs) = reuse_fixture(1);
+        let (ino, reader) = reopen_completed_preparation(&fs, "data", &bytes);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.retained_preparations, 0);
+            assert_eq!(s.seal_stats.canceled, 1);
+            s.release(ino, reader)
+        })
+        .unwrap();
+        idle(&fs);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.chunk_hash_bytes, 2 * bytes.len() as u64);
+            Ok(())
+        })
+        .unwrap();
+        drop(fs);
+        let (temp, fs) = reuse_fixture(16 * 1024 * 1024);
+        reopen_completed_preparation(&fs, "data", &bytes);
+        let observed = Arc::clone(&fs.state);
+        drop(fs);
+        assert_eq!(observed.lock().unwrap().seal_stats.retained_preparations, 0);
+        drop(observed);
+        let root = temp.path().join("store");
+        let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
+        let file = File::open(root.join("tree/data")).unwrap();
+        assert!(live.sealed(&file).unwrap().is_none());
+        assert_eq!(fs::read(root.join("tree/data")).unwrap(), bytes);
+        live.store.check().unwrap();
     }
 }

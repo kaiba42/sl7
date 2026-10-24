@@ -43,6 +43,10 @@ def main():
     settle_mode = os.environ.get('SL7_PROFILE_SETTLE', 'cpu-idle')
     if settle_mode not in {'cpu-idle', 'quiescent'}:
         raise ValueError('SL7_PROFILE_SETTLE must be cpu-idle or quiescent')
+    check_setting = os.environ.get('SL7_PROFILE_CHECK_BEFORE_SETTLE', '0')
+    if check_setting not in {'0', '1'}:
+        raise ValueError('SL7_PROFILE_CHECK_BEFORE_SETTLE must be 0 or 1')
+    check_before_settle = check_setting == '1'
     cache_setting = os.environ.get('SL7_PROFILE_BUILDID_CACHE', '1')
     if cache_setting not in {'0', '1'}:
         raise ValueError('SL7_PROFILE_BUILDID_CACHE must be 0 or 1')
@@ -75,9 +79,13 @@ def main():
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
                   import_pipeline=os.environ.get('SL7_IMPORT_PIPELINE', '0'),
                   compress_workers=os.environ.get('SL7_COMPRESS_WORKERS', '0'),
+                  reuse_prepared=os.environ.get('SL7_REUSE_PREPARED', '0'),
+                  check_before_settle=check_before_settle,
                   settle_mode=settle_mode,
                   mount_helpers_sha256=hashlib.sha256(Path(__file__).with_name('mount_helpers.py').read_bytes()).hexdigest(),
-                  daemon_cpu_scope=f'Cargo plus post-build {settle_mode} observation; excludes executable checks, profiler shutdown and unmount',
+                  daemon_cpu_scope=(f'Cargo plus executable checks plus {settle_mode} observation; excludes profiler shutdown and unmount'
+                                    if check_before_settle else
+                                    f'Cargo plus post-build {settle_mode} observation; excludes executable checks, profiler shutdown and unmount'),
                   lock_sha256=hashlib.sha256((SOURCE/'Cargo.lock').read_bytes()).hexdigest(),
                   cpu_quota=8, memory_limit_gib=12, cpu_max=cpu_max, memory_max=memory_max,
                   nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
@@ -116,6 +124,11 @@ def main():
                     edited.write_text(original.replace(needle, f'about = "{description}"'))
                 else:
                     description = None
+                def check_executable():
+                    if description or stage == 'clean':
+                        help_text = subprocess.check_output([str(mount/'target/debug/synkro'), '--help'], env=env, text=True)
+                        assert (description or 'Synkro AI rule and control enforcement CLI') in help_text
+
                 profilers = []
                 handles = []
 
@@ -157,6 +170,8 @@ def main():
                     wall = time.monotonic()-start
                     after = resource.getrusage(resource.RUSAGE_CHILDREN)
                     assert result.returncode == 0, (ROOT/f'{stage}.stderr').read_text()[-6000:]
+                    if check_before_settle:
+                        check_executable()
                     quiet = wait_for_quiescence(daemon, mount) if settle_mode == 'quiescent' else None
                     idle = quiet['wait_seconds'] if quiet else settle(daemon, mount)
                     cpu_after = daemon_cpu_breakdown(daemon.pid)
@@ -200,9 +215,8 @@ def main():
                            if (a := json.loads(line)).get('reason')=='compiler-artifact']
                 assert records
                 assert all(a['fresh'] for a in records) if fresh else any(not a['fresh'] for a in records)
-                if description or stage=='clean':
-                    help_text = subprocess.check_output([str(mount/'target/debug/synkro'), '--help'], env=env, text=True)
-                    assert (description or 'Synkro AI rule and control enforcement CLI') in help_text
+                if not check_before_settle:
+                    check_executable()
                 post_check = wait_for_quiescence(daemon, mount) if settle_mode == 'quiescent' else None
                 row = dict(stage=stage, wall_seconds=wall, daemon_cpu_seconds=sum(cpu.values()),
                            daemon_user_seconds=cpu['user'], daemon_system_seconds=cpu['system'],

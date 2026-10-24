@@ -116,6 +116,8 @@ def main():
                         help="Set compression workers per sealer (0 disables; maximum 4)")
     parser.add_argument("--import-pipeline", action="append", default=[], metavar="NAME=0|1",
                         help="Enable or disable the large-artifact pipeline per backend")
+    parser.add_argument("--reuse-prepared", action="append", default=[], metavar="NAME=0|1",
+                        help="Retain completed preparation across read-only reopens per backend")
     parser.add_argument("--profiles", nargs="+", choices=["debug", "release"],
                         default=["debug", "release"])
     parser.add_argument("--backends", nargs="+",
@@ -157,6 +159,12 @@ def main():
         if not separator or name not in binaries or name in import_pipeline or enabled not in {"0", "1"}:
             parser.error("import pipeline requires unique SL7 backend NAME=0 or NAME=1 entries")
         import_pipeline[name] = enabled
+    reuse_prepared = {}
+    for item in args.reuse_prepared:
+        name, separator, enabled = item.partition("=")
+        if not separator or name not in binaries or name in reuse_prepared or enabled not in {"0", "1"}:
+            parser.error("reuse prepared requires unique SL7 backend NAME=0 or NAME=1 entries")
+        reuse_prepared[name] = enabled
     edited_file = args.source / "crates/synkro-cli/src/lib.rs"
     original = edited_file.read_text()
     needle = 'about = "Synkro AI rule and control enforcement CLI"'
@@ -187,6 +195,8 @@ def main():
                                   for name in binaries}
     report["import_pipeline"] = {name:import_pipeline.get(name, os.environ.get("SL7_IMPORT_PIPELINE", "0"))
                                  for name in binaries}
+    report["reuse_prepared"] = {name:reuse_prepared.get(name, os.environ.get("SL7_REUSE_PREPARED", "0"))
+                                for name in binaries}
     if args.baseline_binary:
         report["baseline_sl7_sha256"] = hashlib.sha256(args.baseline_binary.read_bytes()).hexdigest()
 
@@ -227,6 +237,7 @@ def main():
                             daemon_env["SL7_SEAL_WORKERS"] = str(seal_workers[backend])
                         daemon_env["SL7_COMPRESS_WORKERS"] = report["compress_workers"][backend]
                         daemon_env["SL7_IMPORT_PIPELINE"] = report["import_pipeline"][backend]
+                        daemon_env["SL7_REUSE_PREPARED"] = report["reuse_prepared"][backend]
                         process = subprocess.Popen([str(case_binary), "--store", str(store), "mount", str(mount)], stdout=daemon_log, stderr=daemon_log,
                                                    env=daemon_env)
                         deadline = time.monotonic() + 30

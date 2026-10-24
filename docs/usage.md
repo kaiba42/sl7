@@ -158,6 +158,21 @@ The [matched build comparison](validation/compression-costs.md) found essentiall
 unchanged Cargo latency (about 0.4% slower medians) and mixed settling costs.
 The pool stays disabled by default; measured concurrency alone is not a speedup.
 
+To avoid repeating a completed preparation after a read-only reopen, start the
+mount with `SL7_REUSE_PREPARED=1` (default `0`). A successful preparation may wait
+in a mount-wide cache until the last reader closes. Reuse requires the same
+mutation epoch; writable opens, writes, and namespace or metadata mutations
+invalidate it. Native data remains available until ordinary safe publication.
+The cache retains at most four entries and 16 MiB of metadata capacities;
+active imports and allocator overhead are additional. Oversized or evicted
+entries fall back to preparation on the next eligible close.
+
+Diagnostics include `deferred_preparations`, `reused_preparations`,
+`reused_source_bytes`, `evicted_preparations`, `stale_preparations`, and current
+and peak retained metadata bytes. Reused bytes count attempts that skip hashing,
+not necessarily successfully published bytes. This is experimental; reducing
+hashing does not by itself establish a Cargo latency improvement.
+
 Sealing diagnostics also count `chunk_hash_bytes` and
 `canceled_chunk_hash_bytes`, plus canceled preparation time. These measure bytes
 that actually passed through chunk identity hashing; they exclude whole-file and
