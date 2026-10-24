@@ -1,7 +1,9 @@
 # Bounded import pipeline experiment
 
 This prototype overlaps file reading, chunk splitting and whole-file SHA-256
-with chunk hashing, catalog lookup and pack writing. It is **not enabled in SL7**.
+with chunk hashing, catalog lookup and pack writing. This is the original
+experiment; the [production implementation](../../docs/usage.md) is now available
+with `SL7_IMPORT_PIPELINE=1` and remains disabled by default.
 
 ```sh
 bash experiments/import-pipeline/run.sh

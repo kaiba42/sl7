@@ -62,6 +62,8 @@
   "memory_note": "The queue bound excludes one producer and one consumer batch, chunker read-ahead, extents, compression state and existing store caches.",
   "design": "Each sealing worker can spawn one scoped producer for reading, chunking and whole-file SHA-256. The existing worker performs chunk hashing, duplicate queries, compression and pack writes. Two queued batches of 16 chunks bound read-ahead. Small files and offline imports stay sequential.",
   "correctness": "Serial and pipeline imports produce identical manifests, chunk identities and pack bytes, including rollover and edits. Producer I/O errors and panics cannot publish a manifest. Backpressured cancellation and premature finish join without deadlock. Existing source metadata and epoch checks and durable pack-before-catalog ordering remain.",
-  "benchmark": "pending",
-  "profile": "pending"
+  "benchmark": "passed",
+  "profile": "pending",
+  "implementation_commit": "40f34e887920e0687282e157b64ed6d239743f19",
+  "comparison_report": "import-pipeline-costs.json"
 }
