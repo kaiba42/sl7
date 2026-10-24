@@ -1,6 +1,20 @@
 # Validation and performance
 
-The latest [catalog statement comparison](catalog-statements-costs.md) and
+The latest [parallel chunk hashing comparison](parallel-hashing-costs.md) and
+[HTML tables](parallel-hashing-costs.html) compare native Cargo with one SL7 binary
+using serial hashing or two shared hash workers. Clean medians were 149.09s,
+171.05s and 166.36s; edit medians were 4.21s, 6.52s and 6.49s. Clean builds were
+2.7% faster with the pool, while only three of six paired edits improved and the
+edit median including settling was effectively unchanged. The focused 64 MiB
+repeat-import test improved 24.3%. The pool remains opt-in with
+`SL7_HASH_WORKERS=2`; no statistical significance is claimed from two rounds.
+[CPU profiles](parallel-hashing-costs-profile.md) confirm execution on helper
+threads and show more discarded preparation after reopens in the parallel run.
+All 48 Cargo commands, 32 artifact-graph comparisons and four integrity checks
+passed. [Correctness validation](parallel-hashing-validation.json) covers 94 Linux
+tests, 51 host tests, 18 Python checks, strict Clippy and five mounted suites.
+
+The earlier [catalog statement comparison](catalog-statements-costs.md) and
 [HTML tables](catalog-statements-costs.html) measure native Cargo and SL7 before
 and after reusing INSERT statements. Clean medians were 149.24s, 169.41s and
 170.36s; edit medians were 4.48s, 6.48s and 5.99s. Only three of six paired edits

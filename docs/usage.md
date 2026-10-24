@@ -154,6 +154,9 @@ The focused repeat-import benchmark is
 `cargo test --release --features fuse hash_worker_throughput -- --ignored --nocapture`.
 It compares 0/1/2/4 workers on identical 64 MiB input and verifies file digests.
 The Cargo harness accepts `--hash-workers BACKEND=COUNT` for matched builds.
+See the [matched build comparison](validation/parallel-hashing-costs.md) and
+[CPU profiles](validation/parallel-hashing-costs-profile.md). The pool remains
+opt-in: faster preparation alone does not establish faster incremental builds.
 
 For parallel compression within an artifact, use `SL7_COMPRESS_WORKERS=2`
 (default `0`, supported range 0–4). Each sealing worker lazily creates its own

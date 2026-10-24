@@ -64,6 +64,94 @@
     "mounted.json": "3b95931534617dcc098e653ef75d48f36c03861ed07ea595b747e69abcc02a79",
     "status.json": "04e42b94f97050e7fd3ebfb6cd03ee3f83ccc41cf3b65a507417c443efe250ab",
     "micro.log": "edc9e916573ef73609d23c011c529a42f400b638719466540c8033f889ac6b1d",
-    "python.log": "11756dd510c989806d4847860c4e13a460b3af771d6dba237e55dcb7a63a7db4"
-  }
+    "python.log": "11756dd510c989806d4847860c4e13a460b3af771d6dba237e55dcb7a63a7db4",
+    "range-bench.log": "12631908d7d0473e73017102368e4f9b5ff4c8a1d5910f3ba62e0ab6cf031eaf"
+  },
+  "profile": "passed",
+  "profile_report": "parallel-hashing-costs-profile.json",
+  "read_benchmarks": {
+    "command": "cargo bench --locked --bench range_reads",
+    "kind": "custom harness, not Criterion",
+    "comparison": "No paired before/after read benchmark; no regression or significance claim.",
+    "groups": [
+      {
+        "bytes_per_read": 4096,
+        "group": "warm_sequential_4k",
+        "median_seconds": 0.320223484,
+        "reads_per_sample": 65536,
+        "samples_seconds": [
+          0.318449156,
+          0.319664887,
+          0.318287269,
+          0.320779987,
+          0.320223484,
+          0.321704266,
+          0.320861972
+        ]
+      },
+      {
+        "bytes_per_read": 4096,
+        "group": "warm_random_4k",
+        "median_seconds": 0.341876861,
+        "reads_per_sample": 65536,
+        "samples_seconds": [
+          0.341876861,
+          0.337374286,
+          0.337926522,
+          0.342822935,
+          0.339939622,
+          0.342494228,
+          0.343642058
+        ]
+      },
+      {
+        "bytes_per_read": 8192,
+        "group": "warm_cross_window_8k",
+        "median_seconds": 0.34332554,
+        "reads_per_sample": 65536,
+        "samples_seconds": [
+          0.343293871,
+          0.347272703,
+          0.33784734,
+          0.348618299,
+          0.344085522,
+          0.34332554,
+          0.339080114
+        ]
+      },
+      {
+        "bytes_per_read": 4096,
+        "group": "cold_sparse_4k",
+        "median_seconds": 0.14972436,
+        "reads_per_sample": 4096,
+        "samples_seconds": [
+          0.15226992399999997,
+          0.14972436,
+          0.15068546299999996,
+          0.15021766600000006,
+          0.149211109,
+          0.14794716800000002,
+          0.14876127
+        ]
+      },
+      {
+        "bytes_per_read": 1048576,
+        "group": "cold_sequential_1m",
+        "median_seconds": 0.218115258,
+        "reads_per_sample": 256,
+        "samples_seconds": [
+          0.21671090400000004,
+          0.22515380500000004,
+          0.22090526500000002,
+          0.21672944700000002,
+          0.219768525,
+          0.214744085,
+          0.218115258
+        ]
+      }
+    ]
+  },
+  "implementation_commit": "218a79d5f409bd1dbd22bb422f45f2951cb8f5bb",
+  "benchmark": "passed",
+  "comparison_report": "parallel-hashing-costs.json"
 }
