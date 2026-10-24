@@ -4,6 +4,7 @@
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
 use fuser::*;
 mod background;
+mod reads;
 use std::{
     collections::{HashMap, VecDeque},
     ffi::{CString, OsStr, OsString},
@@ -27,7 +28,9 @@ use std::{
 
 const TTL: Duration = Duration::ZERO;
 struct Inode {
-    pin: File,
+    pin: Arc<File>,
+    readers: u64,
+    waiting_mutations: u64,
     identity: (u64, u64),
     references: u64,
     opens: u64,
@@ -43,7 +46,7 @@ struct DirectoryEntry {
 }
 struct Handle {
     ino: INodeNo,
-    file: File,
+    file: Arc<File>,
     entries: Option<Vec<DirectoryEntry>>,
 }
 struct State {
@@ -68,6 +71,7 @@ pub struct StagingFs {
     catalog_writer: Arc<Mutex<()>>,
     publication_done: Arc<Condvar>,
     worker: Option<std::thread::JoinHandle<()>>,
+    readers: Option<reads::Readers>,
     _owner: Owner,
 }
 struct Owner(File);
@@ -227,7 +231,7 @@ impl State {
     fn inode(&self, ino: INodeNo) -> io::Result<&File> {
         self.nodes
             .get(&ino)
-            .map(|n| &n.pin)
+            .map(|n| n.pin.as_ref())
             .ok_or_else(|| error(libc::ENOENT))
     }
     fn path(&self, ino: INodeNo) -> io::Result<PathBuf> {
@@ -263,7 +267,9 @@ impl State {
         self.nodes.insert(
             ino,
             Inode {
-                pin: file,
+                pin: Arc::new(file),
+                readers: 0,
+                waiting_mutations: 0,
                 identity: key,
                 references: 0,
                 opens: 0,
@@ -350,7 +356,14 @@ impl State {
                     .references += 1;
             }
         }
-        self.handles.insert(fh, Handle { ino, file, entries });
+        self.handles.insert(
+            fh,
+            Handle {
+                ino,
+                file: Arc::new(file),
+                entries,
+            },
+        );
         Ok(fh)
     }
     fn handle(&self, ino: INodeNo, fh: FileHandle) -> io::Result<&Handle> {
@@ -414,10 +427,13 @@ impl State {
     }
     fn reclaim(&mut self, ino: INodeNo) {
         if ino != INodeNo::ROOT
-            && self
-                .nodes
-                .get(&ino)
-                .is_some_and(|n| n.references == 0 && n.opens == 0 && !n.queued && !n.packing)
+            && self.nodes.get(&ino).is_some_and(|n| {
+                n.references == 0
+                    && n.opens == 0
+                    && n.waiting_mutations == 0
+                    && !n.queued
+                    && !n.packing
+            })
         {
             let node = self.nodes.remove(&ino).unwrap();
             self.identities.remove(&node.identity);
@@ -455,6 +471,7 @@ impl StagingFs {
             catalog_writer: Arc::new(Mutex::new(())),
             publication_done: Arc::new(Condvar::new()),
             worker: None,
+            readers: None,
             _owner: Owner(owner),
         })
     }
@@ -462,6 +479,7 @@ impl StagingFs {
         let mut live = crate::live::Live::open(store)?;
         let mut fs = Self::new(&live.tree())?;
         live.recover()?;
+        fs.readers = Some(reads::Readers::new(&live.store)?);
         let packer = crate::store::Packer::new(&live.store.root)?;
         let publisher = crate::live::Live::open(live.store.publication_connection()?)?;
         fs.state
@@ -477,6 +495,7 @@ impl StagingFs {
         )?);
         Ok(fs)
     }
+    #[cfg(test)]
     fn with<T>(
         &self,
         op: impl FnOnce(&mut State) -> io::Result<T>,
@@ -507,28 +526,79 @@ impl StagingFs {
     }
     fn with_mutation<T>(
         &self,
-        select: impl FnOnce(&mut State) -> io::Result<Vec<INodeNo>>,
+        mut select: impl FnMut(&mut State) -> io::Result<Vec<INodeNo>>,
         op: impl FnOnce(&mut State) -> io::Result<T>,
     ) -> std::result::Result<T, Errno> {
-        let mut op = Some(op);
-        let native = self.with_read(|s| {
-            for ino in select(s)? {
-                let node = s.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?;
-                if node.publishing
-                    || s.live
-                        .as_ref()
-                        .map(|live| live.mutation_needs_catalog(&node.pin).map_err(storage))
-                        .transpose()?
-                        .unwrap_or(false)
-                {
-                    return Ok(None);
-                }
+        let mut writer = None;
+        let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
+        loop {
+            let started = Instant::now();
+            // Resolve names again after every wait; rename/replacement may have
+            // changed which inode this operation will affect.
+            let inodes = select(&mut state).map_err(Errno::from)?;
+            if inodes.iter().any(|ino| !state.nodes.contains_key(ino)) {
+                return Err(Errno::ENOENT);
             }
-            op.take().unwrap()(s).map(Some)
-        })?;
-        match native {
-            Some(result) => Ok(result),
-            None => self.with(op.take().unwrap()),
+            if inodes
+                .iter()
+                .any(|ino| state.nodes.get(ino).is_some_and(|n| n.readers != 0))
+            {
+                // Reserve these inodes against new readers so a stream of reads
+                // cannot starve a mutation. Never hold state or a catalog permit
+                // while waiting for payload reconstruction to finish.
+                for ino in &inodes {
+                    state.nodes.get_mut(ino).unwrap().waiting_mutations += 1;
+                }
+                drop(writer.take());
+                let seconds = started.elapsed().as_secs_f64();
+                state.seal_stats.request_state_seconds += seconds;
+                state.seal_stats.max_request_state_seconds =
+                    state.seal_stats.max_request_state_seconds.max(seconds);
+                let started = Instant::now();
+                state = self.publication_done.wait(state).map_err(|_| Errno::EIO)?;
+                state.seal_stats.mutation_read_wait_seconds += started.elapsed().as_secs_f64();
+                for ino in &inodes {
+                    state.nodes.get_mut(ino).unwrap().waiting_mutations -= 1;
+                }
+                self.publication_done.notify_all();
+                // Namespace selectors will resolve names again on the next
+                // iteration; discard pins no longer referenced by clients.
+                for ino in &inodes {
+                    state.reclaim(*ino);
+                }
+                continue;
+            }
+            let needs_catalog = inodes
+                .iter()
+                .try_fold(false, |needed, ino| -> io::Result<bool> {
+                    let node = state.nodes.get(ino).ok_or_else(|| error(libc::ENOENT))?;
+                    Ok(needed
+                        || node.publishing
+                        || state
+                            .live
+                            .as_ref()
+                            .map(|live| live.mutation_needs_catalog(&node.pin).map_err(storage))
+                            .transpose()?
+                            .unwrap_or(false))
+                })
+                .map_err(Errno::from)?;
+            if needs_catalog && writer.is_none() {
+                let seconds = started.elapsed().as_secs_f64();
+                state.seal_stats.request_state_seconds += seconds;
+                drop(state);
+                let waited = Instant::now();
+                writer = Some(self.catalog_writer.lock().map_err(|_| Errno::EIO)?);
+                let seconds = waited.elapsed().as_secs_f64();
+                state = self.state.lock().map_err(|_| Errno::EIO)?;
+                state.seal_stats.catalog_wait_seconds += seconds;
+                continue;
+            }
+            let result = op(&mut state).map_err(Errno::from);
+            let seconds = started.elapsed().as_secs_f64();
+            state.seal_stats.request_state_seconds += seconds;
+            state.seal_stats.max_request_state_seconds =
+                state.seal_stats.max_request_state_seconds.max(seconds);
+            return result;
         }
     }
     fn open_handle(&self, ino: INodeNo, flags: i32) -> std::result::Result<FileHandle, Errno> {
@@ -768,38 +838,7 @@ impl Filesystem for StagingFs {
         _owner: Option<LockOwner>,
         reply: ReplyData,
     ) {
-        match self.with_read(|s| {
-            if size > 16 * 1024 * 1024 {
-                return Err(error(libc::EINVAL));
-            }
-            if let Some(live) = &s.live {
-                s.handle(ino, fh)?;
-                if let Some(bytes) = live
-                    .read(s.inode(ino)?, offset, size as usize)
-                    .map_err(storage)?
-                {
-                    return Ok(bytes);
-                }
-            }
-            let file = &s.handle(ino, fh)?.file;
-            let mut bytes = vec![0; size as usize];
-            let mut read = 0;
-            while read < bytes.len() {
-                match file.read_at(
-                    &mut bytes[read..],
-                    offset
-                        .checked_add(read as u64)
-                        .ok_or_else(|| error(libc::EINVAL))?,
-                ) {
-                    Ok(0) => break,
-                    Ok(n) => read += n,
-                    Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                    Err(e) => return Err(e),
-                }
-            }
-            bytes.truncate(read);
-            Ok(bytes)
-        }) {
+        match self.read_handle(ino, fh, offset, size as usize) {
             Ok(b) => reply.data(&b),
             Err(e) => reply.error(e),
         }
@@ -1156,7 +1195,7 @@ fn run_mount(fs: StagingFs, mountpoint: &Path) -> crate::Result<()> {
     let mut config = Config::default();
     // A request waiting on its inode or the catalog writer must not prevent
     // another request from reading an unrelated inode.
-    config.n_threads = Some(4);
+    config.n_threads = Some(reads::REQUEST_WORKERS);
     config.mount_options = vec![
         MountOption::RW,
         MountOption::DefaultPermissions,

@@ -6,7 +6,8 @@ use std::{
     fs::File,
     hash::Hash as Key,
     path::Path,
-    sync::Arc,
+    sync::{Arc, Mutex},
+    time::Instant,
 };
 
 // Fixed logical windows bound cold-read work independently of artifact size.
@@ -102,11 +103,15 @@ pub(crate) struct CacheStats {
     pub map_fallbacks: u64,
     pub map_bytes: usize,
     pub map_windows: usize,
+    pub active_loads: usize,
+    pub max_parallel_loads: usize,
+    pub duplicate_loads: u64,
+    pub load_seconds: f64,
 }
 
-pub(crate) struct ReadCache {
+struct CacheState {
     chunks: Lru<Hash, Arc<Vec<u8>>>,
-    packs: Lru<String, File>,
+    packs: Lru<String, Arc<File>>,
     byte_limit: usize,
     pack_limit: usize,
     stats: CacheStats,
@@ -114,12 +119,12 @@ pub(crate) struct ReadCache {
     map_limit: usize,
     map_entry_limit: usize,
 }
-impl Default for ReadCache {
+impl Default for CacheState {
     fn default() -> Self {
         Self::new(128 * 1024 * 1024, 64)
     }
 }
-impl ReadCache {
+impl CacheState {
     fn new(byte_limit: usize, pack_limit: usize) -> Self {
         assert!(pack_limit > 0);
         Self {
@@ -162,6 +167,10 @@ impl ReadCache {
         self.stats.map_fallbacks += 1;
     }
     pub fn remember_map(&mut self, key: MapKey, extents: Arc<[Extent]>) {
+        // Concurrent readers can load the same window. Charge it only once.
+        if self.maps.entries.contains_key(&key) {
+            return;
+        }
         // Account for the extent allocation, pack strings, both LRU key copies,
         // and conservative per-entry bookkeeping. Entry count also bounds maps
         // with little payload; this is an accounting budget, not an RSS promise.
@@ -186,42 +195,197 @@ impl ReadCache {
     pub fn request(&mut self, bytes: u64) {
         self.stats.requested_bytes += bytes;
     }
-    pub fn read(&mut self, root: &Path, loc: &pack::Location) -> Result<Arc<Vec<u8>>> {
-        if let Some(bytes) = self.chunks.get(&loc.hash) {
-            if bytes.len() as u64 != loc.raw_len {
-                return Err(Error::Corrupt(
-                    "cached chunk length differs from catalog".into(),
-                ));
-            }
-            self.stats.chunk_hits += 1;
-            return Ok(Arc::clone(bytes));
+}
+
+/// One mount-wide budget. Only cache bookkeeping holds this mutex; pack I/O,
+/// decompression, verification, and copying run with owned Arc references.
+pub(crate) struct ReadCache {
+    state: Mutex<CacheState>,
+}
+impl Default for ReadCache {
+    fn default() -> Self {
+        Self::new(128 * 1024 * 1024, 64)
+    }
+}
+impl ReadCache {
+    fn new(byte_limit: usize, pack_limit: usize) -> Self {
+        Self {
+            state: Mutex::new(CacheState::new(byte_limit, pack_limit)),
         }
-        self.stats.chunk_misses += 1;
-        if !self.packs.entries.contains_key(&loc.pack) {
-            let file = pack::open(root, &loc.pack)?;
-            if self.packs.entries.len() == self.pack_limit {
-                self.packs.pop_oldest();
+    }
+    pub fn stats(&self) -> CacheStats {
+        self.state.lock().unwrap().stats()
+    }
+    pub fn clear(&self) {
+        self.state.lock().unwrap().clear();
+    }
+    pub fn map(&self, key: &MapKey) -> Option<Arc<[Extent]>> {
+        self.state.lock().unwrap().map(key)
+    }
+    pub fn map_query(&self) {
+        self.state.lock().unwrap().map_query();
+    }
+    pub fn map_fallback(&self) {
+        self.state.lock().unwrap().map_fallback();
+    }
+    pub fn remember_map(&self, key: MapKey, extents: Arc<[Extent]>) {
+        self.state.lock().unwrap().remember_map(key, extents);
+    }
+    pub fn request(&self, bytes: u64) {
+        self.state.lock().unwrap().request(bytes);
+    }
+    pub fn read(&self, root: &Path, loc: &pack::Location) -> Result<Arc<Vec<u8>>> {
+        self.read_with(root, loc, pack::read_from)
+    }
+    fn read_with(
+        &self,
+        root: &Path,
+        loc: &pack::Location,
+        load: impl FnOnce(&File, &pack::Location) -> Result<Vec<u8>>,
+    ) -> Result<Arc<Vec<u8>>> {
+        let cached_pack = {
+            let mut state = self.state.lock().unwrap();
+            if let Some(bytes) = state.chunks.get(&loc.hash).cloned() {
+                if bytes.len() as u64 != loc.raw_len {
+                    return Err(Error::Corrupt(
+                        "cached chunk length differs from catalog".into(),
+                    ));
+                }
+                state.stats.chunk_hits += 1;
+                return Ok(bytes);
             }
-            self.packs.insert(loc.pack.clone(), file);
-            self.stats.pack_opens += 1;
-        }
-        let bytes = Arc::new(pack::read_from(self.packs.get(&loc.pack).unwrap(), loc)?);
-        self.stats.decoded_bytes += bytes.len() as u64;
-        // Insert only after header, decoded length, and content hash verification.
-        if bytes.len() <= self.byte_limit {
-            while self.stats.cached_bytes + bytes.len() > self.byte_limit {
-                self.stats.cached_bytes -= self.chunks.pop_oldest().unwrap().len();
+            state.stats.chunk_misses += 1;
+            state.packs.get(&loc.pack).cloned()
+        };
+        let file = match cached_pack {
+            Some(file) => file,
+            None => {
+                let file = Arc::new(pack::open(root, &loc.pack)?);
+                let mut state = self.state.lock().unwrap();
+                state.stats.pack_opens += 1;
+                if let Some(existing) = state.packs.get(&loc.pack) {
+                    Arc::clone(existing)
+                } else {
+                    if state.packs.entries.len() == state.pack_limit {
+                        state.packs.pop_oldest();
+                    }
+                    state.packs.insert(loc.pack.clone(), Arc::clone(&file));
+                    file
+                }
             }
-            self.stats.cached_bytes += bytes.len();
-            self.chunks.insert(loc.hash, Arc::clone(&bytes));
+        };
+        let _loading = Loading::start(self);
+        let bytes = Arc::new(load(&file, loc)?);
+        // Only verified payloads reach insertion. Racing misses may decode
+        // twice, but must neither double-charge nor overwrite an existing entry.
+        let mut state = self.state.lock().unwrap();
+        state.stats.decoded_bytes += bytes.len() as u64;
+        if state.chunks.entries.contains_key(&loc.hash) {
+            state.stats.duplicate_loads += 1;
+        } else if bytes.len() <= state.byte_limit {
+            while state.stats.cached_bytes + bytes.len() > state.byte_limit {
+                state.stats.cached_bytes -= state.chunks.pop_oldest().unwrap().len();
+            }
+            state.stats.cached_bytes += bytes.len();
+            state.chunks.insert(loc.hash, Arc::clone(&bytes));
         }
         Ok(bytes)
+    }
+}
+
+struct Loading<'a> {
+    cache: &'a ReadCache,
+    started: Instant,
+}
+impl<'a> Loading<'a> {
+    fn start(cache: &'a ReadCache) -> Self {
+        let mut state = cache.state.lock().unwrap();
+        state.stats.active_loads += 1;
+        state.stats.max_parallel_loads =
+            state.stats.max_parallel_loads.max(state.stats.active_loads);
+        Self {
+            cache,
+            started: Instant::now(),
+        }
+    }
+}
+impl Drop for Loading<'_> {
+    fn drop(&mut self) {
+        let mut state = self.cache.state.lock().unwrap();
+        state.stats.active_loads -= 1;
+        state.stats.load_seconds += self.started.elapsed().as_secs_f64();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn cold_loads_overlap_and_racing_duplicates_stay_within_budget() -> Result<()> {
+        use std::{sync::mpsc, thread, time::Duration};
+        let temp = tempfile::tempdir()?;
+        let root = temp.path().join("store");
+        let _store = crate::Store::init(&root)?;
+        let a = vec![7; 32768];
+        let b = vec![9; 32768];
+        let mut writer = pack::Writer::new(&root)?;
+        writer.add(crate::chunk::identity(&a), &a)?;
+        writer.add(crate::chunk::identity(&b), &b)?;
+        let (_, _, locations) = writer.finish(&root)?;
+        for duplicate in [false, true] {
+            let cache = ReadCache::new(32768, 1);
+            thread::scope(|scope| {
+                let (ready, entered) = mpsc::channel();
+                let mut resumes = Vec::new();
+                let mut workers = Vec::new();
+                for index in [0, if duplicate { 0 } else { 1 }] {
+                    let (resume, paused) = mpsc::channel();
+                    resumes.push(resume);
+                    let ready = ready.clone();
+                    let (cache, root, loc) = (&cache, &root, &locations[index]);
+                    workers.push(scope.spawn(move || {
+                        cache.read_with(root, loc, |file, loc| {
+                            ready.send(()).unwrap();
+                            paused.recv_timeout(Duration::from_secs(10)).unwrap();
+                            pack::read_from(file, loc)
+                        })
+                    }));
+                }
+                let first = entered.recv_timeout(Duration::from_secs(5));
+                let second = entered.recv_timeout(Duration::from_secs(5));
+                // Unblock before any assertion so a broken lock never hangs the test.
+                for resume in resumes {
+                    let _ = resume.send(());
+                }
+                first.unwrap();
+                second.expect("cold reads serialized behind the cache mutex");
+                assert_eq!(*workers.remove(0).join().unwrap().unwrap(), a);
+                assert_eq!(
+                    *workers.remove(0).join().unwrap().unwrap(),
+                    if duplicate { a.clone() } else { b.clone() }
+                );
+            });
+            let stats = cache.stats();
+            assert_eq!(stats.max_parallel_loads, 2);
+            assert_eq!(stats.active_loads, 0);
+            assert_eq!(stats.cached_bytes, 32768);
+            assert_eq!(stats.duplicate_loads, u64::from(duplicate));
+            assert_eq!(stats.open_packs, 1);
+            cache.clear();
+            assert!(
+                cache
+                    .read_with(&root, &locations[0], |_, _| Err(Error::Corrupt(
+                        "injected".into()
+                    )))
+                    .is_err()
+            );
+            assert_eq!(cache.stats().active_loads, 0);
+            assert_eq!(cache.stats().cached_bytes, 0);
+            assert_eq!(*cache.read(&root, &locations[0])?, a);
+        }
+        Ok(())
+    }
+
     #[test]
     fn map_cache_evicts_by_bytes_and_count_and_clears() {
         let key = |file| MapKey {
@@ -244,9 +408,11 @@ mod tests {
             }]
             .into()
         };
-        let mut cache = ReadCache::new(1024, 1);
+        let mut cache = CacheState::new(1024, 1);
         cache.remember_map(key(1), extent());
         let one = cache.stats().map_bytes;
+        cache.remember_map(key(1), extent());
+        assert_eq!(cache.stats().map_bytes, one);
         cache.map_limit = one;
         cache.remember_map(key(2), extent());
         assert!(cache.map(&key(1)).is_none());
@@ -273,7 +439,7 @@ mod tests {
         writer.add(crate::chunk::identity(&a), &a)?;
         writer.add(crate::chunk::identity(&b), &b)?;
         let (_, _, locations) = writer.finish(&root)?;
-        let mut cache = ReadCache::new(32768, 1);
+        let cache = ReadCache::new(32768, 1);
         assert_eq!(*cache.read(&root, &locations[0])?, a);
         assert_eq!(*cache.read(&root, &locations[0])?, a);
         assert_eq!(*cache.read(&root, &locations[1])?, b);

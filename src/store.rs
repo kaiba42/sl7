@@ -11,7 +11,6 @@ use rusqlite::{Connection, OpenFlags, OptionalExtension, params};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{
-    cell::RefCell,
     collections::HashSet,
     fs::{self, File, OpenOptions},
     io::{BufReader, Write},
@@ -59,7 +58,7 @@ pub struct Stats {
 pub struct Store {
     pub(crate) root: PathBuf,
     pub(crate) db: Connection,
-    pub(crate) cache: RefCell<crate::read_cache::ReadCache>,
+    pub(crate) cache: Arc<crate::read_cache::ReadCache>,
     report_cache_stats: bool,
     // Declared after the catalog so SQLite closes before ownership is released.
     _lock: Arc<OwnerLock>,
@@ -68,7 +67,7 @@ pub struct Store {
 impl Drop for Store {
     fn drop(&mut self) {
         if self.report_cache_stats && std::env::var_os("SL7_CACHE_STATS").is_some() {
-            if let Ok(stats) = serde_json::to_string(&self.cache.borrow().stats()) {
+            if let Ok(stats) = serde_json::to_string(&self.cache.stats()) {
                 eprintln!("sl7: cache_stats {stats}");
             }
         }
@@ -155,7 +154,7 @@ impl Store {
         Ok(Self {
             root: root.to_path_buf(),
             db,
-            cache: RefCell::default(),
+            cache: Arc::default(),
             report_cache_stats: true,
             _lock: Arc::new(lock),
         })
@@ -186,7 +185,7 @@ impl Store {
         Ok(Self {
             root: root.to_path_buf(),
             db,
-            cache: RefCell::default(),
+            cache: Arc::default(),
             report_cache_stats: true,
             _lock: Arc::new(lock),
         })
@@ -203,7 +202,23 @@ impl Store {
         Ok(Self {
             root: self.root.clone(),
             db,
-            cache: RefCell::default(),
+            cache: Arc::default(),
+            report_cache_stats: false,
+            _lock: Arc::clone(&self._lock),
+        })
+    }
+    /// Independent read-only catalog, shared bounded caches, same exclusive owner.
+    #[cfg(all(feature = "fuse", target_os = "linux"))]
+    pub(crate) fn reader_connection(&self) -> Result<Self> {
+        let db = Connection::open_with_flags(
+            self.root.join("catalog.sqlite"),
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )?;
+        db.busy_timeout(std::time::Duration::from_secs(10))?;
+        Ok(Self {
+            root: self.root.clone(),
+            db,
+            cache: Arc::clone(&self.cache),
             report_cache_stats: false,
             _lock: Arc::clone(&self._lock),
         })
@@ -344,7 +359,7 @@ impl Store {
         }
         let end = offset.saturating_add(length as u64).min(info.size);
         if cached {
-            self.cache.borrow_mut().request(end - offset);
+            self.cache.request(end - offset);
         }
         let mut output = Vec::with_capacity((end - offset) as usize);
         let mut cursor = offset;
@@ -359,15 +374,11 @@ impl Store {
                 digest: info.sha256.clone(),
                 start: window_start,
             };
-            let hit = if cached {
-                self.cache.borrow_mut().map(&key)
-            } else {
-                None
-            };
+            let hit = if cached { self.cache.map(&key) } else { None };
             let extents = if let Some(extents) = hit {
                 Some(extents)
             } else if cached {
-                self.cache.borrow_mut().map_query();
+                self.cache.map_query();
                 let mut query = self.db.prepare_cached(RANGE_SQL_LIMITED)?;
                 let rows = query
                     .query_map(
@@ -383,12 +394,12 @@ impl Store {
                 if rows.len() > MAX_MAP_ROWS {
                     // Dense imported catalogs remain readable without an
                     // unbounded metadata allocation or a new format restriction.
-                    self.cache.borrow_mut().map_fallback();
+                    self.cache.map_fallback();
                     None
                 } else {
                     validate_window(&rows, window_start, window_end)?;
                     let rows: Arc<[Extent]> = rows.into();
-                    self.cache.borrow_mut().remember_map(key, Arc::clone(&rows));
+                    self.cache.remember_map(key, Arc::clone(&rows));
                     Some(rows)
                 }
             } else {
@@ -409,7 +420,7 @@ impl Store {
             } else {
                 // Integrity checking bypasses mapping and payload caches alike.
                 if cached {
-                    self.cache.borrow_mut().map_query();
+                    self.cache.map_query();
                 }
                 let mut query = self.db.prepare_cached(RANGE_SQL)?;
                 for row in query.query_map(
@@ -457,7 +468,7 @@ impl Store {
             )));
         }
         let bytes = if cached {
-            self.cache.borrow_mut().read(&self.root, loc)?
+            self.cache.read(&self.root, loc)?
         } else {
             Arc::new(pack::read(&self.root, loc)?)
         };
@@ -502,7 +513,7 @@ impl Store {
         Ok(hex(&digest.finalize()))
     }
     pub fn check(&self) -> Result<Stats> {
-        self.cache.borrow_mut().clear();
+        self.cache.clear();
         let health: String = self
             .db
             .query_row("PRAGMA integrity_check", [], |r| r.get(0))?;
@@ -822,9 +833,14 @@ mod tests {
         let root = temp.path().join("store");
         let store = Store::init(&root)?;
         let publisher = store.publication_connection()?;
+        let reader = store.reader_connection()?;
+        assert!(Arc::ptr_eq(&store.cache, &reader.cache));
+        assert!(reader.db.execute("CREATE TABLE forbidden(x)", []).is_err());
         drop(store);
         assert!(matches!(Store::open(&root), Err(Error::Locked(_))));
         drop(publisher);
+        assert!(matches!(Store::open(&root), Err(Error::Locked(_))));
+        drop(reader);
         Store::open(&root)?.check()?;
         Ok(())
     }
@@ -836,10 +852,10 @@ mod tests {
         let mut store = Store::init(&temp.path().join("store"))?;
         store.put("a", "b", &source)?;
         store.read("a", "b", 0, 4096)?;
-        let queries = store.cache.borrow().stats().map_queries;
+        let queries = store.cache.stats().map_queries;
         store.read("a", "b", 4096, 4096)?;
-        assert_eq!(store.cache.borrow().stats().map_queries, queries);
-        assert_eq!(store.cache.borrow().stats().map_hits, 1);
+        assert_eq!(store.cache.stats().map_queries, queries);
+        assert_eq!(store.cache.stats().map_hits, 1);
 
         // A valid, densely partitioned catalog may exceed the cache loader's
         // row cap. Preserve format compatibility via the bounded streaming path.
@@ -863,7 +879,7 @@ mod tests {
         }
         tx.commit()?;
         assert_eq!(store.read("a", "dense", 999, 1000)?, vec![37; 1000]);
-        assert_eq!(store.cache.borrow().stats().map_fallbacks, 1);
+        assert_eq!(store.cache.stats().map_fallbacks, 1);
         store.check()?;
         Ok(())
     }

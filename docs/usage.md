@@ -118,9 +118,10 @@ FUSE handle/mapping is released. One background worker prepares and publishes
 files outside the filesystem mutex, validating their mutation epoch first.
 Operations on the publishing inode wait; unrelated reads and native writes can
 continue through the four request workers.
-Normal unmount drains pending sealing. Reads reconstruct requested ranges through
-a bounded verified-chunk cache; writable opens hydrate sealed files
-before mutation. Hard links share an inode; separate files keep separate identities.
+Normal unmount drains pending sealing. Reads reconstruct concurrently outside the
+global filesystem lock, using independent catalog connections and shared bounded
+caches. Same-inode mutations wait for active reads; writable opens hydrate sealed
+files before mutation. Hard links share an inode; separate files keep separate identities.
 See [the live format and recovery protocol](live-format.md).
 
 `live-stats` separates logical bytes, native allocated blocks, and content-store
@@ -159,9 +160,10 @@ bash scripts/verify.sh    # fmt, check, tests, strict Clippy
 On macOS, `fuse-check` compiles/tests the read-only adapter without a runtime and
 refuses real mounts. Do not use `--all-features` to mount. Local checks use the installed Rust toolchain.
 
-This is an owned-build-tree prototype. Foreground I/O and reconstruction still
-serialize under filesystem state; background publication runs outside it.
-Hydration needs temporary native space. Decoded chunks and extent mappings are cached within
+This is an owned-build-tree prototype. Read reconstruction and background
+publication run outside filesystem state. Foreground hydration, writes, and
+metadata/namespace operations still serialize. Hydration needs temporary native
+space. Decoded chunks and extent mappings are cached within
 fixed budgets, and one background worker packs closed files.
 GC is offline and can be expensive. Arbitrary multi-user ownership, restrictive
 permission transitions, ACL/xattr passthrough, special files, direct I/O, online

@@ -51,11 +51,29 @@ native inode, then atomically removes its manifest and metadata binding. Before
 that commit recovery still restores the old manifest; afterward the durable
 empty native file is authoritative. Nonzero size changes still hydrate first.
 
-Four FUSE request workers share filesystem state. Foreground callbacks still
-serialize their native I/O and reconstruction under that mutex, but background
-candidate setup, packing, database publication, and sparse retirement do not.
-Open readers prevent retirement until their last release. New readers of an inode
+Four FUSE request workers share brief filesystem bookkeeping sections. A READ
+callback pins its inode and open file under state, then releases state before any
+catalog lookup, extent query, native read, pack read, decompression, checksum, or
+output copying. Four independent read-only catalog connections are lent from a
+bounded pool; checkout/return never holds filesystem state. All connections share
+one bounded payload/mapping/descriptor cache. Cache locks cover bookkeeping only;
+pack opens and verified chunk decoding run outside them. Concurrent misses may
+decode the same chunk twice, but insertion charges it only once.
+
+An in-flight read lease adds an open reference and a reader count to its inode.
+Release/forget cannot reclaim that inode or allow sparse retirement until the
+lease ends, including error/unwind paths. Mutations wait for readers of affected
+inodes without holding state or the catalog-writer permit. Pending mutations gate
+new reads of those inodes so continuous readers cannot starve a mutation. Namespace
+targets are resolved again after waiting: replacing a rename destination cannot
+bypass the new target's read lease. Reads of unrelated inodes continue.
+
+Open readers prevent retirement until their last release. New opens of an inode
 being published wait on its condition variable without holding filesystem state.
+Background candidate setup, packing, publication, and sparse retirement also run
+outside state. Foreground hydration, writes, fsync, and namespace/metadata callbacks
+still hold state; this is concurrent read reconstruction, not fully independent
+mutation execution.
 
 Catalog-writing mutations acquire a separate writer permit **before** filesystem
 state. Mutations of already-native inodes without a logical metadata override
@@ -66,8 +84,8 @@ an atomic epoch. A writer waiting for publication therefore does not hold state
 and prevent unrelated reads or native writes. Multiple requests waiting for
 catalog access can still occupy the finite request-worker pool.
 
-The worker and foreground catalog connections share one exclusive owner lock;
-dropping either connection alone cannot admit another mount or offline GC.
+The worker, foreground, and read-pool catalog connections share one exclusive
+owner lock; dropping any one connection cannot admit another mount or offline GC.
 Attribute reads sample native metadata before the logical catalog override, so
 concurrent retirement cannot expose a transient zero logical length.
 One worker bounds active jobs; a 1,024-entry queue spills pending flags onto pinned
@@ -76,7 +94,12 @@ work can leave orphan packs for offline GC; native bytes remain authoritative.
 `SL7_CACHE_STATS=1` also prints sealing counts and candidate/preparation/publication
 wall times, selection/publication state-lock hold totals and maxima, foreground
 state-lock hold times, catalog-permit waits, and same-inode publication-open waits.
-Wait totals can overlap across request threads; they are not removable wall time.
+Read counters include in-flight/max concurrent requests, time outside state, read
+bookkeeping time, and waits between same-inode readers and mutations. Cache counters
+include active/max overlapping payload loads and duplicate loads. A request count
+alone does not prove parallel decoding; cold-load overlap has a separate counter
+and deterministic test. Wait/work totals overlap across threads and are not
+removable wall time.
 Files below 64 KiB, unlinked files, and files lacking owner
 read/write permission stay native. Sealing errors are logged and leave native
 bytes or an already committed manifest authoritative. Failure of the optimization
@@ -89,7 +112,7 @@ directory snapshots, and open handles keep pins alive. IDs are not reused within
 a session. Kernel FUSE release follows the final mapping/file reference: closing
 a userspace descriptor does not permit sealing while its mmap remains. Cached I/O
 provides same-inode coherence; writeback-cache is not negotiated. Hydration occurs
-before mutable access; sealing requires zero open handles.
+before mutable access; sealing requires zero open handles and in-flight read leases.
 
 Recovery scans unique native regular inodes before mounting. A committed manifest
 wins over partially hydrated/retired bytes; recovery finishes sparse retirement
@@ -151,5 +174,6 @@ There is no online control socket, multi-daemon writer protocol, or native macOS
 writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
 permission transitions remain outside qualification. Catalog-writing foreground transitions still serialize with publication through
-the writer permit; foreground hydration and reconstruction still hold filesystem
-state. Background lock removal does not eliminate those remaining costs.
+the writer permit. Foreground hydration and writes still hold filesystem state;
+independent READ callbacks reconstruct outside it. The four-request-worker limit
+can still constrain progress when several mutations are waiting.
