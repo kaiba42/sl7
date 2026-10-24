@@ -124,16 +124,18 @@ pub(crate) struct Packer {
 }
 #[cfg(all(feature = "fuse", target_os = "linux"))]
 impl Packer {
-    pub fn new(root: &Path) -> Result<Self> {
+    pub fn new(root: &Path, hash_pool: Arc<crate::hashing::Pool>) -> Result<Self> {
         let db = Connection::open_with_flags(
             root.join("catalog.sqlite"),
             OpenFlags::SQLITE_OPEN_READ_ONLY,
         )?;
         db.busy_timeout(std::time::Duration::from_secs(10))?;
+        let mut import_mode = crate::import_stream::Mode::from_env()?;
+        import_mode.hash_pool = hash_pool;
         Ok(Self {
             root: root.to_path_buf(),
             db,
-            import_mode: crate::import_stream::Mode::from_env()?,
+            import_mode,
         })
     }
     pub(crate) fn pipeline_enabled(&self) -> bool {
@@ -141,6 +143,9 @@ impl Packer {
     }
     pub(crate) fn chunk_hash_bytes(&self) -> u64 {
         self.import_mode.chunk_hash_bytes.get()
+    }
+    pub(crate) fn hash_stats(&self) -> (usize, usize, usize) {
+        self.import_mode.hash_pool.stats()
     }
     pub(crate) fn compression_stats(&self) -> (usize, usize, usize) {
         self.import_mode.encoder.borrow().stats()
@@ -749,27 +754,11 @@ fn prepare_import_mode(
     let mut output = crate::compression::Packs::new(root, pack_limit, &mut encoder, before.len());
     if mode.start_for(before.len()) {
         crate::import_stream::with_pipeline(BufReader::new(file), |chunks| {
-            prepare_chunks(
-                db,
-                file,
-                canceled,
-                &before,
-                chunks,
-                &mut output,
-                &mode.chunk_hash_bytes,
-            )
+            prepare_chunks(db, file, canceled, &before, chunks, &mut output, mode)
         })
     } else {
         let mut chunks = crate::import_stream::Serial::new(BufReader::new(file));
-        prepare_chunks(
-            db,
-            file,
-            canceled,
-            &before,
-            &mut chunks,
-            &mut output,
-            &mode.chunk_hash_bytes,
-        )
+        prepare_chunks(db, file, canceled, &before, &mut chunks, &mut output, mode)
     }
 }
 fn prepare_chunks(
@@ -779,20 +768,21 @@ fn prepare_chunks(
     before: &std::fs::Metadata,
     chunks: &mut impl crate::import_stream::Chunks,
     output: &mut crate::compression::Packs<'_>,
-    chunk_hash_bytes: &std::cell::Cell<u64>,
+    mode: &crate::import_stream::Mode,
 ) -> Result<PreparedImport> {
+    let mut chunks = crate::hashing::Stream::new(
+        chunks,
+        &mode.hash_pool,
+        before.len(),
+        &mode.chunk_hash_bytes,
+    );
     // Quiescent sources only: these checks detect common races, not arbitrary external writers.
     let mut extents: Vec<(u64, Hash)> = Vec::new();
     let mut seen = HashSet::new();
     let mut offset = 0_u64;
     let mut exists_query =
         db.prepare_cached("SELECT EXISTS(SELECT 1 FROM chunks WHERE hash=?1)")?;
-    while let Some(bytes) = chunks.next_chunk()? {
-        if canceled() {
-            return Err(Error::SourceChanged("sealing candidate canceled".into()));
-        }
-        let hash = chunk::identity(&bytes);
-        chunk_hash_bytes.set(chunk_hash_bytes.get().saturating_add(bytes.len() as u64));
+    while let Some((hash, bytes)) = chunks.next(&canceled)? {
         let exists: bool = exists_query.query_row([hash.as_slice()], |r| r.get(0))?;
         let len = bytes.len() as u64;
         if !exists && seen.insert(hash) {
@@ -1113,6 +1103,9 @@ mod tests {
             crate::import_stream::Mode::with_compression_for_test(false, 1),
             crate::import_stream::Mode::with_compression_for_test(false, 2),
             crate::import_stream::Mode::with_compression_for_test(true, 4),
+            crate::import_stream::Mode::with_hashing_for_test(false, 1),
+            crate::import_stream::Mode::with_hashing_for_test(false, 2),
+            crate::import_stream::Mode::with_hashing_for_test(true, 4),
         ]
         .into_iter()
         .enumerate()
@@ -1138,7 +1131,10 @@ mod tests {
                 );
                 reports.push(serde_json::to_value(report).unwrap());
             }
-            assert_eq!(mode.started(), if index == 1 || index == 4 { 2 } else { 0 });
+            assert_eq!(
+                mode.started(),
+                if [1, 4, 7].contains(&index) { 2 } else { 0 }
+            );
             store.check()?;
             let mut packs = fs::read_dir(root.join("packs"))?
                 .map(|entry| {
@@ -1157,7 +1153,8 @@ mod tests {
         let root = temp.path().join("canceled");
         let mut store = Store::init(&root)?;
         let calls = std::cell::Cell::new(0);
-        let mode = crate::import_stream::Mode::with_compression_for_test(true, 2);
+        let mut mode = crate::import_stream::Mode::with_compression_for_test(true, 2);
+        mode.hash_pool = Arc::new(crate::hashing::Pool::new(2)?);
         let result = prepare_import_mode(
             &root,
             &store.db,
@@ -1176,6 +1173,60 @@ mod tests {
         let collected = store.compact()?;
         assert_eq!(collected.stats.orphan_pack_bytes, 0);
         assert_eq!(collected.stats.unique_chunks, 0);
+        Ok(())
+    }
+    /// Focused repeat-import benchmark: splitting, file SHA, chunk identities,
+    /// catalog-hit queries and extents; no compression or publication in samples.
+    #[test]
+    #[ignore = "manual performance measurement"]
+    fn hash_worker_throughput() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let source = temp.path().join("input");
+        let root = temp.path().join("store");
+        let mut seed = 42_u64;
+        let bytes: Vec<u8> = (0..64 * 1024 * 1024)
+            .map(|_| {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                seed as u8
+            })
+            .collect();
+        fs::write(&source, &bytes)?;
+        let mut store = Store::init(&root)?;
+        store.put("bench", "original", &source)?;
+        let modes: Vec<_> = [0, 1, 2, 4]
+            .into_iter()
+            .map(|n| crate::import_stream::Mode::with_hashing_for_test(false, n))
+            .collect();
+        for round in 0..6 {
+            let order = if round % 2 == 0 {
+                vec![0, 1, 2, 3]
+            } else {
+                vec![3, 2, 1, 0]
+            };
+            for index in order {
+                let mode = &modes[index];
+                let started = std::time::Instant::now();
+                let prepared = prepare_import_mode(
+                    &root,
+                    &store.db,
+                    &File::open(&source)?,
+                    pack::LIMIT,
+                    || false,
+                    mode,
+                )?;
+                let seconds = started.elapsed().as_secs_f64();
+                assert_eq!(prepared.digest, <Hash>::from(Sha256::digest(&bytes)));
+                assert_eq!(prepared.size, bytes.len() as u64);
+                assert!(prepared.locations.is_empty());
+                let (workers, peak, chunks) = mode.hash_pool.stats();
+                println!(
+                    "{}",
+                    serde_json::json!({"round":round,"workers":workers,"peak":peak,"chunks":chunks,"seconds":seconds,"bytes":bytes.len()})
+                );
+            }
+        }
         Ok(())
     }
     #[test]

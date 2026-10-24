@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 use std::{
     cell::{Cell, RefCell},
     io::Read,
-    sync::mpsc,
+    sync::{Arc, mpsc},
     thread,
 };
 
@@ -18,6 +18,7 @@ const MIN_PIPELINE_SIZE: u64 = 16 * 1024 * 1024;
 /// One instance belongs to one packer. Counters need no cross-worker sharing.
 pub(crate) struct Mode {
     enabled: bool,
+    pub(crate) hash_pool: Arc<crate::hashing::Pool>,
     pub(crate) encoder: RefCell<crate::compression::Encoder>,
     started: Cell<u64>,
     pub(crate) chunk_hash_bytes: Cell<u64>,
@@ -29,6 +30,7 @@ impl Mode {
     fn new(enabled: bool) -> Self {
         Self {
             enabled,
+            hash_pool: Arc::new(crate::hashing::Pool::new(0).expect("disabled pool cannot fail")),
             encoder: RefCell::new(crate::compression::Encoder::new(0)),
             started: Cell::new(0),
             chunk_hash_bytes: Cell::new(0),
@@ -71,6 +73,12 @@ impl Mode {
     pub(crate) fn with_compression_for_test(enabled: bool, workers: usize) -> Self {
         let mut mode = Self::new(enabled);
         mode.encoder = RefCell::new(crate::compression::Encoder::new(workers));
+        mode
+    }
+    #[cfg(test)]
+    pub(crate) fn with_hashing_for_test(enabled: bool, workers: usize) -> Self {
+        let mut mode = Self::new(enabled);
+        mode.hash_pool = Arc::new(crate::hashing::Pool::new(workers).unwrap());
         mode
     }
     #[cfg(test)]

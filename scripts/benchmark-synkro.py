@@ -114,6 +114,8 @@ def main():
                         help="Set sealing workers for a backend, allowing same-binary 1/2/4-worker comparisons")
     parser.add_argument("--compress-workers", action="append", default=[], metavar="NAME=COUNT",
                         help="Set compression workers per sealer (0 disables; maximum 4)")
+    parser.add_argument("--hash-workers", action="append", default=[], metavar="NAME=COUNT",
+                        help="Set the shared chunk hashing pool (0 disables; maximum 4)")
     parser.add_argument("--import-pipeline", action="append", default=[], metavar="NAME=0|1",
                         help="Enable or disable the large-artifact pipeline per backend")
     parser.add_argument("--reuse-prepared", action="append", default=[], metavar="NAME=0|1",
@@ -153,6 +155,12 @@ def main():
         if not separator or name not in binaries or name in compress_workers or count not in {str(n) for n in range(5)}:
             parser.error("compression workers require unique SL7 backend NAME=COUNT entries, with COUNT from 0 to 4")
         compress_workers[name] = count
+    hash_workers = {}
+    for item in args.hash_workers:
+        name, separator, count = item.partition("=")
+        if not separator or name not in binaries or name in hash_workers or count not in {str(n) for n in range(5)}:
+            parser.error("hash workers require unique SL7 backend NAME=COUNT entries, with COUNT from 0 to 4")
+        hash_workers[name] = count
     import_pipeline = {}
     for item in args.import_pipeline:
         name, separator, enabled = item.partition("=")
@@ -193,6 +201,8 @@ def main():
                               for name in binaries}
     report["compress_workers"] = {name:compress_workers.get(name, os.environ.get("SL7_COMPRESS_WORKERS", "0"))
                                   for name in binaries}
+    report["hash_workers"] = {name:hash_workers.get(name, os.environ.get("SL7_HASH_WORKERS", "0"))
+                              for name in binaries}
     report["import_pipeline"] = {name:import_pipeline.get(name, os.environ.get("SL7_IMPORT_PIPELINE", "0"))
                                  for name in binaries}
     report["reuse_prepared"] = {name:reuse_prepared.get(name, os.environ.get("SL7_REUSE_PREPARED", "0"))
@@ -236,6 +246,7 @@ def main():
                         if backend in seal_workers:
                             daemon_env["SL7_SEAL_WORKERS"] = str(seal_workers[backend])
                         daemon_env["SL7_COMPRESS_WORKERS"] = report["compress_workers"][backend]
+                        daemon_env["SL7_HASH_WORKERS"] = report["hash_workers"][backend]
                         daemon_env["SL7_IMPORT_PIPELINE"] = report["import_pipeline"][backend]
                         daemon_env["SL7_REUSE_PREPARED"] = report["reuse_prepared"][backend]
                         process = subprocess.Popen([str(case_binary), "--store", str(store), "mount", str(mount)], stdout=daemon_log, stderr=daemon_log,

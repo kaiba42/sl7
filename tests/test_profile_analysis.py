@@ -87,6 +87,16 @@ class IoTraceTests(unittest.TestCase):
 
 
 class CpuCounterTests(unittest.TestCase):
+    def test_hash_pool_cpu_is_sealing_without_caller_frames(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'cpu.txt'
+            path.write_text('sl7-hash-1 15 1.003: 10101010 cpu-clock:u:\n'
+                            '    aaaa sha2::sha256::x86::digest_blocks+0x1 (/sl7)\n')
+            result = analysis.cpu(path)
+        self.assertEqual(result['sample_categories'], {'sealing': 1})
+        self.assertEqual(result['sha256_leaf_by_category'], {'sealing': 1})
+        self.assertEqual(result['samples_by_thread_name'], {'sl7-hash-1': 1})
+
     def test_compression_threads_are_sealing_cpu(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'cpu.txt'

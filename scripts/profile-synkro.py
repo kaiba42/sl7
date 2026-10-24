@@ -79,6 +79,7 @@ def main():
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
                   import_pipeline=os.environ.get('SL7_IMPORT_PIPELINE', '0'),
                   compress_workers=os.environ.get('SL7_COMPRESS_WORKERS', '0'),
+                  hash_workers=os.environ.get('SL7_HASH_WORKERS', '0'),
                   reuse_prepared=os.environ.get('SL7_REUSE_PREPARED', '0'),
                   check_before_settle=check_before_settle,
                   settle_mode=settle_mode,

@@ -136,11 +136,30 @@ With `SL7_CACHE_STATS=1`, the unmount report includes `import_pipeline` and
 `pipelined_prepares`; the latter counts attempted preparations, including canceled
 ones. Cancellation closes the queue and joins the producer before returning.
 
+For parallel chunk hashing within one artifact, set `SL7_HASH_WORKERS=2` on the
+mount process (default `0`; accepted values `0` through `4`). Files at least
+1 MiB use a persistent pool shared across all sealing workers. Two sealers and
+two hash workers create two hashing threads total. Smaller files stay serial.
+The splitter and whole-file SHA remain ordered; independent chunk identities run
+in batches of 16, and ordered receipts preserve the exact version-1 chunk IDs,
+manifests and pack bytes. Up to four submitted batches plus one current batch
+retain at most 2.5 MiB of chunk payload per sealer, in addition to any enabled
+producer/compression queues. Cancellation drains outstanding hash jobs before
+preparation returns. This changes CPU scheduling, not publication or durability.
+
+Unmount/status diagnostics expose `hash_workers`, `max_parallel_hash_jobs` and
+`hashed_chunks_on_workers`. These are mount-wide counters; processed chunks
+include canceled preparations. Overlap is not proof of faster Cargo builds.
+The focused repeat-import benchmark is
+`cargo test --release --features fuse hash_worker_throughput -- --ignored --nocapture`.
+It compares 0/1/2/4 workers on identical 64 MiB input and verifies file digests.
+The Cargo harness accepts `--hash-workers BACKEND=COUNT` for matched builds.
+
 For parallel compression within an artifact, use `SL7_COMPRESS_WORKERS=2`
 (default `0`, supported range 0–4). Each sealing worker lazily creates its own
 persistent compression pool. Only novel chunks from files at least 16 MiB enter
-that pool; duplicate chunks and smaller files avoid it. The coordinator keeps
-chunk hashing and catalog lookups ordered, submits batches of 16 novel chunks,
+that pool; duplicate chunks and smaller files avoid it. The coordinator consumes
+chunk identities and catalog lookups in order, submits batches of 16 novel chunks,
 and writes compressed results in original order. Chunk identities, pack bytes,
 rollover, and durability barriers remain unchanged. This works independently of
 `SL7_IMPORT_PIPELINE`.

@@ -2,6 +2,7 @@
 mod chunk;
 mod compression;
 mod gc;
+mod hashing;
 mod import_stream;
 pub use gc::GcReport;
 #[cfg(all(feature = "fuse", target_os = "linux"))]

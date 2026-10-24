@@ -580,10 +580,11 @@ impl StagingFs {
         fs.metadata_writer = Some(Mutex::new(crate::live::MetadataWriter::new(
             live.store.publication_connection()?,
         )?));
+        let hash_pool = Arc::new(crate::hashing::Pool::from_env()?);
         let mut connections = Vec::with_capacity(count);
         for _ in 0..count {
             connections.push((
-                crate::store::Packer::new(&live.store.root)?,
+                crate::store::Packer::new(&live.store.root, Arc::clone(&hash_pool))?,
                 crate::live::Live::open(live.store.publication_connection()?)?,
             ));
         }

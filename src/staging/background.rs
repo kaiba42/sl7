@@ -29,6 +29,9 @@ pub(super) struct Workers(Vec<JoinHandle<()>>);
 #[derive(Default, Serialize)]
 pub(super) struct Stats {
     import_pipeline: bool,
+    hash_workers: usize,
+    max_parallel_hash_jobs: usize,
+    hashed_chunks_on_workers: usize,
     compression_workers_per_sealer: usize,
     max_parallel_compression_per_sealer: usize,
     compressed_chunks_on_workers: usize,
@@ -295,6 +298,7 @@ pub(super) fn start(
             .map_err(|_| io::Error::other("poisoned filesystem state"))?;
         state.wake = Some(Arc::clone(&wake));
         state.seal_stats.workers = connections.len();
+        state.seal_stats.hash_workers = connections.first().map_or(0, |(p, _)| p.hash_stats().0);
         state.seal_stats.compression_workers_per_sealer = connections
             .first()
             .map_or(0, |(p, _)| p.compression_stats().0);
@@ -481,6 +485,9 @@ fn run(
                 };
                 state.seal_stats.active_prepares -= 1;
                 state.seal_stats.chunk_hash_bytes += hash_bytes;
+                let (_, peak_hashes, hashed_chunks) = packer.hash_stats();
+                state.seal_stats.max_parallel_hash_jobs = peak_hashes;
+                state.seal_stats.hashed_chunks_on_workers = hashed_chunks;
                 let (_, peak, compressed) = packer.compression_stats();
                 state.seal_stats.max_parallel_compression_per_sealer = state
                     .seal_stats
