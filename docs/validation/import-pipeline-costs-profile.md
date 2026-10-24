@@ -32,7 +32,7 @@ All twelve profiled Cargo commands, freshness checks, executable checks, increme
 
 Raw recordings are unchanged. CPU and I/O text was re-analyzed with the recorded analyzer commit after capture to recognize accelerated x86 SHA symbols and inlined sealing workers.
 
-Build IDs remain in perf.data; updating the optional perf build-ID cache was disabled for both runs after a baseline recorder shutdown timeout.
+Build IDs remain in perf.data. Optional perf build-ID cache updates were disabled for both runs to avoid the postprocessing timeout observed in an earlier experiment.
 
 Separate instrumented runs on the same middle node, not elapsed-time comparisons.
 
