@@ -131,7 +131,9 @@ def cpu(path):
             inclusive.update(set(frames))
             if '<sl7::live::Live>::hydrate' in frames:
                 category = 'hydration'
-            elif comm == 'sl7-chunks' or any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
+            # Worker names retain attribution when caller frames are inlined or
+            # absent from the bounded DWARF stack sample.
+            elif comm == 'sl7-chunks' or comm == 'sl7-pack' or comm.startswith('sl7-pack-') or any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
                     'sl7::store::prepare_import', 'sl7::staging::background::run',
                     '<sl7::live::Live>::publish_seal']):
                 category = 'sealing'
@@ -141,6 +143,7 @@ def cpu(path):
                 category = 'other'
             categories[category] += 1
             if frames[0] in ('sha2::sha256::compress256',
+                             'sha2::sha256::x86::digest_blocks',
                              'sha2::sha256::aarch64::sha256_compress'):
                 sha_categories[category] += 1
     assert sample_count, 'No CPU stacks parsed'

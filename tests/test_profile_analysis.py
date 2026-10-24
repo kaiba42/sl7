@@ -91,12 +91,11 @@ class CpuCounterTests(unittest.TestCase):
         # The scoped producer's stack does not contain background::run. Keep
         # its hashing in the sealing total and expose samples by thread name.
         trace = '''sl7-chunks 10 1.000: 10101010 cpu-clock:u:
-            aaaa sha2::sha256::compress256+0x12 (/sl7)
+            aaaa sha2::sha256::x86::digest_blocks+0x12 (/sl7)
             bbbb sl7::import_stream::with_pipeline::{closure#0}+0x1 (/sl7)
 
 sl7-pack-0 11/12 [003] 1.002: 10101010 cpu-clock:u:
             cccc sl7::store::prepare_chunks+0x4 (/sl7)
-            dddd sl7::staging::background::run+0x8 (/sl7)
 
 fuser-0 13 1.003: 10101010 cpu-clock:u:
             eeee unrelated+0x1 (/libc.so)
