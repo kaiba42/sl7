@@ -1,0 +1,1536 @@
+{
+  "status": "passed",
+  "node": "top",
+  "architecture": "x86_64",
+  "cpu": "AMD Ryzen 9 7940HS",
+  "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+  "baseline_commit": "40f34e887920e0687282e157b64ed6d239743f19",
+  "binary_sha256": "0ed184aa4105381a5daf46d9aabd5ca1fd055a12944e9bbf62e98c1591391dc7",
+  "source_sha256": {
+    "src/main.rs": "0002991091bab47eb7449673b12b85cff6fe963c733c7085d2d8af89876b802a",
+    "src/original.rs": "15a3208d0d3e33417c527bf2f8d31921f5a4aa15e332df0e70ede3cd375bbdb6",
+    "Cargo.lock": "957add1c565069e9b18b6561f8130600cc5b7963fba7971047d286ad78d43927"
+  },
+  "fixtures": {
+    "stdlib": {
+      "bytes": 186672416,
+      "sha256": "d8381f3b0f6ddc0dd272547293f4e3c4ba094bf2cf7b7221c5a70e00935f3258"
+    },
+    "zeros": {
+      "bytes": 33554432,
+      "sha256": "83ee47245398adee79bd9c0a8bc57b821e92aba10f5f9ade8a5d1fae4d8c4302"
+    },
+    "random": {
+      "bytes": 33554432,
+      "sha256": "eec754d0a2745ef0dc20ba7ee4d8d0523f226fc48d9b2719e0fbb8f1745281c9"
+    },
+    "small-4k": {
+      "bytes": 4096,
+      "sha256": "27ea8434ddf3eecb73c26ab1eeba9d9abf457ce153c909c2dbe45fbcd1592b9c"
+    },
+    "small-64k": {
+      "bytes": 65536,
+      "sha256": "bea8b451fc9b393e5cfe458cbc1532d2d02cbf16acbf0645425960428a85a386"
+    },
+    "small-1m": {
+      "bytes": 1048576,
+      "sha256": "ba48c033547ece0b751c182b8a681cdaef29971e88c94aa029fad86233cdfb40"
+    }
+  },
+  "rows": [
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 0,
+      "passes": 8,
+      "round": 1,
+      "seconds_per_scan": 0.0950333135
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 1,
+      "passes": 8,
+      "round": 1,
+      "seconds_per_scan": 0.094792610625
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 2,
+      "passes": 8,
+      "round": 1,
+      "seconds_per_scan": 0.0869996155
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 3,
+      "passes": 8,
+      "round": 1,
+      "seconds_per_scan": 0.12562446125
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 3,
+      "passes": 8,
+      "round": 2,
+      "seconds_per_scan": 0.1252803355
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 2,
+      "passes": 8,
+      "round": 2,
+      "seconds_per_scan": 0.087735975375
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 1,
+      "passes": 8,
+      "round": 2,
+      "seconds_per_scan": 0.097378539375
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 0,
+      "passes": 8,
+      "round": 2,
+      "seconds_per_scan": 0.09534089175
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 0,
+      "passes": 8,
+      "round": 3,
+      "seconds_per_scan": 0.095073863625
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 1,
+      "passes": 8,
+      "round": 3,
+      "seconds_per_scan": 0.093987029625
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 2,
+      "passes": 8,
+      "round": 3,
+      "seconds_per_scan": 0.08674034225
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 3,
+      "passes": 8,
+      "round": 3,
+      "seconds_per_scan": 0.12554444825
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 3,
+      "passes": 8,
+      "round": 4,
+      "seconds_per_scan": 0.125136224875
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 2,
+      "passes": 8,
+      "round": 4,
+      "seconds_per_scan": 0.088076112125
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 1,
+      "passes": 8,
+      "round": 4,
+      "seconds_per_scan": 0.094385032125
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 0,
+      "passes": 8,
+      "round": 4,
+      "seconds_per_scan": 0.095438749
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 0,
+      "passes": 8,
+      "round": 5,
+      "seconds_per_scan": 0.094776102875
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 1,
+      "passes": 8,
+      "round": 5,
+      "seconds_per_scan": 0.0936944875
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 2,
+      "passes": 8,
+      "round": 5,
+      "seconds_per_scan": 0.08859908
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 3,
+      "passes": 8,
+      "round": 5,
+      "seconds_per_scan": 0.129000282125
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 3,
+      "passes": 8,
+      "round": 6,
+      "seconds_per_scan": 0.12640777575
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 2,
+      "passes": 8,
+      "round": 6,
+      "seconds_per_scan": 0.087202833
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 1,
+      "passes": 8,
+      "round": 6,
+      "seconds_per_scan": 0.09476476725
+    },
+    {
+      "bytes": 186672416,
+      "chunks": 12977,
+      "fixture": "stdlib",
+      "mode": 0,
+      "passes": 8,
+      "round": 6,
+      "seconds_per_scan": 0.0963306425
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 0,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.016910743704545456
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 1,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.016651148522727272
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 2,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.016365724386363637
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 3,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.020195984204545454
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 3,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.020199863681818184
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 2,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.016393905545454546
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 1,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.016677493227272727
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 0,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.01736067225
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 0,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.01711080411363636
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 1,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.016977926977272725
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 2,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.01639999925
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 3,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.020061605818181817
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 3,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.02017334134090909
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 2,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.016536851477272727
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 1,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.0164698515
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 0,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.01708750225
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 0,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.01706518184090909
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 1,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.01676681475
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 2,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.016414622681818182
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 3,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.02018593977272727
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 3,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.020737123136363635
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 2,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.016575770704545453
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 1,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.016818584681818183
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 1024,
+      "fixture": "zeros",
+      "mode": 0,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.01677936715909091
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 0,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.017366633204545453
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 1,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.016951019363636362
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 2,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.014755403977272728
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 3,
+      "passes": 44,
+      "round": 1,
+      "seconds_per_scan": 0.024870349068181818
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 3,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.02522640259090909
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 2,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.01506115084090909
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 1,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.017137802545454547
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 0,
+      "passes": 44,
+      "round": 2,
+      "seconds_per_scan": 0.01733608090909091
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 0,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.017924881454545457
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 1,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.017487453386363636
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 2,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.014896131772727273
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 3,
+      "passes": 44,
+      "round": 3,
+      "seconds_per_scan": 0.025013287227272727
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 3,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.024921367545454546
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 2,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.014628209522727274
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 1,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.016959530863636364
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 0,
+      "passes": 44,
+      "round": 4,
+      "seconds_per_scan": 0.016978348454545454
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 0,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.017138867999999998
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 1,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.01696376465909091
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 2,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.01473338615909091
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 3,
+      "passes": 44,
+      "round": 5,
+      "seconds_per_scan": 0.024863571545454544
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 3,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.025455405636363636
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 2,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.014966378659090908
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 1,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.01717783206818182
+    },
+    {
+      "bytes": 33554432,
+      "chunks": 3270,
+      "fixture": "random",
+      "mode": 0,
+      "passes": 44,
+      "round": 6,
+      "seconds_per_scan": 0.017116504522727272
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 6.586066650390625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 5.5691142578125e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 6.150078857421875e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 6.284848876953125e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 6.381236572265625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 6.14222705078125e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 5.581291015625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 6.565801025390625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 6.6205615234375e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 5.55841015625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 6.1436728515625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 6.288285400390625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 6.271788818359375e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 6.120591552734375e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 5.545695556640625e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 6.549356201171875e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 6.593348876953125e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 5.5425888671875e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 6.118468505859375e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 6.261248779296875e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 6.274682861328125e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 6.123940185546875e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 5.53326708984375e-06
+    },
+    {
+      "bytes": 4096,
+      "chunks": 2,
+      "fixture": "small-4k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 6.549537109375e-06
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 3.345869604492187e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 3.1728318603515625e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 3.010439208984375e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 1,
+      "seconds_per_scan": 4.8408427001953125e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 4.842334057617187e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 3.0086442626953125e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 3.1775885009765627e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 2,
+      "seconds_per_scan": 3.3040310302734376e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 3.307003051757812e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 3.187167138671875e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 3.0064956298828125e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 3,
+      "seconds_per_scan": 4.83907685546875e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 4.8413062255859375e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 3.0062466064453125e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 3.224226806640625e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 4,
+      "seconds_per_scan": 3.315442260742188e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 3.3719140625e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 3.31951083984375e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 3.098680249023438e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 5,
+      "seconds_per_scan": 4.861970971679688e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 3,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 5.0076451416015624e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 2,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 3.0334358154296874e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 1,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 3.1876666259765624e-05
+    },
+    {
+      "bytes": 65536,
+      "chunks": 6,
+      "fixture": "small-64k",
+      "mode": 0,
+      "passes": 4096,
+      "round": 6,
+      "seconds_per_scan": 3.315944213867188e-05
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 0,
+      "passes": 1424,
+      "round": 1,
+      "seconds_per_scan": 0.0004701565007022472
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 1,
+      "passes": 1424,
+      "round": 1,
+      "seconds_per_scan": 0.000470405952247191
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 2,
+      "passes": 1424,
+      "round": 1,
+      "seconds_per_scan": 0.0004049520814606741
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 3,
+      "passes": 1424,
+      "round": 1,
+      "seconds_per_scan": 0.0007303257535112359
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 3,
+      "passes": 1424,
+      "round": 2,
+      "seconds_per_scan": 0.000742179529494382
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 2,
+      "passes": 1424,
+      "round": 2,
+      "seconds_per_scan": 0.0004064412921348314
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 1,
+      "passes": 1424,
+      "round": 2,
+      "seconds_per_scan": 0.0004740277254213483
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 0,
+      "passes": 1424,
+      "round": 2,
+      "seconds_per_scan": 0.0004696672710674157
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 0,
+      "passes": 1424,
+      "round": 3,
+      "seconds_per_scan": 0.00047005097542134836
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 1,
+      "passes": 1424,
+      "round": 3,
+      "seconds_per_scan": 0.00046578934129213483
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 2,
+      "passes": 1424,
+      "round": 3,
+      "seconds_per_scan": 0.0004014701818820224
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 3,
+      "passes": 1424,
+      "round": 3,
+      "seconds_per_scan": 0.0007189451573033708
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 3,
+      "passes": 1424,
+      "round": 4,
+      "seconds_per_scan": 0.0007249679276685393
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 2,
+      "passes": 1424,
+      "round": 4,
+      "seconds_per_scan": 0.0004033476636235955
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 1,
+      "passes": 1424,
+      "round": 4,
+      "seconds_per_scan": 0.0004704075421348315
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 0,
+      "passes": 1424,
+      "round": 4,
+      "seconds_per_scan": 0.0004727835344101123
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 0,
+      "passes": 1424,
+      "round": 5,
+      "seconds_per_scan": 0.0004716976713483146
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 1,
+      "passes": 1424,
+      "round": 5,
+      "seconds_per_scan": 0.0004760034564606742
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 2,
+      "passes": 1424,
+      "round": 5,
+      "seconds_per_scan": 0.0004125079943820225
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 3,
+      "passes": 1424,
+      "round": 5,
+      "seconds_per_scan": 0.0007412211306179775
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 3,
+      "passes": 1424,
+      "round": 6,
+      "seconds_per_scan": 0.0007293661853932585
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 2,
+      "passes": 1424,
+      "round": 6,
+      "seconds_per_scan": 0.00040515565870786514
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 1,
+      "passes": 1424,
+      "round": 6,
+      "seconds_per_scan": 0.0004676880358146067
+    },
+    {
+      "bytes": 1048576,
+      "chunks": 103,
+      "fixture": "small-1m",
+      "mode": 0,
+      "passes": 1424,
+      "round": 6,
+      "seconds_per_scan": 0.000489660400983146
+    }
+  ],
+  "summary": [
+    {
+      "fixture": "stdlib",
+      "modes": {
+        "0": {
+          "median_seconds": 0.09520737768750001,
+          "min_seconds": 0.094776102875,
+          "max_seconds": 0.0963306425
+        },
+        "1": {
+          "median_seconds": 0.0945748996875,
+          "min_seconds": 0.0936944875,
+          "max_seconds": 0.097378539375
+        },
+        "2": {
+          "median_seconds": 0.08746940418749999,
+          "min_seconds": 0.08674034225,
+          "max_seconds": 0.08859908
+        },
+        "3": {
+          "median_seconds": 0.12558445475000002,
+          "min_seconds": 0.125136224875,
+          "max_seconds": 0.129000282125
+        }
+      },
+      "reduction_percent": {
+        "1": 0.6643161647367224,
+        "2": 8.127493570297084,
+        "3": -31.906221765929676
+      }
+    },
+    {
+      "fixture": "zeros",
+      "modes": {
+        "0": {
+          "median_seconds": 0.017076342045454544,
+          "min_seconds": 0.01677936715909091,
+          "max_seconds": 0.01736067225
+        },
+        "1": {
+          "median_seconds": 0.016722153988636364,
+          "min_seconds": 0.0164698515,
+          "max_seconds": 0.016977926977272725
+        },
+        "2": {
+          "median_seconds": 0.01640731096590909,
+          "min_seconds": 0.016365724386363637,
+          "max_seconds": 0.016575770704545453
+        },
+        "3": {
+          "median_seconds": 0.02019096198863636,
+          "min_seconds": 0.020061605818181817,
+          "max_seconds": 0.020737123136363635
+        }
+      },
+      "reduction_percent": {
+        "1": 2.0741447780525113,
+        "2": 3.9178828683836264,
+        "3": -18.239386016578884
+      }
+    },
+    {
+      "fixture": "random",
+      "modes": {
+        "0": {
+          "median_seconds": 0.017237474454545453,
+          "min_seconds": 0.016978348454545454,
+          "max_seconds": 0.017924881454545457
+        },
+        "1": {
+          "median_seconds": 0.017050783602272728,
+          "min_seconds": 0.016951019363636362,
+          "max_seconds": 0.017487453386363636
+        },
+        "2": {
+          "median_seconds": 0.014825767875,
+          "min_seconds": 0.014628209522727274,
+          "max_seconds": 0.01506115084090909
+        },
+        "3": {
+          "median_seconds": 0.024967327386363636,
+          "min_seconds": 0.024863571545454544,
+          "max_seconds": 0.025455405636363636
+        }
+      },
+      "reduction_percent": {
+        "1": 1.083052234624171,
+        "2": 13.991066881085334,
+        "3": -44.84330318923171
+      }
+    },
+    {
+      "fixture": "small-4k",
+      "modes": {
+        "0": {
+          "median_seconds": 6.575933837890625e-06,
+          "min_seconds": 6.549356201171875e-06,
+          "max_seconds": 6.6205615234375e-06
+        },
+        "1": {
+          "median_seconds": 5.552052856445312e-06,
+          "min_seconds": 5.53326708984375e-06,
+          "max_seconds": 5.581291015625e-06
+        },
+        "2": {
+          "median_seconds": 6.133083618164063e-06,
+          "min_seconds": 6.118468505859375e-06,
+          "max_seconds": 6.150078857421875e-06
+        },
+        "3": {
+          "median_seconds": 6.2797658691406254e-06,
+          "min_seconds": 6.261248779296875e-06,
+          "max_seconds": 6.381236572265625e-06
+        }
+      },
+      "reduction_percent": {
+        "1": 15.570122916165852,
+        "2": 6.7344080801855615,
+        "3": 4.503816127885529
+      }
+    },
+    {
+      "fixture": "small-64k",
+      "modes": {
+        "0": {
+          "median_seconds": 3.315693237304688e-05,
+          "min_seconds": 3.3040310302734376e-05,
+          "max_seconds": 3.3719140625e-05
+        },
+        "1": {
+          "median_seconds": 3.1874168823242183e-05,
+          "min_seconds": 3.1728318603515625e-05,
+          "max_seconds": 3.31951083984375e-05
+        },
+        "2": {
+          "median_seconds": 3.0095417358398437e-05,
+          "min_seconds": 3.0062466064453125e-05,
+          "max_seconds": 3.098680249023438e-05
+        },
+        "3": {
+          "median_seconds": 4.8418201416015624e-05,
+          "min_seconds": 4.83907685546875e-05,
+          "max_seconds": 5.0076451416015624e-05
+        }
+      },
+      "reduction_percent": {
+        "1": 3.868764261338742,
+        "2": 9.233408507769958,
+        "3": -46.0273853783125
+      }
+    },
+    {
+      "fixture": "small-1m",
+      "modes": {
+        "0": {
+          "median_seconds": 0.00047092708602528087,
+          "min_seconds": 0.0004696672710674157,
+          "max_seconds": 0.000489660400983146
+        },
+        "1": {
+          "median_seconds": 0.00047040674719101125,
+          "min_seconds": 0.00046578934129213483,
+          "max_seconds": 0.0004760034564606742
+        },
+        "2": {
+          "median_seconds": 0.00040505387008426966,
+          "min_seconds": 0.0004014701818820224,
+          "max_seconds": 0.0004125079943820225
+        },
+        "3": {
+          "median_seconds": 0.0007298459694522472,
+          "min_seconds": 0.0007189451573033708,
+          "max_seconds": 0.000742179529494382
+        }
+      },
+      "reduction_percent": {
+        "1": 0.11049244133765068,
+        "2": 13.987986228822468,
+        "3": -54.98067346524782
+      }
+    }
+  ],
+  "exact_chunk_identity_parity": true,
+  "reproduction": {
+    "status": "passed",
+    "platform": "Darwin-25.0.0-arm64-arm-64bit-Mach-O",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+    "binary_sha256": "5b6ec36c04b1577a5da720334d5ee92b04f457ce966eb9086827ed36338887f9",
+    "samples": 144,
+    "log_sha256": "3b308ee945615c64761b9d43da4e897c435d900898f57e5130154aa0ced41fe3"
+  },
+  "limitations": [
+    "Isolated chunking with warm filesystem caches; not a Cargo benchmark.",
+    "Timing excludes SHA-256, compression and catalog work.",
+    "Six reversed-order rounds, each sample averages 8 to 4096 scans.",
+    "Each scan initializes both prototype objects and consumes only one; production latency is measured separately.",
+    "Mode 3 was slower and is not adopted."
+  ]
+}
