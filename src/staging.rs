@@ -43,6 +43,9 @@ struct Inode {
     queued: bool,
     packing: bool,
     publishing: bool,
+    // Proven native with no logical metadata override. Only publication can
+    // invalidate this fact; it clears the bit under state before committing.
+    native_unoverridden: bool,
 }
 struct DirectoryEntry {
     ino: INodeNo,
@@ -213,6 +216,9 @@ impl State {
     }
     fn hydrate(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
+        if self.nodes[&ino].native_unoverridden {
+            return Ok(());
+        }
         if let Some(live) = &mut self.live {
             live.hydrate(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
                 .map_err(storage)?;
@@ -221,10 +227,14 @@ impl State {
     }
     fn mutated(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
+        if self.nodes[&ino].native_unoverridden {
+            return Ok(());
+        }
         if let Some(live) = &mut self.live {
             live.mutated(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
                 .map_err(storage)?;
         }
+        self.nodes.get_mut(&ino).unwrap().native_unoverridden = true;
         Ok(())
     }
     #[cfg(test)]
@@ -287,6 +297,7 @@ impl State {
                 queued: false,
                 packing: false,
                 publishing: false,
+                native_unoverridden: !meta.is_file(),
             },
         );
         Ok(ino)
@@ -307,12 +318,15 @@ impl State {
     }
     fn attr(&self, ino: INodeNo) -> io::Result<FileAttr> {
         let m = self.inode(ino)?.metadata()?;
-        let logical = self
-            .live
-            .as_ref()
-            .map(|l| l.metadata(self.inode(ino).unwrap()).map_err(storage))
-            .transpose()?
-            .flatten();
+        let logical = if self.nodes[&ino].native_unoverridden {
+            None
+        } else {
+            self.live
+                .as_ref()
+                .map(|l| l.metadata(self.inode(ino).unwrap()).map_err(storage))
+                .transpose()?
+                .flatten()
+        };
         Ok(FileAttr {
             ino,
             size: logical.as_ref().map_or(m.size(), |m| m.size),
@@ -622,19 +636,28 @@ impl StagingFs {
                 }
                 continue;
             }
-            let needs_catalog = inodes
-                .iter()
-                .try_fold(false, |needed, ino| -> io::Result<bool> {
-                    let node = state.nodes.get(ino).ok_or_else(|| error(libc::ENOENT))?;
-                    Ok(needed
-                        || state
-                            .live
-                            .as_ref()
-                            .map(|live| live.mutation_needs_catalog(&node.pin).map_err(storage))
-                            .transpose()?
-                            .unwrap_or(false))
-                })
-                .map_err(Errno::from)?;
+            let mut needs_catalog = false;
+            for ino in &inodes {
+                if state.nodes[ino].native_unoverridden {
+                    state.seal_stats.native_state_cache_hits += 1;
+                    continue;
+                }
+                state.seal_stats.native_state_checks += 1;
+                let needed = state
+                    .live
+                    .as_ref()
+                    .map(|live| {
+                        live.mutation_needs_catalog(&state.nodes[ino].pin)
+                            .map_err(storage)
+                    })
+                    .transpose()
+                    .map_err(Errno::from)?
+                    .unwrap_or(false);
+                if !needed {
+                    state.nodes.get_mut(ino).unwrap().native_unoverridden = true;
+                }
+                needs_catalog |= needed;
+            }
             if needs_catalog && writer.is_none() {
                 let seconds = started.elapsed().as_secs_f64();
                 state.seal_stats.request_state_seconds += seconds;

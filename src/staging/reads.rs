@@ -105,7 +105,7 @@ impl StagingFs {
         if size > 16 * 1024 * 1024 {
             return Err(Errno::EINVAL);
         }
-        let (file, pin, _lease) = {
+        let (file, pin, native, _lease) = {
             let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
             let waited = Instant::now();
             let mut blocked = false;
@@ -124,6 +124,7 @@ impl StagingFs {
             let file = Arc::clone(&state.handle(ino, fh).map_err(Errno::from)?.file);
             let node = state.nodes.get_mut(&ino).ok_or(Errno::ENOENT)?;
             let pin = Arc::clone(&node.pin);
+            let native = node.native_unoverridden;
             node.readers += 1;
             node.opens += 1;
             state.seal_stats.read_operations += 1;
@@ -140,6 +141,7 @@ impl StagingFs {
             (
                 file,
                 pin,
+                native,
                 ReadLease {
                     fs: self,
                     ino,
@@ -150,7 +152,7 @@ impl StagingFs {
         // Used by deterministic tests to pause a real read after pinning. There
         // is no callback or allocation here in the production instantiation.
         ready();
-        if let Some(readers) = &self.readers {
+        if let Some(readers) = self.readers.as_ref().filter(|_| !native) {
             let reader = readers.take().map_err(Errno::from)?;
             if let Some(bytes) = reader
                 .read(&pin, offset, size)

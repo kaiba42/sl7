@@ -133,6 +133,16 @@ an atomic epoch. A writer waiting for publication therefore does not hold state
 and prevent unrelated reads or native writes. Multiple requests waiting for
 catalog access can still occupy the finite request-worker pool.
 
+Each pinned inode can cache a proven native representation with no logical
+metadata override. Repeated writes then skip identity/catalog checks and redundant
+hydration checks; attributes use native metadata, and reads use the native file.
+Publication clears this fact under state before committing a manifest, including
+when the commit later fails. Hydration alone does not establish it because logical
+timestamps remain overridden until mutation. The cache adds one bit per pinned
+inode and is discarded with that inode; it does not cache native size or timestamps.
+This relies on the existing requirement that backing files are accessed only
+through the mounted owner. Counters distinguish state checks from cache hits.
+
 The worker, foreground, and read-pool catalog connections share one exclusive
 owner lock; dropping any one connection cannot admit another mount or offline GC.
 Attribute reads sample native metadata before the logical catalog override, so

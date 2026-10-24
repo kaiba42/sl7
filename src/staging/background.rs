@@ -62,6 +62,8 @@ pub(super) struct Stats {
     pub(super) active_native_io: usize,
     pub(super) max_parallel_native_io: usize,
     pub(super) native_io_seconds: f64,
+    pub(super) native_state_checks: u64,
+    pub(super) native_state_cache_hits: u64,
     pub(super) read_operations: u64,
     pub(super) active_reads: usize,
     pub(super) max_parallel_reads: usize,
@@ -348,7 +350,11 @@ fn run(
                 }
             };
             if prepared.is_some() {
-                state.nodes.get_mut(&job.ino).unwrap().publishing = true;
+                let node = state.nodes.get_mut(&job.ino).unwrap();
+                node.publishing = true;
+                // Attribute callbacks can still run during publication. They
+                // must consult the catalog before native retirement can begin.
+                node.native_unoverridden = false;
             }
             #[cfg(test)]
             {
@@ -454,6 +460,105 @@ mod tests {
         for value in ["", "0", "9", "-1", "two", "18446744073709551616"] {
             assert!(worker_count(Some(value)).is_err());
         }
+    }
+
+    #[test]
+    fn native_state_cache_is_revoked_before_publication_and_relearned_after_mutation() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("store");
+        let fs =
+            StagingFs::deduplicating_with_workers(crate::Store::init(&root).unwrap(), 1).unwrap();
+        let mut bytes = vec![42; 128 * 1024];
+        fs::write(root.join("tree/data"), &bytes).unwrap();
+        let ino = fs
+            .with(|s| {
+                let ino = s.lookup(INodeNo::ROOT, OsStr::new("data"))?;
+                s.entry_attr(ino)?;
+                Ok(ino)
+            })
+            .unwrap();
+        let fh = fs.open_handle(ino, libc::O_RDWR).unwrap();
+        let checks = fs
+            .with_read(|s| {
+                assert!(s.nodes[&ino].native_unoverridden);
+                Ok(s.seal_stats.native_state_checks)
+            })
+            .unwrap();
+        for value in 0..4 {
+            fs.native_io(ino, fh, true, |f| f.write_all_at(&[value], 0))
+                .unwrap();
+        }
+        bytes[0] = 3;
+        assert_eq!(fs.read_handle(ino, fh, 0, bytes.len()).unwrap(), bytes);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.native_state_checks, checks);
+            assert!(s.seal_stats.native_state_cache_hits >= 4);
+            assert_eq!(s.attr(ino)?.size, bytes.len() as u64);
+            Ok(())
+        })
+        .unwrap();
+
+        let (ready, publishing) = mpsc::sync_channel(1);
+        let (resume, paused) = mpsc::sync_channel(1);
+        fs.with_read(|s| {
+            s.publish_pause = Some((ready, paused));
+            s.release(ino, fh)
+        })
+        .unwrap();
+        publishing.recv_timeout(Duration::from_secs(10)).unwrap();
+        let revoked = fs
+            .with_read(|s| Ok(!s.nodes[&ino].native_unoverridden))
+            .unwrap();
+        resume.send(()).unwrap();
+        assert!(revoked, "native fast path survived publication gate");
+        idle(&fs);
+        let reader = fs.open_handle(ino, libc::O_RDONLY).unwrap();
+        assert_eq!(fs.read_handle(ino, reader, 0, bytes.len()).unwrap(), bytes);
+        let writer = fs.open_handle(ino, libc::O_RDWR).unwrap();
+        fs.with_read(|s| {
+            // Hydration keeps the logical timestamp override until mutation.
+            assert!(!s.nodes[&ino].native_unoverridden);
+            assert!(
+                s.live
+                    .as_ref()
+                    .unwrap()
+                    .metadata(s.inode(ino)?)
+                    .unwrap()
+                    .is_some()
+            );
+            Ok(())
+        })
+        .unwrap();
+        fs.native_io(ino, writer, true, |f| {
+            f.write_all_at(b"new", bytes.len() as u64)
+        })
+        .unwrap();
+        bytes.extend_from_slice(b"new");
+        fs.with_read(|s| {
+            assert!(s.nodes[&ino].native_unoverridden);
+            assert!(
+                s.live
+                    .as_ref()
+                    .unwrap()
+                    .metadata(s.inode(ino)?)
+                    .unwrap()
+                    .is_none()
+            );
+            assert_eq!(s.attr(ino)?.size, bytes.len() as u64);
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(fs.read_handle(ino, reader, 0, bytes.len()).unwrap(), bytes);
+        fs.with_read(|s| {
+            s.release(ino, reader)?;
+            s.release(ino, writer)
+        })
+        .unwrap();
+        drop(fs);
+        let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
+        let file = File::open(root.join("tree/data")).unwrap();
+        assert_eq!(live.read(&file, 0, bytes.len()).unwrap().unwrap(), bytes);
+        live.store.check().unwrap();
     }
 
     #[test]
