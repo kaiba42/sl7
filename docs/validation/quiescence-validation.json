@@ -66,7 +66,8 @@
     "Historical CPU-idle mode remains the default for existing comparisons."
   ],
   "benchmark": "passed",
-  "profile": "pending",
+  "profile": "passed",
   "implementation_commit": "fcb2954a7f9902498ab77cd4ec9abbaefe8afa7c",
-  "comparison_report": "quiescence-costs.json"
+  "comparison_report": "quiescence-costs.json",
+  "profile_report": "quiescence-costs-profile.json"
 }
