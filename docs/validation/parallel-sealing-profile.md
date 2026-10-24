@@ -36,3 +36,18 @@ time across daemon threads, not elapsed latency or time asleep waiting for I/O.
 Stack sampling remains user-space only. FUSE request tracepoints are unavailable.
 
 [Full profile JSON](parallel-sealing-profile.json) · [Build results](parallel-sealing.md)
+
+## Separate pack-write probe
+
+A later observational probe used a public Rust 1.97.1 standard-library artifact
+on ARM64 OrbStack, with source and executable hashes in the
+[probe JSON](pack-write-probe.json). This is separate from the x86 Cargo profile
+above. Importing the 12,124,282-byte library into an empty store produced 787 new
+chunks and a 3,852,184-byte pack. `strace` counted 3,936 writes to the pack's
+temporary file, including 3,149 small header writes. Store integrity checking
+passed. No payload bytes or raw traces are included in the report.
+
+This confirms that buffering pack records can eliminate many small write calls.
+It does not establish a Cargo speedup or attribute all daemon writes to packing.
+Any implementation must flush its buffer before syncing and publishing the pack;
+that ordering remains part of the durability requirement.
