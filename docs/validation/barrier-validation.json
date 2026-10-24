@@ -22,5 +22,9 @@
   "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
   "durability": "Namespace timestamp commits use WAL/NORMAL; file and directory fsync perform a nonempty FULL catalog transaction before native sync; content publication remains FULL",
   "barrier_tests": "FULL mode enforced by SQL trigger; file/directory/datasync boundaries; injected failure propagation and reservation release; sealed namespace metadata survives daemon kill after fsync",
-  "benchmark": "pending"
+  "benchmark": "passed",
+  "comparison_report": "catalog-barrier.json",
+  "implementation_commit": "b91f464dce033e5123928f8720f3f58cd3d79080",
+  "profile": "passed",
+  "profile_report": "catalog-barrier-profile.json"
 }

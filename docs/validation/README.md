@@ -1,6 +1,12 @@
 # Initial implementation validation
 
-For the latest native-I/O and namespace-commit concurrency changes, see the
+For explicit catalog barriers and the latest native/before/after comparison, see
+the [build results](catalog-barrier.md), [HTML tables](catalog-barrier.html),
+and [re-profile findings](catalog-barrier-profile.md). This change trades eager
+namespace timestamp durability for explicit file/directory fsync boundaries;
+content publication remains FULL-synchronous.
+
+For the preceding native-I/O and namespace-commit concurrency changes, see the
 [four-version comparison](concurrent-io.md), [HTML tables](concurrent-io.html),
 and [re-profile findings](concurrent-io-profile.md).
 
