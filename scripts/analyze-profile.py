@@ -107,6 +107,7 @@ def cpu(path):
     inclusive = Counter()
     categories = Counter()
     sha_categories = Counter()
+    threads = Counter()
     sample_count = 0
     # perf script default format: a sample header, indented stack frames, blank.
     for block in path.read_text().strip().split('\n\n'):
@@ -120,12 +121,17 @@ def cpu(path):
                 symbol=re.sub(r'::h[0-9a-f]{16}$', '', symbol)
                 frames.append(symbol)
         if frames:
+            header = re.match(r'^\s*(.+?)\s+\d+(?:/\d+)?\s+(?:\[\d+\]\s+)?[\d.]+:\s+.*cpu-clock:u:',
+                              block.splitlines()[0])
+            assert header, ('unparsed CPU sample header', block.splitlines()[0])
+            comm = header[1]
+            threads[comm] += 1
             sample_count+=1
             leaf[frames[0]]+=1
             inclusive.update(set(frames))
             if '<sl7::live::Live>::hydrate' in frames:
                 category = 'hydration'
-            elif any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
+            elif comm == 'sl7-chunks' or any(symbol in frames for symbol in ['<sl7::live::Live>::seal',
                     'sl7::store::prepare_import', 'sl7::staging::background::run',
                     '<sl7::live::Live>::publish_seal']):
                 category = 'sealing'
@@ -141,7 +147,8 @@ def cpu(path):
     def rows(counter):
         return [dict(symbol=s, samples=n, sample_percent=100*n/sample_count) for s,n in counter.most_common(50)]
     return dict(samples=sample_count, top_leaf=rows(leaf), top_inclusive=rows(inclusive),
-                sample_categories=categories, sha256_leaf_by_category=sha_categories,
+                sample_categories=categories, samples_by_thread_name=threads,
+                sha256_leaf_by_category=sha_categories,
                 note='Unweighted sample counts at requested 99 Hz; inclusive percentages overlap.')
 
 

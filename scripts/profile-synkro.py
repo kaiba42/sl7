@@ -70,6 +70,7 @@ def main():
                   sl7_sha256=hashlib.sha256(BINARY.read_bytes()).hexdigest(),
                   profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
+                  import_pipeline=os.environ.get('SL7_IMPORT_PIPELINE', '0'),
                   daemon_cpu_scope='Cargo plus post-build idle observation; excludes profiler shutdown and unmount',
                   lock_sha256=hashlib.sha256((SOURCE/'Cargo.lock').read_bytes()).hexdigest(),
                   cpu_quota=8, memory_limit_gib=12, cpu_max=cpu_max, memory_max=memory_max,
