@@ -108,6 +108,8 @@ def main():
                         help="Also measure an older SL7 binary on the same machine")
     parser.add_argument("--comparison-binary", action="append", default=[], metavar="NAME=PATH",
                         help="Add a named SL7 implementation to --backends (repeatable)")
+    parser.add_argument("--seal-workers", action="append", default=[], metavar="NAME=COUNT",
+                        help="Set sealing workers for a backend, allowing same-binary 1/2/4-worker comparisons")
     parser.add_argument("--profiles", nargs="+", choices=["debug", "release"],
                         default=["debug", "release"])
     parser.add_argument("--backends", nargs="+",
@@ -131,6 +133,12 @@ def main():
         binaries[name] = Path(path)
     if set(args.backends) - ({"native"} | set(binaries)):
         parser.error("unknown backend; provide its --comparison-binary NAME=PATH")
+    seal_workers = {}
+    for item in args.seal_workers:
+        name, separator, count = item.partition("=")
+        if not separator or name not in binaries or name in seal_workers or count not in {str(n) for n in range(1, 9)}:
+            parser.error("seal workers require unique SL7 backend NAME=COUNT entries, with COUNT from 1 to 8")
+        seal_workers[name] = int(count)
     edited_file = args.source / "crates/synkro-cli/src/lib.rs"
     original = edited_file.read_text()
     needle = 'about = "Synkro AI rule and control enforcement CLI"'
@@ -153,6 +161,8 @@ def main():
                   method="Empty Cargo outputs; pre-fetched dependencies; warm OS caches; serial, counterbalanced cases; unchanged workspace profiles/default features")
     report["binary_sha256s"] = {name:hashlib.sha256(path.read_bytes()).hexdigest()
                                for name,path in binaries.items()}
+    report["seal_workers"] = {name:seal_workers.get(name, os.environ.get("SL7_SEAL_WORKERS", "binary default"))
+                              for name in binaries}
     if args.baseline_binary:
         report["baseline_sl7_sha256"] = hashlib.sha256(args.baseline_binary.read_bytes()).hexdigest()
 
@@ -187,8 +197,11 @@ def main():
                         return json.loads(subprocess.check_output([str(case_binary), "--store", str(store), *command], text=True))
 
                     def start_mount():
+                        daemon_env = dict(os.environ, SL7_CACHE_STATS="1")
+                        if backend in seal_workers:
+                            daemon_env["SL7_SEAL_WORKERS"] = str(seal_workers[backend])
                         process = subprocess.Popen([str(case_binary), "--store", str(store), "mount", str(mount)], stdout=daemon_log, stderr=daemon_log,
-                                                   env=dict(os.environ, SL7_CACHE_STATS="1"))
+                                                   env=daemon_env)
                         deadline = time.monotonic() + 30
                         while not is_mounted(mount):
                             if process.poll() is not None or time.monotonic() > deadline:

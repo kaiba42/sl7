@@ -2,16 +2,37 @@
 use super::*;
 use crate::store::Packer;
 use serde::Serialize;
+#[cfg(test)]
+use std::sync::mpsc;
 use std::{
-    sync::mpsc::{self, Receiver},
     thread::{self, JoinHandle},
     time::Instant,
 };
 
 const QUEUE_LIMIT: usize = 1024;
 
+pub(super) fn worker_count(value: Option<&str>) -> crate::Result<usize> {
+    match value {
+        None => Ok(2),
+        Some(value) => value
+            .parse::<usize>()
+            .ok()
+            .filter(|n| (1..=8).contains(n))
+            .ok_or_else(|| {
+                crate::Error::Invalid("SL7_SEAL_WORKERS must be an integer from 1 to 8".into())
+            }),
+    }
+}
+
+pub(super) struct Workers(Vec<JoinHandle<()>>);
+
 #[derive(Default, Serialize)]
 pub(super) struct Stats {
+    workers: usize,
+    active_seals: usize,
+    max_parallel_seals: usize,
+    active_prepares: usize,
+    max_parallel_prepares: usize,
     completed: u64,
     canceled: u64,
     skipped: u64,
@@ -88,7 +109,7 @@ impl State {
         }
         self.seal_stats.max_queue_len = self.seal_stats.max_queue_len.max(self.seal_queue.len());
         if let Some(wake) = &self.wake {
-            let _ = wake.try_send(());
+            wake.notify_one();
         }
     }
 
@@ -97,12 +118,12 @@ impl State {
             let ino = self.seal_queue.pop_front().or_else(|| {
                 self.nodes
                     .iter()
-                    .find_map(|(&ino, node)| node.queued.then_some(ino))
+                    .find_map(|(&ino, node)| (node.queued && !node.packing).then_some(ino))
             })?;
             let Some(node) = self.nodes.get_mut(&ino) else {
                 continue;
             };
-            if !node.queued {
+            if !node.queued || node.packing {
                 continue;
             }
             node.queued = false;
@@ -114,6 +135,11 @@ impl State {
             match node.pin.try_clone() {
                 Ok(pin) => {
                     node.packing = true;
+                    self.seal_stats.active_seals += 1;
+                    self.seal_stats.max_parallel_seals = self
+                        .seal_stats
+                        .max_parallel_seals
+                        .max(self.seal_stats.active_seals);
                     return Some(Job {
                         ino,
                         pin,
@@ -135,26 +161,34 @@ pub(super) fn start(
     state: Arc<Mutex<State>>,
     catalog_writer: Arc<Mutex<()>>,
     publication_done: Arc<Condvar>,
-    packer: Packer,
-    publisher: crate::live::Live,
-) -> io::Result<JoinHandle<()>> {
-    let (wake, receive) = mpsc::sync_channel(1);
-    state
-        .lock()
-        .map_err(|_| io::Error::other("poisoned filesystem state"))?
-        .wake = Some(wake);
-    thread::Builder::new()
-        .name("sl7-pack".into())
-        .spawn(move || {
-            run(
-                state,
-                catalog_writer,
-                publication_done,
-                packer,
-                publisher,
-                receive,
-            )
-        })
+    connections: Vec<(Packer, crate::live::Live)>,
+) -> io::Result<Workers> {
+    let wake = Arc::new(Condvar::new());
+    {
+        let mut state = state
+            .lock()
+            .map_err(|_| io::Error::other("poisoned filesystem state"))?;
+        state.wake = Some(Arc::clone(&wake));
+        state.seal_stats.workers = connections.len();
+    }
+    let mut workers = Workers(Vec::new());
+    for (index, (packer, publisher)) in connections.into_iter().enumerate() {
+        let worker_state = Arc::clone(&state);
+        let writer = Arc::clone(&catalog_writer);
+        let done = Arc::clone(&publication_done);
+        let wake = Arc::clone(&wake);
+        match thread::Builder::new()
+            .name(format!("sl7-pack-{index}"))
+            .spawn(move || run(worker_state, writer, done, packer, publisher, wake))
+        {
+            Ok(worker) => workers.0.push(worker),
+            Err(error) => {
+                stop(&state, workers);
+                return Err(error);
+            }
+        }
+    }
+    Ok(workers)
 }
 
 /// Clear the inode's publication gate even if the publisher unwinds. Its native
@@ -172,6 +206,12 @@ impl Drop for Publication {
                 node.publishing = false;
                 node.packing = false;
             }
+            state.seal_stats.active_seals -= 1;
+            // A close during preparation can requeue this inode. It becomes
+            // eligible only now, after the previous candidate has finished.
+            if let Some(wake) = &state.wake {
+                wake.notify_one();
+            }
             state.reclaim(self.ino);
             let elapsed = started.elapsed().as_secs_f64();
             state.seal_stats.publication_state_seconds += elapsed;
@@ -188,28 +228,29 @@ fn run(
     publication_done: Arc<Condvar>,
     packer: Packer,
     mut publisher: crate::live::Live,
-    wake: Receiver<()>,
+    wake: Arc<Condvar>,
 ) {
     loop {
         let job = {
             let Ok(mut state) = state.lock() else {
                 return;
             };
-            let started = Instant::now();
-            let job = state.take_job();
-            let seconds = started.elapsed().as_secs_f64();
-            state.seal_stats.selection_state_seconds += seconds;
-            state.seal_stats.max_selection_state_seconds =
-                state.seal_stats.max_selection_state_seconds.max(seconds);
-            match job {
-                Some(job) => job,
-                None if state.stopping => return,
-                None => {
-                    drop(state);
-                    if wake.recv().is_err() {
-                        return;
+            loop {
+                let started = Instant::now();
+                let job = state.take_job();
+                let seconds = started.elapsed().as_secs_f64();
+                state.seal_stats.selection_state_seconds += seconds;
+                state.seal_stats.max_selection_state_seconds =
+                    state.seal_stats.max_selection_state_seconds.max(seconds);
+                match job {
+                    Some(job) => break job,
+                    None if state.stopping => return,
+                    None => {
+                        state = match wake.wait(state) {
+                            Ok(state) => state,
+                            Err(_) => return,
+                        };
                     }
-                    continue;
                 }
             }
         };
@@ -248,11 +289,27 @@ fn run(
         };
         #[cfg(test)]
         let prepare_pause = state.lock().unwrap().seal_pause.take();
+        {
+            let Ok(mut state) = state.lock() else {
+                return;
+            };
+            state.seal_stats.active_prepares += 1;
+            state.seal_stats.max_parallel_prepares = state
+                .seal_stats
+                .max_parallel_prepares
+                .max(state.seal_stats.active_prepares);
+        }
         let started = Instant::now();
         let prepared = packer.prepare(&fd_path(&job.pin), || {
             job.epoch.load(Ordering::Relaxed) != job.version
         });
         let elapsed = started.elapsed().as_secs_f64();
+        {
+            let Ok(mut state) = state.lock() else {
+                return;
+            };
+            state.seal_stats.active_prepares -= 1;
+        }
         #[cfg(test)]
         if let Some((ready, resume)) = prepare_pause {
             let _ = ready.send(());
@@ -359,17 +416,19 @@ fn run(
     }
 }
 
-pub(super) fn stop(state: &Mutex<State>, worker: JoinHandle<()>) {
+pub(super) fn stop(state: &Mutex<State>, workers: Workers) {
     if let Ok(mut state) = state.lock() {
         state.stopping = true;
         if let Some(wake) = &state.wake {
-            let _ = wake.try_send(());
+            wake.notify_all();
         }
     }
-    if worker.join().is_err() {
-        eprintln!("sl7: background sealing worker panicked");
-        if let Ok(mut state) = state.lock() {
-            state.worker_failed = true;
+    for worker in workers.0 {
+        if worker.join().is_err() {
+            eprintln!("sl7: background sealing worker panicked");
+            if let Ok(mut state) = state.lock() {
+                state.worker_failed = true;
+            }
         }
     }
     if std::env::var_os("SL7_CACHE_STATS").is_some() {
@@ -385,6 +444,88 @@ pub(super) fn stop(state: &Mutex<State>, worker: JoinHandle<()>) {
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn worker_limit_is_bounded() {
+        assert_eq!(worker_count(None).unwrap(), 2);
+        for count in 1..=8 {
+            assert_eq!(worker_count(Some(&count.to_string())).unwrap(), count);
+        }
+        for value in ["", "0", "9", "-1", "two", "18446744073709551616"] {
+            assert!(worker_count(Some(value)).is_err());
+        }
+    }
+
+    #[test]
+    fn another_worker_publishes_while_first_candidate_is_paused() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("store");
+        let fs =
+            StagingFs::deduplicating_with_workers(crate::Store::init(&root).unwrap(), 2).unwrap();
+        // Both workers prepare identical, initially absent chunks. The second
+        // publishes first, so the first must resolve its now-stale chunk lookup.
+        let bytes = vec![42; 256 * 1024];
+        for name in ["first", "second"] {
+            fs::write(root.join("tree").join(name), &bytes).unwrap();
+        }
+        let (ready, prepared) = mpsc::sync_channel(1);
+        let (resume, paused) = mpsc::sync_channel(1);
+        fs.with(|s| {
+            s.seal_pause = Some((ready, paused));
+            let ino = s.lookup(INodeNo::ROOT, OsStr::new("first"))?;
+            s.entry_attr(ino)?;
+            let fh = s.open(ino, libc::O_RDONLY)?;
+            s.release(ino, fh)
+        })
+        .unwrap();
+        prepared.recv_timeout(Duration::from_secs(10)).unwrap();
+        let second = fs
+            .with(|s| {
+                let ino = s.lookup(INodeNo::ROOT, OsStr::new("second"))?;
+                s.entry_attr(ino)?;
+                let fh = s.open(ino, libc::O_RDONLY)?;
+                s.release(ino, fh)?;
+                Ok(ino)
+            })
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let progressed = loop {
+            let complete = fs
+                .with(|s| {
+                    Ok(s.live
+                        .as_ref()
+                        .unwrap()
+                        .sealed(s.inode(second)?)
+                        .map_err(storage)?
+                        .is_some()
+                        && !s.nodes[&second].packing)
+                })
+                .unwrap();
+            if complete || Instant::now() >= deadline {
+                break complete;
+            }
+            thread::sleep(Duration::from_millis(5));
+        };
+        // Always release the worker before assertions, including on failure.
+        resume.send(()).unwrap();
+        idle(&fs);
+        assert!(progressed, "second candidate waited for the first worker");
+        fs.with(|s| {
+            assert_eq!(s.seal_stats.completed, 2);
+            assert_eq!(s.seal_stats.errors, 0);
+            assert_eq!(s.seal_stats.max_parallel_seals, 2);
+            assert_eq!(s.seal_stats.active_seals, 0);
+            Ok(())
+        })
+        .unwrap();
+        drop(fs);
+        let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
+        for name in ["first", "second"] {
+            let file = File::open(root.join("tree").join(name)).unwrap();
+            assert_eq!(live.read(&file, 0, bytes.len()).unwrap().unwrap(), bytes);
+        }
+        live.store.check().unwrap();
+    }
 
     fn idle(fs: &StagingFs) {
         let deadline = Instant::now() + Duration::from_secs(10);

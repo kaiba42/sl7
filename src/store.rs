@@ -284,15 +284,23 @@ impl Store {
             locations,
             packs,
         } = prepared;
+        let mut new_pack_bytes = 0;
         for (id, size) in &packs {
-            tx.execute(
+            let inserted = tx.execute(
                 "INSERT OR IGNORE INTO packs VALUES(?1,?2)",
                 params![id, size],
             )?;
+            if inserted != 0 {
+                new_pack_bytes += size;
+            }
         }
+        let mut new_chunks = 0;
         for loc in &locations {
-            tx.execute(
-                "INSERT INTO chunks VALUES(?1,?2,?3,?4,?5,?6)",
+            // Another packer may have prepared the same chunk before either
+            // transaction committed. Keep the first durable location; extents
+            // address content, not a particular worker's copy of that content.
+            new_chunks += tx.execute(
+                "INSERT INTO chunks VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(hash) DO NOTHING",
                 params![
                     loc.hash.as_slice(),
                     loc.raw_len,
@@ -322,8 +330,8 @@ impl Store {
                 size: offset,
                 sha256: hex(&digest),
             },
-            new_chunks: locations.len(),
-            new_pack_bytes: packs.iter().map(|p| p.1).sum(),
+            new_chunks,
+            new_pack_bytes,
             references: extents.len(),
         })
     }
@@ -937,6 +945,56 @@ mod tests {
         assert!(count > 1);
         assert!(maximum <= 65536);
         assert_eq!(store.read("main", "file", 0, bytes.len())?, bytes);
+        store.check()?;
+        Ok(())
+    }
+
+    #[test]
+    fn concurrent_preparations_share_chunks_at_publication() -> Result<()> {
+        let temp = tempfile::tempdir()?;
+        let root = temp.path().join("store");
+        let source = temp.path().join("input");
+        let bytes = vec![42; 256 * 1024];
+        fs::write(&source, &bytes)?;
+        let mut store = Store::init(&root)?;
+        let barrier = std::sync::Barrier::new(2);
+        let prepared = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..2)
+                .map(|_| {
+                    scope.spawn(|| {
+                        let db = Connection::open_with_flags(
+                            root.join("catalog.sqlite"),
+                            OpenFlags::SQLITE_OPEN_READ_ONLY,
+                        )?;
+                        let file = File::open(&source)?;
+                        barrier.wait();
+                        prepare_import(&root, &db, &file, pack::LIMIT, || false)
+                    })
+                })
+                .collect();
+            handles
+                .into_iter()
+                .map(|h| h.join().unwrap())
+                .collect::<Result<Vec<_>>>()
+        })?;
+        for (index, candidate) in prepared.into_iter().enumerate() {
+            assert!(
+                !candidate.locations.is_empty(),
+                "both candidates must see absent chunks"
+            );
+            let report = store.publish_import("parallel", &index.to_string(), candidate)?;
+            if index == 0 {
+                assert!(report.new_chunks > 0);
+                assert!(report.new_pack_bytes > 0);
+            } else {
+                assert_eq!(report.new_chunks, 0);
+                assert_eq!(report.new_pack_bytes, 0);
+            }
+            assert_eq!(
+                store.read("parallel", &index.to_string(), 0, bytes.len())?,
+                bytes
+            );
+        }
         store.check()?;
         Ok(())
     }

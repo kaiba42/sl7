@@ -137,14 +137,25 @@ The worker, foreground, and read-pool catalog connections share one exclusive
 owner lock; dropping any one connection cannot admit another mount or offline GC.
 Attribute reads sample native metadata before the logical catalog override, so
 concurrent retirement cannot expose a transient zero logical length.
-One worker bounds active jobs; a 1,024-entry queue spills pending flags onto pinned
-inodes. Normal unmount drains the worker before releasing store ownership. Canceled
-work can leave orphan packs for offline GC; native bytes remain authoritative.
+Two workers prepare and retire independent files concurrently. Each has its own
+read-only packing connection and publication connection. `SL7_SEAL_WORKERS=1`
+selects serial sealing for comparison; values from 1 through 8 are supported.
+Catalog transactions remain serialized, while hashing, compression, pack writes,
+and native retirement can overlap. Only one job may own an inode, including when
+a concurrent write and close requeue it. If workers prepare the same absent chunk,
+publication keeps the first committed chunk location; both manifests reference
+that content. Redundant pack bytes remain eligible for offline GC.
+A 1,024-entry queue spills pending flags onto pinned inodes. Normal unmount drains
+and joins all workers before releasing store ownership. Canceled work can leave
+orphan packs for offline GC; native bytes remain authoritative.
 `SL7_CACHE_STATS=1` also prints sealing counts and candidate/preparation/publication
 wall times, selection/publication state-lock hold totals and maxima, foreground
 state-lock hold times, catalog-permit waits, and same-inode publication-open waits.
 Publication counters separately measure catalog commits and native retirement;
 mutation waits distinguish publication from active readers.
+Worker counters report configured workers, active/maximum concurrent seal jobs,
+and active/maximum concurrent preparation phases. Summed phase times can exceed
+elapsed wall time when workers overlap.
 Read counters include in-flight/max concurrent requests, time outside state, read
 bookkeeping time, and waits between same-inode readers and mutations. Cache counters
 include active/max overlapping payload loads and duplicate loads. A request count

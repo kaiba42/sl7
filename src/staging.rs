@@ -7,6 +7,8 @@ mod background;
 mod namespace;
 mod operations;
 mod reads;
+#[cfg(test)]
+use std::sync::mpsc::SyncSender;
 use std::{
     collections::{HashMap, VecDeque},
     ffi::{CString, OsStr, OsString},
@@ -23,7 +25,6 @@ use std::{
     sync::{
         Arc, Condvar, Mutex,
         atomic::{AtomicU64, Ordering},
-        mpsc::SyncSender,
     },
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -61,7 +62,7 @@ struct State {
     next_inode: u64,
     next_handle: u64,
     seal_queue: VecDeque<INodeNo>,
-    wake: Option<SyncSender<()>>,
+    wake: Option<Arc<Condvar>>,
     stopping: bool,
     worker_failed: bool,
     seal_stats: background::Stats,
@@ -76,7 +77,7 @@ pub struct StagingFs {
     state: Arc<Mutex<State>>,
     catalog_writer: Arc<Mutex<()>>,
     publication_done: Arc<Condvar>,
-    worker: Option<std::thread::JoinHandle<()>>,
+    worker: Option<background::Workers>,
     readers: Option<reads::Readers>,
     metadata_writer: Option<Mutex<crate::live::MetadataWriter>>,
     _owner: Owner,
@@ -509,6 +510,10 @@ impl StagingFs {
         })
     }
     pub fn deduplicating(store: crate::Store) -> crate::Result<Self> {
+        let count = background::worker_count(std::env::var("SL7_SEAL_WORKERS").ok().as_deref())?;
+        Self::deduplicating_with_workers(store, count)
+    }
+    fn deduplicating_with_workers(store: crate::Store, count: usize) -> crate::Result<Self> {
         let mut live = crate::live::Live::open(store)?;
         let mut fs = Self::new(&live.tree())?;
         live.recover()?;
@@ -516,8 +521,13 @@ impl StagingFs {
         fs.metadata_writer = Some(Mutex::new(crate::live::MetadataWriter::new(
             live.store.publication_connection()?,
         )?));
-        let packer = crate::store::Packer::new(&live.store.root)?;
-        let publisher = crate::live::Live::open(live.store.publication_connection()?)?;
+        let mut connections = Vec::with_capacity(count);
+        for _ in 0..count {
+            connections.push((
+                crate::store::Packer::new(&live.store.root)?,
+                crate::live::Live::open(live.store.publication_connection()?)?,
+            ));
+        }
         fs.state
             .lock()
             .map_err(|_| crate::Error::Invalid("poisoned filesystem state".into()))?
@@ -526,8 +536,7 @@ impl StagingFs {
             Arc::clone(&fs.state),
             Arc::clone(&fs.catalog_writer),
             Arc::clone(&fs.publication_done),
-            packer,
-            publisher,
+            connections,
         )?);
         Ok(fs)
     }

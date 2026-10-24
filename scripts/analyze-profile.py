@@ -161,7 +161,8 @@ def io_latencies(path):
         assert match, ('unparsed I/O event', line)
         comm, tid, timestamp, phase, operation, detail = match.groups()
         timestamp = float(timestamp)
-        group = 'foreground' if comm.startswith('fuser-') else 'background' if comm=='sl7-pack' else comm
+        group = ('foreground' if comm.startswith('fuser-') else
+                 'background' if comm == 'sl7-pack' or comm.startswith('sl7-pack-') else comm)
         events[phase] += 1
         if phase == 'enter':
             assert tid not in pending, ('overlapping syscalls in one thread', tid)

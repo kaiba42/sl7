@@ -54,6 +54,7 @@ def main():
                   kernel=subprocess.check_output(['uname', '-r'], text=True).strip(),
                   perf=subprocess.check_output(['perf', '--version'], text=True).strip(),
                   sl7_sha256=hashlib.sha256(BINARY.read_bytes()).hexdigest(),
+                  seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
                   lock_sha256=hashlib.sha256((SOURCE/'Cargo.lock').read_bytes()).hexdigest(),
                   cpu_quota=8, memory_limit_gib=12, cpu_max=cpu_max, memory_max=memory_max,
                   nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
