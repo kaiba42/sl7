@@ -20,7 +20,7 @@
   },
   "host_tests": 36,
   "x86_validation": "passed",
-  "benchmark": "pending",
+  "benchmark": "passed",
   "durability": "Only in-memory scheduling changes. A completed seal or unchanged eligibility decision is cached for the captured inode epoch. Every mutation invalidates the cached decision; cancellation and errors never mark an inode checked. Catalog commits, inode syncs, publication and retirement ordering are unchanged.",
   "tests": "Repeated read-only opens of both freshly sealed and previously sealed files schedule no new candidates; writing revokes the decision and the updated bytes reseal and pass integrity checks. A successful seal absorbs a read-only close queued during preparation. Existing concurrent mutation cancellation, open-reader retirement, crash/recovery and mounted Cargo suites pass.",
   "implementation_commit": "bcd8da2f495cc1415a4a98200cc956c1d82024f8",
@@ -44,5 +44,8 @@
       "live": "passed",
       "selfhost": "passed"
     }
-  }
+  },
+  "comparison_report": "seal-check-costs.json",
+  "profile": "passed",
+  "profile_report": "seal-check-costs-profile.json"
 }

@@ -20,7 +20,9 @@
   "negative_control": "Retaining the catalog writer through the identity pause fails the second-worker progress assertion; the restored implementation passes.",
   "durability": "Reserve rows in a FULL transaction before assigning the inode xattr; sync the inode before publication. Only reservation holds the catalog permit; native identity I/O and read-only candidate setup can overlap across inodes.",
   "concurrency": "Two workers; same-inode packing exclusion and epoch validation remain. A paused identity phase permits the other worker to complete durable publication and retirement.",
-  "benchmark": "pending",
+  "benchmark": "passed",
   "profile": "pending",
-  "mounted_report_sha256": "db00881e7359f00984ba612b4e40aa9cf4cec98d147fc21f27466686c1f9af36"
+  "mounted_report_sha256": "db00881e7359f00984ba612b4e40aa9cf4cec98d147fc21f27466686c1f9af36",
+  "implementation_commit": "5e7efe258906d2cb7aa277dce12e9db3c7cc2753",
+  "comparison_report": "parallel-identity-costs.json"
 }
