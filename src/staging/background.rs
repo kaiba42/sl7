@@ -89,6 +89,28 @@ struct Job {
 }
 
 impl State {
+    pub(super) fn runtime_status(&self) -> serde_json::Value {
+        // Queue overflow is stored on the inode, not in seal_queue. A worker
+        // blocked on I/O is still active even if it consumes no CPU ticks.
+        let queued = self.nodes.values().filter(|node| node.queued).count();
+        let drained = queued == 0
+            && self.seal_queue.is_empty()
+            && self.seal_stats.active_seals == 0
+            && self.seal_stats.active_reads == 0
+            && self.seal_stats.active_native_io == 0;
+        serde_json::json!({
+            "schema_version": 1,
+            "queue_entries": self.seal_queue.len(),
+            "queued_inodes": queued,
+            "open_handles": self.handles.len(),
+            "drained": drained,
+            "quiescent": drained && self.handles.is_empty() && !self.worker_failed && !self.stopping,
+            "worker_failed": self.worker_failed,
+            "stopping": self.stopping,
+            "sealing": self.seal_stats,
+        })
+    }
+
     pub(super) fn schedule_seal(&mut self, ino: INodeNo) {
         if self.live.is_none() {
             return;
@@ -520,6 +542,33 @@ mod tests {
     }
 
     #[test]
+    fn status_counts_overflow_queue_bits_and_open_handles() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::write(temp.path().join("data"), b"small").unwrap();
+        let fs = StagingFs::new(temp.path()).unwrap();
+        fs.with_read(|state| {
+            let ino = state.lookup(INodeNo::ROOT, OsStr::new("data"))?;
+            state.entry_attr(ino)?;
+            // Simulate an inode queued outside the bounded hot queue.
+            state.nodes.get_mut(&ino).unwrap().queued = true;
+            let status = state.runtime_status();
+            assert_eq!(status["queue_entries"], 0);
+            assert_eq!(status["queued_inodes"], 1);
+            assert_eq!(status["drained"], false);
+            state.nodes.get_mut(&ino).unwrap().queued = false;
+            let handle = state.open(ino, libc::O_RDONLY)?;
+            let status = state.runtime_status();
+            assert_eq!(status["drained"], true);
+            assert_eq!(status["quiescent"], false);
+            assert_eq!(status["open_handles"], 1);
+            state.release(ino, handle)?;
+            assert_eq!(state.runtime_status()["quiescent"], true);
+            Ok(())
+        })
+        .unwrap();
+    }
+
+    #[test]
     fn native_state_cache_is_revoked_before_publication_and_relearned_after_mutation() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("store");
@@ -654,6 +703,7 @@ mod tests {
         })
         .unwrap();
         prepared.recv_timeout(Duration::from_secs(10)).unwrap();
+        let paused_status = fs.with_read(|s| Ok(s.runtime_status())).unwrap();
         let second = fs
             .with_read(|s| {
                 let ino = s.lookup(INodeNo::ROOT, OsStr::new("second"))?;
@@ -684,6 +734,9 @@ mod tests {
         // Always release the worker before assertions, including on failure.
         resume.send(()).unwrap();
         idle(&fs);
+        assert_eq!(paused_status["drained"], false);
+        assert_eq!(paused_status["quiescent"], false);
+        assert_eq!(paused_status["sealing"]["active_seals"], 1);
         assert!(progressed, "second candidate waited for the first worker");
         fs.with(|s| {
             assert_eq!(s.seal_stats.completed, 2);

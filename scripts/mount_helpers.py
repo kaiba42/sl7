@@ -5,6 +5,50 @@ import re
 import shutil
 import subprocess
 import tempfile
+import json
+import os
+import time
+
+
+def mount_status(mount):
+    status = json.loads(os.getxattr(mount, 'user.sl7.status'))
+    if status.get('schema_version') != 1:
+        raise RuntimeError('Unsupported SL7 mount status schema')
+    return status
+
+
+def wait_for_quiescence(daemon, mount, timeout=180):
+    """Wait for closed handles and drained work, including workers asleep in I/O.
+
+    Three matching quiet observations avoid accepting a transient gap. This is
+    an observation for isolated workloads, not a durability barrier or a promise
+    that another client cannot start new work after it returns.
+    """
+    start = time.monotonic()
+    stable = polls = 0
+    previous = None
+    while True:
+        if daemon.poll() is not None:
+            raise RuntimeError('SL7 exited while waiting for quiescence')
+        status = mount_status(mount)
+        polls += 1
+        sealing = status['sealing']
+        if status['worker_failed'] or status['stopping'] or sealing['errors']:
+            raise RuntimeError(f'SL7 failed while draining: {status}')
+        progress = tuple(sealing[key] for key in (
+            'completed', 'canceled', 'skipped', 'write_operations',
+            'read_operations', 'sync_operations', 'namespace_commits'))
+        if status['quiescent']:
+            stable = stable + 1 if progress == previous else 1
+        else:
+            stable = 0
+        previous = progress
+        elapsed = time.monotonic() - start
+        if stable >= 3:
+            return dict(wait_seconds=elapsed, polls=polls, status=status)
+        if elapsed >= timeout:
+            raise RuntimeError(f'SL7 did not become quiescent: {status}')
+        time.sleep(0.1)
 
 
 def is_mounted(path):

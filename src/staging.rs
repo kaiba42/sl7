@@ -87,6 +87,7 @@ pub struct StagingFs {
     worker: Option<background::Workers>,
     readers: Option<reads::Readers>,
     metadata_writer: Option<Mutex<crate::live::MetadataWriter>>,
+    status_enabled: bool,
     _owner: Owner,
 }
 struct Owner(File);
@@ -528,12 +529,25 @@ impl StagingFs {
             worker: None,
             readers: None,
             metadata_writer: None,
+            status_enabled: false,
             _owner: Owner(owner),
         })
     }
     pub fn deduplicating(store: crate::Store) -> crate::Result<Self> {
         let count = background::worker_count(std::env::var("SL7_SEAL_WORKERS").ok().as_deref())?;
-        Self::deduplicating_with_workers(store, count)
+        let status_enabled = match std::env::var("SL7_MOUNT_STATUS") {
+            Err(std::env::VarError::NotPresent) => false,
+            Ok(value) if value == "0" => false,
+            Ok(value) if value == "1" => true,
+            _ => {
+                return Err(crate::Error::Invalid(
+                    "SL7_MOUNT_STATUS must be 0 or 1".into(),
+                ));
+            }
+        };
+        let mut fs = Self::deduplicating_with_workers(store, count)?;
+        fs.status_enabled = status_enabled;
+        Ok(fs)
     }
     fn deduplicating_with_workers(store: crate::Store, count: usize) -> crate::Result<Self> {
         let mut live = crate::live::Live::open(store)?;
@@ -763,6 +777,26 @@ impl Filesystem for StagingFs {
         }) {
             Ok(a) => reply.attr(&self.metadata_ttl(), &a),
             Err(e) => reply.error(e),
+        }
+    }
+    fn getxattr(&self, _req: &Request, ino: INodeNo, name: &OsStr, size: u32, reply: ReplyXattr) {
+        if !self.status_enabled {
+            reply.error(Errno::ENOSYS);
+            return;
+        }
+        if ino != INodeNo::ROOT || name != "user.sl7.status" || self.readers.is_none() {
+            // ENOSYS would make Linux stop issuing getxattr requests for this
+            // mount, including later requests for the supported diagnostic.
+            reply.error(Errno::ENODATA);
+            return;
+        }
+        match self.with_read(|state| {
+            serde_json::to_vec(&state.runtime_status()).map_err(io::Error::other)
+        }) {
+            Ok(bytes) if size == 0 => reply.size(bytes.len() as u32),
+            Ok(bytes) if bytes.len() > size as usize => reply.error(Errno::ERANGE),
+            Ok(bytes) => reply.data(&bytes),
+            Err(error) => reply.error(error),
         }
     }
     fn setattr(

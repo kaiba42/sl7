@@ -16,7 +16,7 @@ import signal
 import subprocess
 import time
 
-from mount_helpers import is_mounted, isolated_test_directory
+from mount_helpers import is_mounted, isolated_test_directory, mount_status, wait_for_quiescence
 
 spec = importlib.util.spec_from_file_location('benchmark_synkro', Path(__file__).with_name('benchmark-synkro.py'))
 benchmark = importlib.util.module_from_spec(spec)
@@ -40,6 +40,9 @@ def daemon_cpu_breakdown(pid):
 
 
 def main():
+    settle_mode = os.environ.get('SL7_PROFILE_SETTLE', 'cpu-idle')
+    if settle_mode not in {'cpu-idle', 'quiescent'}:
+        raise ValueError('SL7_PROFILE_SETTLE must be cpu-idle or quiescent')
     cache_setting = os.environ.get('SL7_PROFILE_BUILDID_CACHE', '1')
     if cache_setting not in {'0', '1'}:
         raise ValueError('SL7_PROFILE_BUILDID_CACHE must be 0 or 1')
@@ -71,7 +74,9 @@ def main():
                   profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
                   import_pipeline=os.environ.get('SL7_IMPORT_PIPELINE', '0'),
-                  daemon_cpu_scope='Cargo plus post-build idle observation; excludes profiler shutdown and unmount',
+                  settle_mode=settle_mode,
+                  mount_helpers_sha256=hashlib.sha256(Path(__file__).with_name('mount_helpers.py').read_bytes()).hexdigest(),
+                  daemon_cpu_scope=f'Cargo plus post-build {settle_mode} observation; excludes executable checks, profiler shutdown and unmount',
                   lock_sha256=hashlib.sha256((SOURCE/'Cargo.lock').read_bytes()).hexdigest(),
                   cpu_quota=8, memory_limit_gib=12, cpu_max=cpu_max, memory_max=memory_max,
                   nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
@@ -89,12 +94,15 @@ def main():
         subprocess.check_call([str(BINARY), '--store', str(store), 'init'], stdout=subprocess.DEVNULL)
         log = (ROOT/'daemon.log').open('w')
         daemon = subprocess.Popen([str(BINARY), '--store', str(store), 'mount', str(mount)], stdout=log, stderr=log,
-                                  env=dict(os.environ, SL7_CACHE_STATS="1"))
+                                  env=dict(os.environ, SL7_CACHE_STATS="1",
+                                           SL7_MOUNT_STATUS='1' if settle_mode == 'quiescent' else '0'))
         try:
             deadline = time.monotonic()+30
             while not is_mounted(mount):
                 assert daemon.poll() is None and time.monotonic()<deadline
                 time.sleep(.02)
+            if settle_mode == 'quiescent':
+                mount_status(mount)
             dev = os.stat(mount).st_dev
             assert os.major(dev) == 0
             connection = os.minor(dev)
@@ -148,7 +156,8 @@ def main():
                     wall = time.monotonic()-start
                     after = resource.getrusage(resource.RUSAGE_CHILDREN)
                     assert result.returncode == 0, (ROOT/f'{stage}.stderr').read_text()[-6000:]
-                    idle = settle(daemon, mount)
+                    quiet = wait_for_quiescence(daemon, mount) if settle_mode == 'quiescent' else None
+                    idle = quiet['wait_seconds'] if quiet else settle(daemon, mount)
                     cpu_after = daemon_cpu_breakdown(daemon.pid)
                     cpu = {kind:cpu_after[kind]-cpu_before[kind] for kind in ('user', 'system')}
                 finally:
@@ -193,10 +202,12 @@ def main():
                 if description or stage=='clean':
                     help_text = subprocess.check_output([str(mount/'target/debug/synkro'), '--help'], env=env, text=True)
                     assert (description or 'Synkro AI rule and control enforcement CLI') in help_text
+                post_check = wait_for_quiescence(daemon, mount) if settle_mode == 'quiescent' else None
                 row = dict(stage=stage, wall_seconds=wall, daemon_cpu_seconds=sum(cpu.values()),
                            daemon_user_seconds=cpu['user'], daemon_system_seconds=cpu['system'],
                            cargo_cpu_seconds=after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
                            idle_seconds=idle, artifacts=len(records), fresh_artifacts=sum(a['fresh'] for a in records),
+                           post_build_quiescence=quiet, post_check_quiescence=post_check,
                            cpu_sampling=sample, fuse_tracing=trace and fuse_trace_available,
                            syscall_counting=trace, io_tracing=trace,
                            syscall_counts=syscall_counts,

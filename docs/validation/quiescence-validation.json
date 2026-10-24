@@ -1,0 +1,70 @@
+{
+  "runtime_base_commit": "9d202ea9138927a1816a6202237fe5a9d2a08b94",
+  "source_archive_commit": "3dcb4796cf11be8b6526de9ca3c85f44d3efff51",
+  "source_sha256": {
+    "src/staging.rs": "68045727ca77bb4213c4ba014797cc0d05f2f8c17e217405f24b21b893d9a77f",
+    "src/staging/background.rs": "2189c10b80250fc1fb0f792591d2e80ba2337018ac4d1ada713177e3ceb64138",
+    "scripts/benchmark-synkro.py": "6dcaa309598bc924660f2eab52e2df1d3290b54f27da876f5cf5ba6bf606d2d3",
+    "scripts/profile-synkro.py": "fb5ea2f305ba1c7f66b18158aaea12c2ea4abcfcbd273c2146284500e84e1000",
+    "scripts/mount_helpers.py": "ce84ea1527e9eb16d64c267107b9c0eb977b35e0a2bcfaa610d2e3d39b419963",
+    "scripts/status-test.py": "f5b96ca09998b2212070d84840cf7e1c132c254f62d2ccb43d5f8ba0fe70b46d",
+    "tests/test_mount_status.py": "012f90b0b790d7af10d8cd079d4e123bd39afeaaf63dd1b980f1197d85dc47f7"
+  },
+  "binary_sha256": "cf22fa3d9bb060b555f372ca5ce3164653f9259338e94be75bd0a2e916dfbbe9",
+  "platform": "x86_64-unknown-linux-gnu",
+  "node": "middle",
+  "linux_tests": 82,
+  "host_tests": 44,
+  "python_tests": 10,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "mounted_status_modes": {
+    "off": {
+      "status": "passed",
+      "checks": [
+        "unknown xattr does not disable status",
+        "open handle blocks quiescence",
+        "closed handle drains sealing",
+        "cold reconstruction",
+        "size query and ERANGE",
+        "store integrity and GC"
+      ],
+      "polls": 4,
+      "wait_seconds": 0.3013276606798172
+    },
+    "on": {
+      "status": "passed",
+      "checks": [
+        "unknown xattr does not disable status",
+        "open handle blocks quiescence",
+        "closed handle drains sealing",
+        "cold reconstruction",
+        "size query and ERANGE",
+        "store integrity and GC"
+      ],
+      "polls": 4,
+      "wait_seconds": 0.3010828271508217
+    }
+  },
+  "report_sha256": {
+    "off.json": "dde207bc091bf607caba76f1ad839a0bef88d1bb157870820eb4cb0974f58c77",
+    "mounted.json": "a44ea0749fb27eacc1358b28192acec0b6c242222c52afa30bad83fcc1191c9b",
+    "on.json": "dc99e5e03e81c871ff1754b5e61488cf8040e62432ee3f630c7828c7aac90f22"
+  },
+  "default": "Status disabled; enable with SL7_MOUNT_STATUS=1 or benchmark --settle-mode quiescent.",
+  "contract": "Root-only read-only user.sl7.status JSON. Drained includes queued inode overflow, active seal jobs, reads and native I/O. Quiescent additionally requires closed FUSE handles, no fatal worker failure and no shutdown. Waits require three quiet observations with matching progress counters, and reject sealing errors.",
+  "tests": "The status remains busy while a sealing worker is deliberately paused. Overflow queue bits count even when the hot queue is empty. Mounted tests cover open/closed handles, completed sealing, reconstruction, unknown xattrs, size negotiation and ERANGE in both pipeline modes.",
+  "limitations": [
+    "An observation for isolated workloads; not an fsync barrier or a guarantee against future client activity.",
+    "Diagnostic support preserves ENOSYS behavior when disabled. Enabling it may change kernel xattr request behavior, so quiescent runs are a separately identified benchmark method.",
+    "Historical CPU-idle mode remains the default for existing comparisons."
+  ],
+  "benchmark": "pending",
+  "profile": "pending"
+}

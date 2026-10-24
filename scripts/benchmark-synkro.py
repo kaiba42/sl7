@@ -16,7 +16,7 @@ import shutil
 import statistics
 import subprocess
 import time
-from mount_helpers import is_mounted, isolated_test_directory
+from mount_helpers import is_mounted, isolated_test_directory, mount_status, wait_for_quiescence
 
 
 def allocated(path):
@@ -104,6 +104,8 @@ def main():
     parser.add_argument("--revision", required=True)
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--jobs", type=int, default=8)
+    parser.add_argument("--settle-mode", choices=["cpu-idle", "quiescent"], default="cpu-idle",
+                        help="Use legacy CPU-idle observation or require closed handles and drained sealing")
     parser.add_argument("--baseline-binary", type=Path,
                         help="Also measure an older SL7 binary on the same machine")
     parser.add_argument("--comparison-binary", action="append", default=[], metavar="NAME=PATH",
@@ -160,8 +162,10 @@ def main():
     report = dict(revision=args.revision, rustc=subprocess.check_output(["rustc", "-Vv"], text=True),
                   platform=subprocess.check_output(["uname", "-a"], text=True).strip(),
                   sl7_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                  benchmark_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                  mount_helpers_sha256=hashlib.sha256(Path(__file__).with_name('mount_helpers.py').read_bytes()).hexdigest(),
                   lock_sha256=hashlib.sha256((args.source / "Cargo.lock").read_bytes()).hexdigest(),
-                  jobs=args.jobs, rounds=args.rounds, cases=[],
+                  jobs=args.jobs, rounds=args.rounds, settle_mode=args.settle_mode, cases=[],
                   cpu_max=(cgroup / "cpu.max").read_text().strip(),
                   memory_max=(cgroup / "memory.max").read_text().strip(),
                   nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
@@ -208,6 +212,7 @@ def main():
 
                     def start_mount():
                         daemon_env = dict(os.environ, SL7_CACHE_STATS="1")
+                        daemon_env["SL7_MOUNT_STATUS"] = "1" if args.settle_mode == "quiescent" else "0"
                         if backend in seal_workers:
                             daemon_env["SL7_SEAL_WORKERS"] = str(seal_workers[backend])
                         daemon_env["SL7_IMPORT_PIPELINE"] = report["import_pipeline"][backend]
@@ -241,7 +246,7 @@ def main():
                         after = resource.getrusage(resource.RUSAGE_CHILDREN)
                         if result.returncode:
                             raise RuntimeError(prefix.with_suffix(".stderr").read_text()[-12000:])
-                        idle = settle(daemon, mount) if daemon else 0
+                        idle = settle(daemon, mount) if daemon and args.settle_mode == "cpu-idle" else 0
                         artifacts = [r for line in prefix.with_suffix(".jsonl").read_text().splitlines()
                                      if (r := json.loads(line)).get("reason") == "compiler-artifact"]
                         assert artifacts
@@ -252,11 +257,15 @@ def main():
                         if expected:
                             help_text = subprocess.check_output([str(mount / "target" / profile / "synkro"), "--help"], env=env, text=True)
                             assert expected in help_text
+                        quiet = wait_for_quiescence(daemon, mount) if daemon and args.settle_mode == "quiescent" else None
+                        if quiet:
+                            idle = quiet["wait_seconds"]
                         measurement = dict(stage=stage, command=command, wall_seconds=elapsed,
                                            cargo_user_seconds=after.ru_utime-before.ru_utime,
                                            cargo_system_seconds=after.ru_stime-before.ru_stime,
                                            daemon_cpu_seconds=(daemon_cpu(daemon.pid)-daemon_before) if daemon else 0,
                                            post_build_idle_wait_seconds=idle,
+                                           post_build_quiescence=quiet,
                                            fresh_artifacts=sum(r["fresh"] for r in artifacts), artifacts=len(artifacts))
                         case["measurements"].append(measurement)
                         save()
@@ -266,6 +275,8 @@ def main():
                         if backend != "native":
                             sl7("init")
                             daemon = start_mount()
+                            if args.settle_mode == "quiescent":
+                                mount_status(mount)  # Fail before compiling if the binary lacks status support.
                         build("clean", "Synkro AI rule and control enforcement CLI")
                         for i in range(3):
                             build(f"unchanged-{i+1}", fresh=True)

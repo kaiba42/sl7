@@ -127,6 +127,8 @@ chunks, checks for duplicates, compresses, and writes packs. Each worker queues
 at most two batches of 16 chunks (1 MiB of queued payload, plus producer and
 consumer batches). Small files and offline `put` imports remain sequential.
 This consumes additional CPU and does not guarantee faster Cargo builds.
+The [matched comparison](validation/import-pipeline-costs.md) did not show a
+consistent benefit across clean and edit builds.
 With `SL7_CACHE_STATS=1`, the unmount report includes `import_pipeline` and
 `pipelined_prepares`; the latter counts attempted preparations, including canceled
 ones. Cancellation closes the queue and joins the producer before returning.
@@ -141,6 +143,23 @@ Reopening a file preserves its kernel page-cache contents, avoiding reconstructi
 of unchanged pages on every open. Writes and truncation through the mount remain
 coherent. Kernel cache memory is reclaimable and separate from SL7's userspace
 cache budgets.
+
+For live diagnostics, start the mount with `SL7_MOUNT_STATUS=1`. On Linux, read
+its root's virtual `user.sl7.status` attribute as JSON:
+
+```sh
+python3 -c 'import os; print(os.getxattr("/tmp/sl7-mount", "user.sl7.status").decode())'
+```
+
+`drained` means no queued sealing, active sealing, reads, or native I/O remain.
+`quiescent` additionally requires closed FUSE handles, no fatal worker failure,
+and no shutdown in progress.
+The snapshot includes inode queue overflow and workers asleep in I/O. It is an
+observation, not an fsync or a barrier against subsequent client activity. Status
+support is disabled by default. The benchmark's `--settle-mode quiescent` enables
+it and records three stable quiet observations after each build and executable
+check; the historical `cpu-idle` mode remains available for comparison.
+
 Read-only closes do not schedule further sealing once the inode's current
 mutation epoch has been checked. A write or metadata mutation restores eligibility.
 Successful name lookups and attributes are cached in the kernel for one second.
