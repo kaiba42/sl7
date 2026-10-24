@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import re
 import shutil
 import statistics
 import subprocess
@@ -105,9 +106,11 @@ def main():
     parser.add_argument("--jobs", type=int, default=8)
     parser.add_argument("--baseline-binary", type=Path,
                         help="Also measure an older SL7 binary on the same machine")
+    parser.add_argument("--comparison-binary", action="append", default=[], metavar="NAME=PATH",
+                        help="Add a named SL7 implementation to --backends (repeatable)")
     parser.add_argument("--profiles", nargs="+", choices=["debug", "release"],
                         default=["debug", "release"])
-    parser.add_argument("--backends", nargs="+", choices=["native", "baseline-sl7", "sl7"],
+    parser.add_argument("--backends", nargs="+",
                         help="Select a focused comparison; default includes native and SL7")
     args = parser.parse_args()
     args.backends = args.backends or (["native", "baseline-sl7", "sl7"] if args.baseline_binary else ["native", "sl7"])
@@ -118,6 +121,16 @@ def main():
     cgroup = process_cgroup()
     args.results.mkdir(parents=True, exist_ok=True)
     binary = Path(os.environ.get("SL7_BINARY", "/sl7/target/release/sl7"))
+    binaries = {"sl7": binary}
+    if args.baseline_binary:
+        binaries["baseline-sl7"] = args.baseline_binary
+    for item in args.comparison_binary:
+        name, separator, path = item.partition("=")
+        if not separator or not re.fullmatch(r"[a-z][a-z0-9-]*", name) or name in {"native", "baseline-sl7", "sl7"} or name in binaries or not path:
+            parser.error("comparison binaries require unique NAME=PATH entries with lowercase names")
+        binaries[name] = Path(path)
+    if set(args.backends) - ({"native"} | set(binaries)):
+        parser.error("unknown backend; provide its --comparison-binary NAME=PATH")
     edited_file = args.source / "crates/synkro-cli/src/lib.rs"
     original = edited_file.read_text()
     needle = 'about = "Synkro AI rule and control enforcement CLI"'
@@ -138,6 +151,8 @@ def main():
                   nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
                   incremental_environment={key:env.get(key) for key in ["CARGO_INCREMENTAL", "CARGO_BUILD_INCREMENTAL", "CARGO_PROFILE_DEV_INCREMENTAL", "CARGO_PROFILE_RELEASE_INCREMENTAL"]},
                   method="Empty Cargo outputs; pre-fetched dependencies; warm OS caches; serial, counterbalanced cases; unchanged workspace profiles/default features")
+    report["binary_sha256s"] = {name:hashlib.sha256(path.read_bytes()).hexdigest()
+                               for name,path in binaries.items()}
     if args.baseline_binary:
         report["baseline_sl7_sha256"] = hashlib.sha256(args.baseline_binary.read_bytes()).hexdigest()
 
@@ -157,7 +172,7 @@ def main():
                 backends.reverse()
             for profile in profiles:
                 for backend in backends:
-                    case_binary = args.baseline_binary if backend == "baseline-sl7" else binary
+                    case_binary = binaries.get(backend, binary)
                     label = f"round-{round_id + 1}-{profile}-{backend}"
                     edited_file.write_text(original)
                     mount.mkdir()

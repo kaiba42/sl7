@@ -4,6 +4,7 @@
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
 use fuser::*;
 mod background;
+mod namespace;
 mod operations;
 mod reads;
 use std::{
@@ -75,6 +76,7 @@ pub struct StagingFs {
     publication_done: Arc<Condvar>,
     worker: Option<std::thread::JoinHandle<()>>,
     readers: Option<reads::Readers>,
+    metadata_writer: Option<Mutex<crate::live::Live>>,
     _owner: Owner,
 }
 struct Owner(File);
@@ -222,6 +224,7 @@ impl State {
         }
         Ok(())
     }
+    #[cfg(test)]
     fn namespace_changed(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
         if let Some(live) = &mut self.live {
@@ -497,6 +500,7 @@ impl StagingFs {
             publication_done: Arc::new(Condvar::new()),
             worker: None,
             readers: None,
+            metadata_writer: None,
             _owner: Owner(owner),
         })
     }
@@ -505,6 +509,9 @@ impl StagingFs {
         let mut fs = Self::new(&live.tree())?;
         live.recover()?;
         fs.readers = Some(reads::Readers::new(&live.store)?);
+        fs.metadata_writer = Some(Mutex::new(crate::live::Live::open(
+            live.store.publication_connection()?,
+        )?));
         let packer = crate::store::Packer::new(&live.store.root)?;
         let publisher = crate::live::Live::open(live.store.publication_connection()?)?;
         fs.state
@@ -932,15 +939,14 @@ impl Filesystem for StagingFs {
         }
     }
     fn unlink(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEmpty) {
-        match self.with_mutation(
+        match self.with_namespace_mutation(
             |s| Ok(vec![s.lookup(parent, name)?]),
             |s| {
                 let ino = s.lookup(parent, name)?;
                 fs::remove_file(s.child(parent, name)?)?;
-                s.namespace_changed(ino)?;
-                s.reclaim(ino);
-                Ok(())
+                Ok(((), vec![ino]))
             },
+            |_, ()| Ok(()),
         ) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
@@ -962,7 +968,7 @@ impl Filesystem for StagingFs {
         flags: RenameFlags,
         reply: ReplyEmpty,
     ) {
-        match self.with_mutation(
+        match self.with_namespace_mutation(
             |s| {
                 let mut inodes = vec![s.lookup(parent, name)?];
                 match s.lookup(newparent, newname) {
@@ -991,14 +997,13 @@ impl Filesystem for StagingFs {
                         flags.bits(),
                     )
                 })?;
-                s.namespace_changed(source)?;
+                let mut inodes = vec![source];
                 if let Some(ino) = replaced {
-                    s.namespace_changed(ino)?;
-                    s.reclaim(ino);
+                    inodes.push(ino);
                 }
-                s.reclaim(source);
-                Ok(())
+                Ok(((), inodes))
             },
+            |_, ()| Ok(()),
         ) {
             Ok(()) => reply.ok(),
             Err(e) => reply.error(e),
@@ -1012,7 +1017,7 @@ impl Filesystem for StagingFs {
         newname: &OsStr,
         reply: ReplyEntry,
     ) {
-        match self.with_mutation(
+        match self.with_namespace_mutation(
             |_| Ok(vec![ino]),
             |s| {
                 if !s.inode(ino)?.metadata()?.is_file() {
@@ -1030,9 +1035,9 @@ impl Filesystem for StagingFs {
                         libc::AT_SYMLINK_FOLLOW,
                     )
                 })?;
-                s.namespace_changed(ino)?;
-                s.entry_attr(ino)
+                Ok((ino, vec![ino]))
             },
+            |s, ino| s.entry_attr(ino),
         ) {
             Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
             Err(e) => reply.error(e),

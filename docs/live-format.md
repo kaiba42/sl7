@@ -75,13 +75,20 @@ outside state. Native positioned writes and file/directory synchronization also
 run outside state. Their inode reservations retain the descriptor and block
 same-inode file mutations until completion, including error paths. Unrelated
 native I/O and reads can overlap. Hydration and catalog preparation still occur
-under state before a write reservation is released to execute native I/O.
-Foreground namespace/metadata callbacks still hold state.
+under state before the global lock is released for native I/O.
+Hard-link, unlink, and rename operations capture changed logical timestamps and
+reserve affected inodes under state, then commit on a separate catalog connection
+outside state. Reads can overlap these metadata-only commits, including reads of
+the affected inode. Same-inode mutations wait; release/forget cannot remove pins
+until commit and reply-attribute capture complete. Rename updates share one
+transaction. Successful replies still wait for the FULL-synchronous commit.
+Foreground hydration, truncation, chmod/utime, and other short namespace/metadata
+callbacks still use state.
 
 Catalog-writing mutations acquire a separate writer permit **before** filesystem
 state. Mutations of already-native inodes without a logical metadata override
-need no catalog permit; their eligibility check and mutation share the state
-lock, so publication cannot start between them. Namespace operations re-resolve
+need no catalog permit; their eligibility check and reservation installation share
+the state lock, so publication cannot start between them. Namespace operations re-resolve
 names after waiting for the permit. Mutations invalidate pending work through
 an atomic epoch. A writer waiting for publication therefore does not hold state
 and prevent unrelated reads or native writes. Multiple requests waiting for
@@ -195,6 +202,7 @@ There is no online control socket, multi-daemon writer protocol, or native macOS
 writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
 permission transitions remain outside qualification. Catalog-writing foreground transitions still serialize with publication through
-the writer permit. Foreground hydration and namespace metadata commits still hold
-filesystem state; reads, native writes, and synchronization run outside it. The four-request-worker limit
+the writer permit. Hydration, truncation, and chmod/utime still hold filesystem
+state; reads, native writes, synchronization, and link/unlink/rename catalog commits
+run outside it. SQLite catalog writes remain serialized. The four-request-worker limit
 can still constrain progress when several mutations are waiting.

@@ -149,6 +149,7 @@ def io_latencies(path):
     pattern = re.compile(r'^\s*(\S+)\s+(\d+)\s+([\d.]+):\s+syscalls:sys_(enter|exit)_(fsync|fdatasync|pwrite64):\s*(.*)')
     pending = {}
     durations = defaultdict(list)
+    descriptors = defaultdict(Counter)
     errors = Counter()
     incomplete = Counter()
     events = Counter()
@@ -163,6 +164,11 @@ def io_latencies(path):
         events[phase] += 1
         if phase == 'enter':
             assert tid not in pending, ('overlapping syscalls in one thread', tid)
+            descriptor = re.search(r'\bfd[:=]\s*(0x[0-9a-fA-F]+|\d+)\b', detail)
+            assert descriptor, ('missing syscall descriptor', line)
+            raw_fd = descriptor[1]
+            fd = int(raw_fd, 16 if raw_fd.startswith('0x') else 10)
+            descriptors[group+'/'+operation][str(fd)] += 1
             pending[tid] = (timestamp, operation, group)
         elif tid not in pending:
             incomplete['missing_enter'] += 1
@@ -180,6 +186,7 @@ def io_latencies(path):
                 errors[group+'/'+operation] += 1
     incomplete['missing_exit'] = len(pending)
     return dict(events=events, incomplete=incomplete, errors=errors,
+                descriptor_calls=dict(descriptors),
                 operations={key:distribution(values) for key,values in sorted(durations.items())},
                 note='Per-thread syscall durations include scheduling and I/O waits; concurrent totals overlap.')
 

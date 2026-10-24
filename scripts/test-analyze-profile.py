@@ -38,6 +38,7 @@ fuser-0 1 1.100000000: syscalls:sys_exit_pwrite64: ret: 0x1000
         result = self.parse('fuser-3 130963 1.000000000: syscalls:sys_enter_pwrite64: fd: 3\nfuser-3 130963 1.100000000: syscalls:sys_exit_pwrite64: 0x18\n')
         self.assertAlmostEqual(result['operations']['foreground/pwrite64']['sum_seconds'], .1)
         self.assertEqual(result['errors'], {})
+        self.assertEqual(result['descriptor_calls'], {'foreground/pwrite64': {'3': 1}})
 
     def test_rejects_mismatched_exit(self):
         with self.assertRaises(AssertionError):

@@ -76,6 +76,10 @@ pub(crate) struct SealCandidate {
     generation: i64,
     metadata: Metadata,
 }
+pub(crate) struct MetadataUpdate {
+    identity: i64,
+    value: String,
+}
 // Persistent identity, optional manifest id, optional logical metadata JSON.
 type InodeRecord = (i64, Option<i64>, Option<String>);
 
@@ -421,6 +425,19 @@ impl Live {
 
     /// Preserve sealed content while reflecting a successful native metadata edit.
     pub fn metadata_changed(&mut self, file: &File, atime: bool, mtime: bool) -> Result<()> {
+        if let Some(update) = self.prepare_metadata_change(file, atime, mtime)? {
+            self.commit_metadata_changes(&[update])?;
+        }
+        Ok(())
+    }
+    /// Capture under the inode reservation; commit using a separate connection
+    /// while that reservation prevents mutation or retirement of the inode.
+    pub(crate) fn prepare_metadata_change(
+        &self,
+        file: &File,
+        atime: bool,
+        mtime: bool,
+    ) -> Result<Option<MetadataUpdate>> {
         if let Some((identity, _, Some(value))) = self.record(file)? {
             let mut metadata = decode(value)?;
             let now = Metadata::capture(file)?;
@@ -434,11 +451,28 @@ impl Live {
             }
             metadata.ctime = now.ctime;
             metadata.ctime_ns = now.ctime_ns;
-            self.store.db.execute(
-                "UPDATE live_files SET metadata=?1 WHERE id=?2",
-                params![encode(&metadata)?, identity],
-            )?;
+            return Ok(Some(MetadataUpdate {
+                identity,
+                value: encode(&metadata)?,
+            }));
         }
+        Ok(None)
+    }
+    pub(crate) fn commit_metadata_changes(&mut self, updates: &[MetadataUpdate]) -> Result<()> {
+        if updates.is_empty() {
+            return Ok(());
+        }
+        let tx = self.store.db.transaction()?;
+        for update in updates {
+            let changed = tx.execute(
+                "UPDATE live_files SET metadata=?1 WHERE id=?2 AND metadata IS NOT NULL",
+                params![update.value, update.identity],
+            )?;
+            if changed != 1 {
+                return Err(Error::Corrupt("reserved metadata disappeared".into()));
+            }
+        }
+        tx.commit()?;
         Ok(())
     }
     /// Native mutation now owns size and timestamps. Invoke before allowing a

@@ -492,12 +492,12 @@
           "sample_percent": 38.99812734082397
         },
         {
-          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
           "samples": 1666,
           "sample_percent": 38.99812734082397
         },
         {
-          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
           "samples": 1666,
           "sample_percent": 38.99812734082397
         },
@@ -1009,12 +1009,12 @@
           "sample_percent": 31.510416666666668
         },
         {
-          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
           "samples": 121,
           "sample_percent": 31.510416666666668
         },
         {
-          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
           "samples": 121,
           "sample_percent": 31.510416666666668
         },
@@ -1124,27 +1124,7 @@
           "sample_percent": 6.770833333333333
         },
         {
-          "symbol": "ZSTD_compressStream_generic",
-          "samples": 26,
-          "sample_percent": 6.770833333333333
-        },
-        {
-          "symbol": "<zstd::bulk::compressor::Compressor>::compress",
-          "samples": 26,
-          "sample_percent": 6.770833333333333
-        },
-        {
-          "symbol": "ZSTD_compress_frameChunk",
-          "samples": 26,
-          "sample_percent": 6.770833333333333
-        },
-        {
           "symbol": "zstd::bulk::compress",
-          "samples": 26,
-          "sample_percent": 6.770833333333333
-        },
-        {
-          "symbol": "ZSTD_compressEnd_public",
           "samples": 26,
           "sample_percent": 6.770833333333333
         },
@@ -1154,12 +1134,32 @@
           "sample_percent": 6.770833333333333
         },
         {
-          "symbol": "<sl7::store::Store>::publish_import",
+          "symbol": "ZSTD_compressStream_generic",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compressEnd_public",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "ZSTD_compress_frameChunk",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "<zstd::bulk::compressor::Compressor>::compress",
+          "samples": 26,
+          "sample_percent": 6.770833333333333
+        },
+        {
+          "symbol": "<sl7::live::Live>::publish_seal",
           "samples": 21,
           "sample_percent": 5.46875
         },
         {
-          "symbol": "<sl7::live::Live>::publish_seal",
+          "symbol": "<sl7::store::Store>::publish_import",
           "samples": 21,
           "sample_percent": 5.46875
         },
@@ -1174,7 +1174,7 @@
           "sample_percent": 5.208333333333333
         },
         {
-          "symbol": "<sl7::read_cache::ReadCache>::read",
+          "symbol": "sl7::pack::read_from",
           "samples": 17,
           "sample_percent": 4.427083333333333
         },
@@ -1184,7 +1184,7 @@
           "sample_percent": 4.427083333333333
         },
         {
-          "symbol": "sl7::pack::read_from",
+          "symbol": "<sl7::read_cache::ReadCache>::read",
           "samples": 17,
           "sample_percent": 4.427083333333333
         },
@@ -1523,17 +1523,17 @@
           "sample_percent": 31.47632311977716
         },
         {
+          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
+          "samples": 106,
+          "sample_percent": 29.526462395543174
+        },
+        {
           "symbol": "std::sys::backtrace::__rust_begin_short_backtrace::<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>",
           "samples": 106,
           "sample_percent": 29.526462395543174
         },
         {
           "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
-          "samples": 106,
-          "sample_percent": 29.526462395543174
-        },
-        {
-          "symbol": "<std::thread::lifecycle::spawn_unchecked<<fuser::session::Session<sl7::staging::StagingFs>>::run::{closure#0}, core::result::Result<(), std::io::error::Error>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}",
           "samples": 106,
           "sample_percent": 29.526462395543174
         },
@@ -1678,12 +1678,12 @@
           "sample_percent": 3.8997214484679668
         },
         {
-          "symbol": "ZSTD_compressStream_generic",
+          "symbol": "ZSTD_compressBlock_internal",
           "samples": 14,
           "sample_percent": 3.8997214484679668
         },
         {
-          "symbol": "ZSTD_compress_frameChunk",
+          "symbol": "ZSTD_compressStream_generic",
           "samples": 14,
           "sample_percent": 3.8997214484679668
         },
@@ -1693,7 +1693,7 @@
           "sample_percent": 3.8997214484679668
         },
         {
-          "symbol": "ZSTD_compressBlock_internal",
+          "symbol": "ZSTD_compress_frameChunk",
           "samples": 14,
           "sample_percent": 3.8997214484679668
         },
@@ -1755,6 +1755,47 @@
         "missing_exit": 0
       },
       "errors": {},
+      "descriptor_calls": {
+        "foreground/pwrite64": {
+          "5": 2268,
+          "6260": 10,
+          "6283": 2894,
+          "8188": 7,
+          "8189": 285,
+          "7857": 4,
+          "6494": 1553,
+          "6714": 12,
+          "7944": 912,
+          "8116": 2,
+          "6581": 224,
+          "6634": 51,
+          "6730": 1,
+          "6720": 1846
+        },
+        "foreground/fsync": {
+          "5": 1134
+        },
+        "background/pwrite64": {
+          "19": 32413,
+          "18": 7670
+        },
+        "background/fsync": {
+          "19": 41,
+          "8189": 1,
+          "8194": 2,
+          "7857": 2,
+          "8195": 2,
+          "6283": 5,
+          "6712": 3,
+          "18": 3,
+          "6494": 5,
+          "6260": 3,
+          "6581": 6,
+          "6634": 2,
+          "7786": 1,
+          "27": 2
+        }
+      },
       "operations": {
         "background/fsync": {
           "count": 78,
@@ -1800,6 +1841,49 @@
         "missing_exit": 0
       },
       "errors": {},
+      "descriptor_calls": {
+        "foreground/pwrite64": {
+          "5": 2269,
+          "6260": 5,
+          "4": 889,
+          "6643": 2894,
+          "8184": 7,
+          "8187": 285,
+          "8149": 4,
+          "6676": 1553,
+          "6736": 12,
+          "7943": 912,
+          "8115": 2,
+          "6671": 228,
+          "6684": 52,
+          "6744": 1,
+          "6730": 2122
+        },
+        "foreground/fsync": {
+          "5": 1136,
+          "4": 1
+        },
+        "background/pwrite64": {
+          "19": 24773,
+          "18": 7194
+        },
+        "background/fsync": {
+          "19": 41,
+          "8187": 1,
+          "8192": 4,
+          "8195": 2,
+          "6643": 5,
+          "6720": 3,
+          "18": 3,
+          "6676": 5,
+          "6260": 3,
+          "6671": 6,
+          "6684": 1,
+          "6744": 1,
+          "7859": 1,
+          "27": 2
+        }
+      },
       "operations": {
         "background/fsync": {
           "count": 78,
@@ -1844,5 +1928,19 @@
     "Foreground syscall totals include both FUSE callbacks and internal storage work.",
     "This kernel lacks FUSE request tracepoints.",
     "Profile timings are instrumented and are not the matched benchmark."
-  ]
+  ],
+  "descriptor_analysis": {
+    "edit_2_foreground_fsync": {
+      "5": 1134
+    },
+    "edit_3_foreground_fsync": {
+      "5": 1136,
+      "4": 1
+    },
+    "same_binary_disposable_mount": {
+      "4": "catalog.sqlite",
+      "5": "catalog.sqlite-wal"
+    },
+    "interpretation": "Strong evidence for catalog synchronization; original trace lacks per-call stacks."
+  }
 }

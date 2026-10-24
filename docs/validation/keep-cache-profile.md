@@ -14,12 +14,18 @@ compilation enabled.
 | Background fsync cumulative seconds | 3.81 | 4.17 |
 | CPU samples in background sealing | 68.5% | 69.9% |
 
-Foreground synchronization is a substantial remaining cost. These syscall totals
-include internal storage transitions as well as FUSE callbacks: the trace does
-not yet distinguish their call sites. They measure time including scheduling and
-I/O waits; concurrent totals overlap and cannot be subtracted from build wall
-time. Moving callback synchronization out of global state is a testable next
-step, but may leave substantial synchronization inside catalog transitions.
+Foreground synchronization is a substantial remaining cost. All 1,134 foreground
+fsync calls in edit 2 target descriptor 5; in edit 3, 1,136 target descriptor 5
+and one targets descriptor 4. A disposable mount of the same executable identifies
+5 as `catalog.sqlite-wal` and 4 as `catalog.sqlite`. This strongly attributes the
+observed waits to catalog durability, rather than output-file fsync callbacks.
+The trace does not capture their individual call stacks.
+
+These durations include scheduling and I/O waits; concurrent totals overlap and
+cannot be subtracted from build wall time. Moving callback synchronization out of
+global state alone is therefore unlikely to remove most of this cost. Namespace
+metadata commits must also release filesystem state while SQLite synchronizes;
+the catalog writer itself remains serial. The durability setting remains FULL.
 
 CPU samples mostly land in background packing/sealing. User CPU sampling omits
 blocked time, so this does not establish packing as the build's critical path.

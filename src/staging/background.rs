@@ -30,6 +30,8 @@ pub(super) struct Stats {
     pub(super) publication_open_wait_seconds: f64,
     pub(super) lookup_operations: u64,
     pub(super) getattr_operations: u64,
+    pub(super) namespace_commits: u64,
+    pub(super) namespace_commit_seconds: f64,
     pub(super) write_operations: u64,
     pub(super) sync_operations: u64,
     pub(super) active_native_io: usize,

@@ -1,0 +1,24 @@
+{
+  "binary_sha256": "165eff84426d046764cc9c14efa35d61d711ec4a19b72f1749d5b6809d4cfbee",
+  "source_sha256": {
+    "src/live.rs": "d213dcd45906389ed10b1e970d4b05c64866f7da7d6aaa5caa1bdb834a6f8b59",
+    "src/staging.rs": "b92fe44f20dc12e39c5bddb33f83a40a2aa1334f5c6daf4bcbeabb9a4e6ec652",
+    "src/staging/namespace.rs": "96de7bf5df1fb13e2c4f33645f5f1de4acbe296989e93c0ddcccdd9660567a15",
+    "src/staging/operations.rs": "a8d3b4314b2b068ea430016230455bd7ebafae7fcc82823b882d225064ce3db7",
+    "src/staging/reads.rs": "8c363ca8a8e6a552e0b090fd6125dfa3c9ce9f202455ba8c56c50ee70b600991",
+    "src/staging/background.rs": "733742eaaa1173586c22e5c66a5665e28f6b738e14c42af77ce68246b7fd6160"
+  },
+  "linux_tests": 57,
+  "host_tests": 35,
+  "strict_clippy": "passed",
+  "mounted_suites": {
+    "readonly": "passed",
+    "staging": "passed",
+    "cache": "passed",
+    "live": "passed",
+    "selfhost": "passed"
+  },
+  "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
+  "durability": "FULL synchronous catalog commit before success reply",
+  "benchmark": "pending"
+}
