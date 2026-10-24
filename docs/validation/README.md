@@ -4,7 +4,8 @@ The latest [native-state cache comparison](native-state-costs.md) and
 [HTML tables](native-state-costs.html) show clean-build medians of 149.52s native,
 168.71s before, and 166.31s after the cache. Edited-build medians are
 4.24s, 8.42s, and 8.12s. All 48 Cargo commands and four integrity checks passed;
-the detailed cache profile is in progress.
+the [cache profile](native-state-costs-profile.md) records substantially fewer
+identity lookups and separates daemon user/kernel CPU.
 
 The [same-binary worker comparison](parallel-sealing.md) and
 [HTML tables](parallel-sealing.html) measure native Cargo and one, two, and four

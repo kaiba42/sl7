@@ -21,7 +21,7 @@ The native-state cache reduced the observed clean-build median by 1.4% and the e
 
 The remaining overhead versus native Cargo is 11.2% for the clean-build median and 91.8% for the edited-build median. The recorded Cargo/idle-observation/drain sequence median fell from 214.48s to 207.47s (3.3%). This sequence includes harness idle observations and is not uninterrupted developer build latency.
 
-Filesystem-state hold totals fell from 17.1–17.6s to 11.7–12.0s across the full sequences. Those counters overlap compiler work and do not translate directly into elapsed build savings. The separate profile will measure syscall and user/kernel CPU changes.
+Filesystem-state hold totals fell from 17.1–17.6s to 11.7–12.0s across the full sequences. Those counters overlap compiler work and do not translate directly into elapsed build savings. The [separate profile](native-state-costs-profile.md) records syscall and user/kernel CPU changes.
 
 These measurements predate batched identity allocation and cached seal decisions. Those changes have passed local correctness checks, and their isolated performance comparisons remain queued.
 

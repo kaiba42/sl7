@@ -46,5 +46,7 @@
       "selfhost": "passed"
     }
   },
-  "comparison_report": "native-state-costs.json"
+  "comparison_report": "native-state-costs.json",
+  "profile": "passed",
+  "profile_report": "native-state-costs-profile.json"
 }
