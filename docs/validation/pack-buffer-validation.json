@@ -20,7 +20,7 @@
   },
   "host_tests": 36,
   "x86_validation": "passed",
-  "benchmark": "pending",
+  "benchmark": "passed",
   "durability": "A bounded 64 KiB buffer coalesces each active pack writer. finish explicitly flushes before syncing the file, then persists and syncs the directory before catalog publication. Pack bytes, hashes, schema and ordering are unchanged.",
   "tests": "The pack-synced process-death case now requires the abandoned temporary pack to match a complete published reference byte for byte, including a tail smaller than the buffer. Existing corruption, failed publication, rollover, GC, mounted Cargo and recovery suites pass.",
   "syscall_probe": {
@@ -73,5 +73,6 @@
       "live": "passed",
       "selfhost": "passed"
     }
-  }
+  },
+  "comparison_report": "pack-buffer-costs.json"
 }
