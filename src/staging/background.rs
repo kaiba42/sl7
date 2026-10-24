@@ -36,6 +36,7 @@ pub(super) struct Stats {
     completed: u64,
     canceled: u64,
     skipped: u64,
+    unchanged_seals_avoided: u64,
     errors: u64,
     candidate_seconds: f64,
     prepare_seconds: f64,
@@ -91,6 +92,10 @@ impl State {
             return;
         };
         if node.opens != 0 || node.queued {
+            return;
+        }
+        if node.seal_checked {
+            self.seal_stats.unchanged_seals_avoided += 1;
             return;
         }
         let Ok(meta) = node.pin.metadata() else {
@@ -155,6 +160,18 @@ impl State {
                 }
             }
             self.reclaim(ino);
+        }
+    }
+
+    fn checked_seal(&mut self, ino: INodeNo, version: u64) {
+        if let Some(node) = self.nodes.get_mut(&ino) {
+            if node.epoch.load(Ordering::Relaxed) == version {
+                node.seal_checked = true;
+                // Read-only closes during preparation may have queued another
+                // check. The completed decision covers them at this epoch.
+                // Any stale hot-queue entry is ignored by take_job.
+                node.queued = false;
+            }
         }
     }
 }
@@ -280,6 +297,7 @@ fn run(
                 Ok(Some(candidate)) => candidate,
                 Ok(None) => {
                     state.seal_stats.skipped += 1;
+                    state.checked_seal(job.ino, job.version);
                     continue;
                 }
                 Err(error) => {
@@ -402,7 +420,10 @@ fn run(
             };
             let locked = Instant::now();
             match result {
-                Ok(_) => state.seal_stats.completed += 1,
+                Ok(_) => {
+                    state.seal_stats.completed += 1;
+                    state.checked_seal(job.ino, job.version);
+                }
                 Err(error) => {
                     state.seal_stats.errors += 1;
                     eprintln!("sl7: sealing inode {}: {error}", u64::from(job.ino));
@@ -644,6 +665,113 @@ mod tests {
             assert!(Instant::now() < deadline, "worker did not drain");
             thread::sleep(Duration::from_millis(5));
         }
+    }
+
+    #[test]
+    fn unchanged_seals_are_not_requeued_and_mutation_restores_eligibility() {
+        for presealed in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = temp.path().join("store");
+            let mut live = crate::live::Live::open(crate::Store::init(&root).unwrap()).unwrap();
+            let mut bytes = vec![42; 128 * 1024];
+            fs::write(root.join("tree/data"), &bytes).unwrap();
+            if presealed {
+                live.seal(&File::open(root.join("tree/data")).unwrap())
+                    .unwrap();
+            }
+            drop(live);
+            let fs = StagingFs::deduplicating(crate::Store::open(&root).unwrap()).unwrap();
+            let ino = fs
+                .with(|s| {
+                    let ino = s.lookup(INodeNo::ROOT, OsStr::new("data"))?;
+                    s.entry_attr(ino)?;
+                    let fh = s.open(ino, libc::O_RDONLY)?;
+                    s.release(ino, fh)?;
+                    Ok(ino)
+                })
+                .unwrap();
+            idle(&fs);
+            let before = fs
+                .with_read(|s| {
+                    assert!(s.nodes[&ino].seal_checked);
+                    Ok((s.seal_stats.completed, s.seal_stats.skipped))
+                })
+                .unwrap();
+            for _ in 0..8 {
+                let fh = fs.open_handle(ino, libc::O_RDONLY).unwrap();
+                assert_eq!(fs.read_handle(ino, fh, 0, bytes.len()).unwrap(), bytes);
+                fs.with_read(|s| s.release(ino, fh)).unwrap();
+            }
+            idle(&fs);
+            fs.with_read(|s| {
+                assert_eq!((s.seal_stats.completed, s.seal_stats.skipped), before);
+                assert_eq!(s.seal_stats.unchanged_seals_avoided, 8);
+                Ok(())
+            })
+            .unwrap();
+            let fh = fs.open_handle(ino, libc::O_RDWR).unwrap();
+            fs.with_read(|s| {
+                assert!(!s.nodes[&ino].seal_checked);
+                Ok(())
+            })
+            .unwrap();
+            fs.write_handle(ino, fh, 0, &[77]).unwrap();
+            bytes[0] = 77;
+            fs.with_read(|s| s.release(ino, fh)).unwrap();
+            idle(&fs);
+            fs.with_read(|s| {
+                assert_eq!(s.seal_stats.completed, before.0 + 1);
+                assert!(s.nodes[&ino].seal_checked);
+                Ok(())
+            })
+            .unwrap();
+            drop(fs);
+            let live = crate::live::Live::open(crate::Store::open(&root).unwrap()).unwrap();
+            assert_eq!(
+                live.read(&File::open(root.join("tree/data")).unwrap(), 0, bytes.len())
+                    .unwrap()
+                    .unwrap(),
+                bytes
+            );
+            live.store.check().unwrap();
+        }
+    }
+
+    #[test]
+    fn successful_seal_absorbs_readonly_close_queued_during_preparation() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("store");
+        let fs = StagingFs::deduplicating(crate::Store::init(&root).unwrap()).unwrap();
+        fs::write(root.join("tree/data"), vec![77; 128 * 1024]).unwrap();
+        let (ready, prepared) = mpsc::sync_channel(1);
+        let (resume, paused) = mpsc::sync_channel(1);
+        let ino = fs
+            .with(|s| {
+                s.seal_pause = Some((ready, paused));
+                let ino = s.lookup(INodeNo::ROOT, OsStr::new("data"))?;
+                s.entry_attr(ino)?;
+                let fh = s.open(ino, libc::O_RDONLY)?;
+                s.release(ino, fh)?;
+                Ok(ino)
+            })
+            .unwrap();
+        prepared.recv_timeout(Duration::from_secs(10)).unwrap();
+        fs.with(|s| {
+            let fh = s.open(ino, libc::O_RDONLY)?;
+            s.release(ino, fh)?;
+            assert!(s.nodes[&ino].queued);
+            Ok(())
+        })
+        .unwrap();
+        resume.send(()).unwrap();
+        idle(&fs);
+        fs.with_read(|s| {
+            assert_eq!(s.seal_stats.completed, 1);
+            assert_eq!(s.seal_stats.skipped, 0);
+            assert!(s.nodes[&ino].seal_checked);
+            Ok(())
+        })
+        .unwrap();
     }
 
     #[test]

@@ -114,8 +114,11 @@ compresses each independently with a raw fallback. Identical files add namespace
 and extent metadata but no new chunk payload. Edits can reuse unchanged chunks.
 
 Files at least 64 KiB with owner read/write permission are sealed after the last
-FUSE handle/mapping is released. One background worker prepares and publishes
-files outside the filesystem mutex, validating their mutation epoch first.
+FUSE handle/mapping is released. Two background workers prepare independent files
+outside the filesystem mutex, validating their mutation epoch before publication.
+Catalog commits remain serialized. Set `SL7_SEAL_WORKERS=1` for serial sealing;
+values from 1 through 8 are supported. More workers do not necessarily reduce build
+time; see the [worker comparison](validation/parallel-sealing.md).
 Operations on the publishing inode wait; unrelated reads and native writes can
 continue through the four request workers.
 Normal unmount drains pending sealing. Reads reconstruct concurrently outside the
@@ -126,6 +129,8 @@ Reopening a file preserves its kernel page-cache contents, avoiding reconstructi
 of unchanged pages on every open. Writes and truncation through the mount remain
 coherent. Kernel cache memory is reclaimable and separate from SL7's userspace
 cache budgets.
+Read-only closes do not schedule further sealing once the inode's current
+mutation epoch has been checked. A write or metadata mutation restores eligibility.
 Successful name lookups and attributes are cached in the kernel for one second.
 Changes through the mount remain immediately visible; allocated block counts
 changed by background sealing can take that interval to refresh in `stat`.
@@ -168,10 +173,11 @@ On macOS, `fuse-check` compiles/tests the read-only adapter without a runtime an
 refuses real mounts. Do not use `--all-features` to mount. Local checks use the installed Rust toolchain.
 
 This is an owned-build-tree prototype. Read reconstruction and background
-publication run outside filesystem state. Foreground hydration, writes, and
-metadata/namespace operations still serialize. Hydration needs temporary native
-space. Decoded chunks and extent mappings are cached within
-fixed budgets, and one background worker packs closed files.
+publication run outside filesystem state. Native payload writes can overlap across
+inodes, while hydration and metadata/namespace bookkeeping still hold filesystem
+state. Catalog writes remain serialized. Hydration needs temporary native space.
+Decoded chunks and extent mappings are cached within fixed budgets, and bounded
+background workers pack closed files.
 GC is offline and can be expensive. Arbitrary multi-user ownership, restrictive
 permission transitions, ACL/xattr passthrough, special files, direct I/O, online
 GC, remote storage, and native macOS semantics are not qualified. Current mounted

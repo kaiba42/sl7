@@ -165,6 +165,12 @@ and native retirement can overlap. Only one job may own an inode, including when
 a concurrent write and close requeue it. If workers prepare the same absent chunk,
 publication keeps the first committed chunk location; both manifests reference
 that content. Redundant pack bytes remain eligible for offline GC.
+Completed seal decisions are cached on the pinned inode for its current mutation
+epoch. Read-only closes avoid scheduling another candidate once that epoch is
+checked; every mutation clears the flag. A successful decision also absorbs a
+read-only close queued during preparation. Canceled and failed jobs do not mark
+an inode checked. The flag is discarded when the inode is forgotten and reclaimed;
+it adds no persistent metadata or change to durability ordering.
 A 1,024-entry queue spills pending flags onto pinned inodes. Normal unmount drains
 and joins all workers before releasing store ownership. Canceled work can leave
 orphan packs for offline GC; native bytes remain authoritative.
@@ -176,6 +182,8 @@ mutation waits distinguish publication from active readers.
 Worker counters report configured workers, active/maximum concurrent seal jobs,
 and active/maximum concurrent preparation phases. Summed phase times can exceed
 elapsed wall time when workers overlap.
+`unchanged_seals_avoided` counts read-only closes and other scheduling attempts
+suppressed by the cached decision; it is not a count of unique files.
 Read counters include in-flight/max concurrent requests, time outside state, read
 bookkeeping time, and waits between same-inode readers and mutations. Cache counters
 include active/max overlapping payload loads and duplicate loads. A request count

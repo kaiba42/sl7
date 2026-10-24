@@ -7,8 +7,9 @@ daemon user and kernel CPU costs. Independent preparation phases overlap, but mo
 improve build latency consistently: four workers regress clean builds in both
 rounds, while two workers slightly shorten the recorded build/observation/drain
 sequence. Canceled candidates, completed seals, and catalog waits all increase.
-The subsequent native-state cache and batched identity allocation have passed
-local correctness checks; their isolated performance measurements are pending.
+The subsequent native-state cache, batched identity allocation, and
+[unchanged seal decision cache](seal-check-validation.json) have passed local
+correctness checks; their isolated performance measurements are pending.
 
 For native Cargo versus the shorter catalog lock and atomic publication changes,
 see the [build results](publication-costs.md), [HTML tables](publication-costs.html),

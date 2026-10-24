@@ -43,6 +43,8 @@ struct Inode {
     queued: bool,
     packing: bool,
     publishing: bool,
+    // No sealing work remains at this epoch. Invalidated before every mutation.
+    seal_checked: bool,
     // Proven native with no logical metadata override. Only publication can
     // invalidate this fact; it clears the bit under state before committing.
     native_unoverridden: bool,
@@ -204,6 +206,7 @@ impl State {
                 value.checked_add(1)
             })
             .map_err(|_| error(libc::EOVERFLOW))?;
+        self.nodes.get_mut(&ino).unwrap().seal_checked = false;
         Ok(())
     }
     fn truncate_zero(&mut self, ino: INodeNo) -> io::Result<()> {
@@ -297,6 +300,7 @@ impl State {
                 queued: false,
                 packing: false,
                 publishing: false,
+                seal_checked: false,
                 native_unoverridden: !meta.is_file(),
             },
         );

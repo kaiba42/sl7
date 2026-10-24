@@ -1,0 +1,26 @@
+{
+  "snapshot_base_commit": "077674032cd5b751f4916c70bfbd5e7a4681c423",
+  "source_sha256": {
+    "src/staging.rs": "8cfd3c30259e0ce359dba06a23e644bbc07aa8d01664b9915598b1b57f08de1f",
+    "src/staging/background.rs": "0ab2a44c045a2c38fbe46568c588f47c187e2fdc77a898a74581fdb8d9ead028"
+  },
+  "orbstack": {
+    "platform": "aarch64-unknown-linux-gnu",
+    "binary_sha256": "18d677db4231f6d0d74078c59e10f7f1e77828e197075f6060fe98cdd54d019a",
+    "image_id": "sha256:d64eb3ddba40f96638c05b97e3fc9b652cdc6d88fdd064e2f968623e7a23499c",
+    "linux_tests": 72,
+    "strict_clippy": "passed",
+    "mounted_suites": {
+      "readonly": "passed",
+      "staging": "passed",
+      "cache": "passed",
+      "live": "passed",
+      "selfhost": "passed"
+    }
+  },
+  "host_tests": 36,
+  "x86_validation": "pending",
+  "benchmark": "pending",
+  "durability": "Only in-memory scheduling changes. A completed seal or unchanged eligibility decision is cached for the captured inode epoch. Every mutation invalidates the cached decision; cancellation and errors never mark an inode checked. Catalog commits, inode syncs, publication and retirement ordering are unchanged.",
+  "tests": "Repeated read-only opens of both freshly sealed and previously sealed files schedule no new candidates; writing revokes the decision and the updated bytes reseal and pass integrity checks. A successful seal absorbs a read-only close queued during preparation. Existing concurrent mutation cancellation, open-reader retirement, crash/recovery and mounted Cargo suites pass."
+}
