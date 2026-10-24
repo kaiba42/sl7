@@ -1,7 +1,8 @@
 # Initial implementation validation
 
 For the latest native-I/O and namespace-commit concurrency changes, see the
-[four-version comparison](concurrent-io.md) or [HTML tables](concurrent-io.html).
+[four-version comparison](concurrent-io.md), [HTML tables](concurrent-io.html),
+and [re-profile findings](concurrent-io-profile.md).
 
 For the prior kernel-cache retention improvement and matched native/before/after
 debug builds, see the [results](keep-cache.md) or [HTML tables](keep-cache.html).

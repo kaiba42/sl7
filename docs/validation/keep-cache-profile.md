@@ -35,7 +35,8 @@ for native writes and synchronization. Neither has a measured speedup in this
 report.
 
 The clean build, unchanged builds, control edit, two profiled edits, executable
-checks, and final store integrity check passed. All profilers shut down normally.
+checks, and final store integrity check passed. CPU and I/O recordings finalized normally. The separate perf-stat CSV outputs
+were empty and are excluded; see the [collector fix](concurrent-io-profile.md).
 Every CPU and syscall recording reports zero lost samples. Both syscall traces
 have matched enter/exit pairs, no boundary-incomplete calls, and no syscall errors.
 The compressed raw artifact was copied and checked against its remote SHA-256.

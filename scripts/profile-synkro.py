@@ -6,6 +6,7 @@ Uses only the SL7 mount's connection for system-wide FUSE tracepoint collection.
 The source workload is fixed; the SL7 binary hash identifies the implementation.
 """
 import hashlib
+import csv
 import importlib.util
 import json
 import os
@@ -134,9 +135,11 @@ def main():
                 finally:
                     stop_started = time.monotonic()
                     failures = []
-                    for _, process in profilers:
+                    for kind, process in profilers:
                         if process.poll() is None:
-                            process.terminate()
+                            # perf stat writes final counts on SIGINT; SIGTERM
+                            # exits with an empty CSV. Record flushes on SIGTERM.
+                            process.send_signal(signal.SIGINT if kind == 'syscalls' else signal.SIGTERM)
                         else:
                             failures.append(('profiler exited before stop', process.returncode))
                     for kind, process in profilers:
@@ -146,12 +149,24 @@ def main():
                             process.kill()
                             process.wait(timeout=10)
                             failures.append((kind, 'shutdown timeout'))
-                        if process.returncode not in [0, 128 + signal.SIGTERM, -signal.SIGTERM]:
+                        stop_signal = signal.SIGINT if kind == 'syscalls' else signal.SIGTERM
+                        if process.returncode not in [0, 128 + stop_signal, -stop_signal]:
                             failures.append((kind, process.returncode))
                     for handle in handles:
                         handle.close()
                     profiler_stop_seconds = time.monotonic() - stop_started
                     assert not failures, failures
+                syscall_counts = {}
+                if trace:
+                    with (ROOT/f'{stage}-syscalls.csv').open() as counts:
+                        for fields in csv.reader(counts):
+                            if not fields or fields[0].startswith('#'):
+                                continue
+                            assert len(fields) >= 3 and fields[2].startswith('syscalls:sys_enter_'), fields
+                            name = fields[2].removeprefix('syscalls:sys_enter_')
+                            assert name not in syscall_counts, name
+                            syscall_counts[name] = int(fields[0])
+                    assert set(syscall_counts) == set(SYSCALLS), 'missing perf stat counts'
                 records = [a for line in (ROOT/f'{stage}.jsonl').read_text().splitlines()
                            if (a := json.loads(line)).get('reason')=='compiler-artifact']
                 assert records
@@ -164,6 +179,7 @@ def main():
                            idle_seconds=idle, artifacts=len(records), fresh_artifacts=sum(a['fresh'] for a in records),
                            cpu_sampling=sample, fuse_tracing=trace and fuse_trace_available,
                            syscall_counting=trace, io_tracing=trace,
+                           syscall_counts=syscall_counts,
                            profiler_stop_seconds=profiler_stop_seconds)
                 row['catalog_descriptors_after'] = {}
                 for descriptor in Path(f'/proc/{daemon.pid}/fd').iterdir():

@@ -90,3 +90,6 @@ paired comparison for isolating metadata caching.
 [JSON measurements](concurrent-io.json) · [HTML tables](concurrent-io.html) ·
 [Native-I/O validation](native-io-validation.json) ·
 [Namespace validation](namespace-validation.json)
+
+The [subsequent profile](concurrent-io-profile.md) confirms actual syscall overlap
+and identifies serialized catalog synchronization as a remaining cost.

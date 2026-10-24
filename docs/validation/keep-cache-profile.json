@@ -1951,7 +1951,8 @@
     "Per-thread syscall durations overlap; do not subtract them from wall time.",
     "Foreground syscall totals include both FUSE callbacks and internal storage work.",
     "This kernel lacks FUSE request tracepoints.",
-    "Profile timings are instrumented and are not the matched benchmark."
+    "Profile timings are instrumented and are not the matched benchmark.",
+    "Separate perf-stat CSV outputs are empty in this run; they are excluded. CPU samples and perf-record I/O events remain available."
   ],
   "descriptor_analysis": {
     "edit_2_foreground_fsync": {
@@ -1966,5 +1967,7 @@
       "5": "catalog.sqlite-wal"
     },
     "interpretation": "Strong evidence for catalog synchronization; original trace lacks per-call stacks."
-  }
+  },
+  "perf_stat_counts_available": false,
+  "recorded_io_events_available": true
 }
