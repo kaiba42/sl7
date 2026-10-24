@@ -1,5 +1,11 @@
 # Initial implementation validation
 
+The latest [native-state cache comparison](native-state-costs.md) and
+[HTML tables](native-state-costs.html) show clean-build medians of 149.52s native,
+168.71s before, and 166.31s after the cache. Edited-build medians are
+4.24s, 8.42s, and 8.12s. All 48 Cargo commands and four integrity checks passed;
+the detailed cache profile is in progress.
+
 The [same-binary worker comparison](parallel-sealing.md) and
 [HTML tables](parallel-sealing.html) measure native Cargo and one, two, and four
 sealing workers; the [follow-up profile](parallel-sealing-profile.md) separates
@@ -7,7 +13,7 @@ daemon user and kernel CPU costs. Independent preparation phases overlap, but mo
 improve build latency consistently: four workers regress clean builds in both
 rounds, while two workers slightly shorten the recorded build/observation/drain
 sequence. Canceled candidates, completed seals, and catalog waits all increase.
-The subsequent native-state cache, batched identity allocation, and
+Batched identity allocation and the
 [unchanged seal decision cache](seal-check-validation.json) have passed local
 correctness checks; their isolated performance measurements are pending.
 

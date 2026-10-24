@@ -21,7 +21,7 @@
   },
   "host_tests": 36,
   "x86_validation": "passed",
-  "benchmark": "pending",
+  "benchmark": "passed",
   "durability": "No on-disk changes or relaxed synchronization. Only publication creates a sealed binding/metadata override, and it revokes the native-state cache under state before committing.",
   "tests": "Repeated native writes avoid further representation checks; publication revokes the fact before commit; sealed reads reconstruct bytes; hydration retains its metadata override until first mutation; subsequent growth is visible through an existing reader and after resealing/remount. Existing concurrent publication, mutation, metadata and crash suites pass.",
   "implementation_commit": "0685bac24b8e74694a1e8922e25a6054929464cb",
@@ -45,5 +45,6 @@
       "live": "passed",
       "selfhost": "passed"
     }
-  }
+  },
+  "comparison_report": "native-state-costs.json"
 }
