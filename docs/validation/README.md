@@ -1,6 +1,15 @@
-# Initial implementation validation
+# Validation and performance
 
-The latest [native-state cache comparison](native-state-costs.md) and
+The latest [compression-worker comparison](compression-costs.md) and
+[HTML tables](compression-costs.html) measure native Cargo, serial compression,
+and two persistent compression workers per sealer. Clean-build medians were
+149.42s, 168.52s, and 169.14s; edit medians were 4.03s, 6.18s, and 6.21s.
+All 48 Cargo commands, 32 artifact-graph comparisons, and four integrity checks
+passed. Compression overlapped, but it did not consistently shorten builds or
+settling; it remains opt-in. [Correctness validation](compression-validation.json)
+includes exact pack parity and mounted novel/duplicate/edited-artifact tests.
+
+An earlier [native-state cache comparison](native-state-costs.md) and
 [HTML tables](native-state-costs.html) show clean-build medians of 149.52s native,
 168.71s before, and 166.31s after the cache. Edited-build medians are
 4.24s, 8.42s, and 8.12s. All 48 Cargo commands and four integrity checks passed;
@@ -16,8 +25,9 @@ rounds, while two workers slightly shorten the recorded build/observation/drain
 sequence. Canceled candidates, completed seals, and catalog waits all increase.
 Batched identity allocation, the
 [unchanged seal decision cache](seal-check-validation.json), and
-[buffered pack writes](pack-buffer-validation.json) have passed local correctness
-checks; their isolated Cargo performance measurements are pending. The buffering
+[buffered pack writes](pack-buffer-validation.json) have passed correctness
+checks and matched Cargo comparisons: [identity batching](identity-batch-costs.md),
+[seal decisions](seal-check-costs.md), and [pack buffering](pack-buffer-costs.md). The buffering
 probe reduced pack writes from 3,936 to 63 with identical published bytes; that
 syscall-count result is not an elapsed Cargo speedup.
 

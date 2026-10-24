@@ -154,7 +154,9 @@ normal unmount therefore cannot leave compression running. Diagnostics expose
 `compression_workers_per_sealer`, `max_parallel_compression_per_sealer`, and
 `compressed_chunks_on_workers` (including work from subsequently canceled seals).
 The peak is a per-sealer high-water mark, not a mount-wide concurrency count.
-Keep this option experimental until matched builds show a benefit on your workload.
+The [matched build comparison](validation/compression-costs.md) found essentially
+unchanged Cargo latency (about 0.4% slower medians) and mixed settling costs.
+The pool stays disabled by default; measured concurrency alone is not a speedup.
 
 Operations on the publishing inode wait; unrelated reads and native writes can
 continue through the four request workers.
