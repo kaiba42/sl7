@@ -19,7 +19,7 @@
   },
   "host_tests": 36,
   "x86_validation": "passed",
-  "benchmark": "pending",
+  "benchmark": "passed",
   "durability": "Identity rows are reserved 64 at a time in one FULL transaction. Each row is durable before attaching its xattr, and the inode remains synced before manifest publication. The schema and publication/retirement ordering are unchanged.",
   "tests": "Two concurrent connections allocate distinct identities across batch boundaries; offline GC discards unused reservations without recycling IDs and the same Live instance can allocate afterward. Injected partial-batch failure rolls back all rows without attaching an xattr. Process death before commit, after reservation, and after inode sync preserves native bytes and allows GC/reseal. Existing filesystem/Cargo/recovery suites pass.",
   "implementation_commit": "d15f94009f41c4f82d35bc71b4afbe52575d0343",
@@ -43,5 +43,8 @@
       "live": "passed",
       "selfhost": "passed"
     }
-  }
+  },
+  "comparison_report": "identity-batch-costs.json",
+  "profile": "passed",
+  "profile_report": "identity-batch-costs-profile.json"
 }
