@@ -41,7 +41,7 @@ See [the end-to-end result](validation/end-to-end.json) and
 measurements, not controlled performance benchmarks or power-loss certification.
 
 For a separate native-versus-SL7 comparison using the full Synkro workspace, see
-[current build performance measurements](validation/oaktown-build-performance.md).
+[current build performance measurements](validation/native-latest.md).
 The reproducible harness covers clean builds, unchanged builds, and one-line
 edits in both debug and release profiles.
 

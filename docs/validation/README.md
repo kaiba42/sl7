@@ -1,6 +1,9 @@
 # Initial implementation validation
 
-For the latest focused debug comparison, see the
+For the latest native-versus-SL7 debug and release comparison, see the
+[matched results](native-latest.md) or [HTML table](native-latest.html).
+
+For the focused before/after publication-lock comparison, see the
 [publication-lock results](publication-lock.md) or [HTML table](publication-lock.html).
 
 For the broader native/debug/release baseline, see the

@@ -5,9 +5,8 @@ build artifacts. Cargo writes ordinary files; SL7 shares repeated chunks and
 reconstructs them on reads. Worktrees keep independent output directories.
 
 **Prototype:** native macOS mounting is unsupported. SL7 trades build time for
-storage savings. See the [full build comparison](docs/validation/oaktown-build-performance.md)
-of native storage, original SL7, and the earlier optimized version, plus the
-[new publication-lock measurements](docs/validation/publication-lock.md).
+storage savings. See the [latest native-versus-SL7 build comparison](docs/validation/native-latest.md)
+and the [publication-lock improvement](docs/validation/publication-lock.md).
 
 ## Try it with Docker
 
