@@ -1,0 +1,120 @@
+{
+  "status": "passed",
+  "kernel": "6.12.58",
+  "filesystem": "ext4",
+  "cases": [
+    {
+      "mapping": "readonly",
+      "release_before_munmap": true,
+      "lease_blocked_with_mapping": true,
+      "lease_granted_after_munmap": true,
+      "reopen_while_mapped": true,
+      "private_or_shared_write_visibility": "passed"
+    },
+    {
+      "mapping": "private-writable",
+      "release_before_munmap": true,
+      "lease_blocked_with_mapping": true,
+      "lease_granted_after_munmap": true,
+      "reopen_while_mapped": true,
+      "private_or_shared_write_visibility": "passed"
+    },
+    {
+      "mapping": "shared-writable",
+      "release_before_munmap": true,
+      "lease_blocked_with_mapping": true,
+      "lease_granted_after_munmap": true,
+      "reopen_while_mapped": true,
+      "private_or_shared_write_visibility": "passed"
+    },
+    {
+      "mapping": "forked-shared-writable",
+      "release_before_munmap": true,
+      "lease_blocked_with_mapping": true,
+      "lease_granted_after_munmap": true,
+      "reopen_while_mapped": true,
+      "private_or_shared_write_visibility": "passed",
+      "parent_unmapped_before_child_write": true
+    }
+  ],
+  "events": {
+    "open": 8,
+    "release": 8,
+    "backing_register": 8,
+    "backing_close": 8,
+    "destroy": 1
+  },
+  "limitations": [
+    "Three local mapping modes and one forked shared mapping on this ext4/kernel combination only.",
+    "No SL7 metadata overrides, sealing, mutation epochs, crash recovery or performance were tested.",
+    "Does not establish safety on overlayfs or other backing filesystems."
+  ],
+  "source_sha256": {
+    "Cargo.toml": "3d897605d8434e00711f52ab1ed045eed2b92d891bdaaf776c89ae15108d565a",
+    "Cargo.lock": "4ee560f5e1f0c01a2e01e51d611a768aea13bbcc12ddda7daf195e2559d1784e",
+    "src/main.rs": "10846b309bff8ce6c2dae8221c2d97537df5d5021b869f14e6656c926a4e3857",
+    "probe.py": "8eb0ce27623320fa070e440d0b4b01ebddd216d2e6d37d9cbdcfd834c6b552d9",
+    "native-lease.c": "f568e73fda71c194170090db6e3d2abcff6ba7af7d2c835aacaa7f5864272bcd"
+  },
+  "binary_sha256": "421da55b83c32f109df5ffb5c042e6e72785663690f779400fb41c1865616575",
+  "fuser_version": "0.18.0",
+  "strict_clippy": "passed",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6",
+  "native_controls": {
+    "ext4": {
+      "cases": [
+        {
+          "mapping": "readonly",
+          "blocked_with_live_mapping": true,
+          "held_errno": 11,
+          "granted_after_munmap": true,
+          "after_errno": 0
+        },
+        {
+          "mapping": "private-writable",
+          "blocked_with_live_mapping": true,
+          "held_errno": 11,
+          "granted_after_munmap": true,
+          "after_errno": 0
+        },
+        {
+          "mapping": "shared-writable",
+          "blocked_with_live_mapping": true,
+          "held_errno": 11,
+          "granted_after_munmap": true,
+          "after_errno": 0
+        }
+      ],
+      "limitation": "Native mapping lifetime probe, not a FUSE passthrough correctness test"
+    },
+    "overlayfs": {
+      "cases": [
+        {
+          "mapping": "readonly",
+          "blocked_with_live_mapping": false,
+          "held_errno": 0,
+          "granted_after_munmap": true,
+          "after_errno": 0
+        },
+        {
+          "mapping": "private-writable",
+          "blocked_with_live_mapping": false,
+          "held_errno": 0,
+          "granted_after_munmap": true,
+          "after_errno": 0
+        },
+        {
+          "mapping": "shared-writable",
+          "blocked_with_live_mapping": false,
+          "held_errno": 0,
+          "granted_after_munmap": true,
+          "after_errno": 0
+        }
+      ],
+      "limitation": "Native mapping lifetime probe, not a FUSE passthrough correctness test"
+    }
+  },
+  "native_binary_sha256": "ff5459c73989b80f5c988dea52b9e7379a821848b029c05ccbda113798dfc337",
+  "production_passthrough_enabled": false,
+  "performance_claim": null
+}

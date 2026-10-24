@@ -1,0 +1,8 @@
+[package]
+name = "sl7-passthrough-proof"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[dependencies]
+fuser = "=0.18.0"
+libc = "0.2"
