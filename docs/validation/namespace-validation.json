@@ -20,5 +20,7 @@
   },
   "concurrency_test": "Paused catalog commit permits reads of the affected and unrelated inodes and native writes to another inode; conflicting mutations wait; release/forget pins survive through reply capture.",
   "durability": "FULL synchronous catalog commit before success reply",
-  "benchmark": "pending"
+  "benchmark": "passed",
+  "comparison_report": "concurrent-io.json",
+  "implementation_commit": "bdf3843"
 }

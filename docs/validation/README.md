@@ -1,6 +1,9 @@
 # Initial implementation validation
 
-For the latest kernel-cache retention improvement and matched native/before/after
+For the latest native-I/O and namespace-commit concurrency changes, see the
+[four-version comparison](concurrent-io.md) or [HTML tables](concurrent-io.html).
+
+For the prior kernel-cache retention improvement and matched native/before/after
 debug builds, see the [results](keep-cache.md) or [HTML tables](keep-cache.html).
 
 For the previous concurrent-read implementation and matched before/after debug builds,

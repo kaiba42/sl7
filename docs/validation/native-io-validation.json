@@ -21,5 +21,7 @@
     "reservation survives release/forget and error paths",
     "unlink waits for active write and open descriptor survives unlink"
   ],
-  "benchmark": "pending"
+  "benchmark": "passed",
+  "comparison_report": "concurrent-io.json",
+  "implementation_commit": "5ea23d2"
 }

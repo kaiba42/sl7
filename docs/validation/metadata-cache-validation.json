@@ -55,5 +55,7 @@
     ]
   },
   "zero_ttl_negative_control": "failed attribute-retention assertion as expected",
-  "benchmark": "pending"
+  "benchmark": "passed",
+  "comparison_report": "concurrent-io.json",
+  "implementation_commit": "ef93358"
 }
