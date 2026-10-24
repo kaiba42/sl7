@@ -1,5 +1,7 @@
 # Latest SL7 versus native Cargo storage
 
+This comparison predates the [concurrent-read implementation and measurements](parallel-reads.md).
+
 A fresh matched comparison of native storage and SL7 after publication was moved outside the filesystem state mutex. Both run the same Cargo/rustc commands against the full Synkro workspace. SL7 runtime: `ab25491`; checkout: `8f48ea6`.
 
 Clean builds took 43% more time in debug and 21% more in release. Debug one-line rebuilds took 5.40× native time; release rebuilds took 17% more time. Retained storage was 74% smaller in debug and 73% smaller in release.

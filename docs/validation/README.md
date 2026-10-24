@@ -1,6 +1,9 @@
 # Initial implementation validation
 
-For the latest native-versus-SL7 debug and release comparison, see the
+For the latest concurrent-read implementation and matched before/after debug builds,
+see the [parallel-read results](parallel-reads.md) or [HTML tables](parallel-reads.html).
+
+For the native-versus-SL7 debug and release comparison before concurrent reads, see the
 [matched results](native-latest.md) or [HTML table](native-latest.html).
 
 For the focused before/after publication-lock comparison, see the
