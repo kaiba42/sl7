@@ -40,6 +40,8 @@
   "max_chunk_bytes": 32768,
   "design": "Keep a bounded 128 KiB buffer with start/end cursors; compact only when fewer than 32 KiB remain. The existing scalar mask selection sees at most 32 KiB, preserving chunk identities and pack format. No new threads.",
   "correctness": "Golden version-1 boundaries, fragmented and interrupted reads, full reconstructed bytes, pack/manifest parity, pipeline cancellation/error/panic tests and all mounted lifecycle suites pass.",
-  "benchmark": "pending",
-  "profile": "pending"
+  "benchmark": "passed",
+  "profile": "pending",
+  "implementation_commit": "9d202ea9138927a1816a6202237fe5a9d2a08b94",
+  "comparison_report": "chunker-buffer-costs.json"
 }

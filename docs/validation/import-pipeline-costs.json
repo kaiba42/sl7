@@ -3616,9 +3616,10 @@
       "design": "Each sealing worker can spawn one scoped producer for reading, chunking and whole-file SHA-256. The existing worker performs chunk hashing, duplicate queries, compression and pack writes. Two queued batches of 16 chunks bound read-ahead. Small files and offline imports stay sequential.",
       "correctness": "Serial and pipeline imports produce identical manifests, chunk identities and pack bytes, including rollover and edits. Producer I/O errors and panics cannot publish a manifest. Backpressured cancellation and premature finish join without deadlock. Existing source metadata and epoch checks and durable pack-before-catalog ordering remain.",
       "benchmark": "passed",
-      "profile": "pending",
+      "profile": "passed",
       "implementation_commit": "40f34e887920e0687282e157b64ed6d239743f19",
-      "comparison_report": "import-pipeline-costs.json"
+      "comparison_report": "import-pipeline-costs.json",
+      "profile_report": "import-pipeline-costs-profile.json"
     }
   },
   "limitations": [
