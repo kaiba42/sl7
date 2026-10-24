@@ -128,7 +128,10 @@ at most two batches of 16 chunks (1 MiB of queued payload, plus producer and
 consumer batches). Small files and offline `put` imports remain sequential.
 This consumes additional CPU and does not guarantee faster Cargo builds.
 The [matched comparison](validation/import-pipeline-costs.md) did not show a
-consistent benefit across clean and edit builds.
+consistent benefit across clean and edit builds. A later
+[comparison that drains sealing between stages](validation/quiescence-costs.md)
+measured 0.2% lower clean-build and 6.2% lower edit medians, with four of six
+paired edits faster; two rounds do not establish a reliable speedup.
 With `SL7_CACHE_STATS=1`, the unmount report includes `import_pipeline` and
 `pipelined_prepares`; the latter counts attempted preparations, including canceled
 ones. Cancellation closes the queue and joins the producer before returning.
