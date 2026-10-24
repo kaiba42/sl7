@@ -1,10 +1,18 @@
 # Initial implementation validation
 
+The [same-binary worker comparison](parallel-sealing.md) and
+[HTML tables](parallel-sealing.html) measure native Cargo and one, two, and four
+sealing workers. Independent preparation phases overlap, but more workers do not
+improve build latency consistently: four workers regress clean builds in both
+rounds, while two workers slightly shorten the recorded build/observation/drain
+sequence. Canceled candidates, completed seals, and catalog waits all increase.
+The subsequent native-state cache and batched identity allocation have passed
+local correctness checks; their isolated performance measurements are pending.
+
 For native Cargo versus the shorter catalog lock and atomic publication changes,
 see the [build results](publication-costs.md), [HTML tables](publication-costs.html),
 and [re-profile findings](publication-costs-profile.md). These measurements precede
-the worker pool; its [correctness checks](parallel-validation.json) have passed,
-and its performance comparison is pending.
+the worker pool; its [correctness checks](parallel-validation.json) also passed.
 
 For explicit catalog barriers and the preceding native/before/after comparison, see
 the [build results](catalog-barrier.md), [HTML tables](catalog-barrier.html),

@@ -27,7 +27,7 @@
   "default_workers": 2,
   "worker_limit": 8,
   "x86_validation": "passed",
-  "benchmark": "pending",
+  "benchmark": "passed",
   "durability": "Sealing catalog commits remain serialized and FULL; only durable manifests allow native retirement. Per-inode gates prevent overlapping candidates for the same inode.",
   "tests": "A paused prepared candidate does not block another worker from publishing; overlapping preparations of identical chunks both publish and reconstruct correctly; existing cancellation, read leases, retirement, crash, remount and self-hosted Cargo tests pass.",
   "instrumentation": "Counters separate active seal jobs from active preparation phases; the profiler groups per-worker threads and measures overlapping background syscalls. Same-binary benchmark supports explicit 1/2/4-worker cases.",
@@ -51,5 +51,6 @@
       "live": "passed",
       "selfhost": "passed"
     }
-  }
+  },
+  "comparison_report": "parallel-sealing.json"
 }
