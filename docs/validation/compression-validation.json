@@ -86,7 +86,8 @@
     "Large mounted artifacts compress novel chunks, bypass duplicate compression, reconstruct exactly and pass integrity/GC."
   ],
   "benchmark": "passed",
-  "profile": "pending",
+  "profile": "passed",
   "implementation_commit": "a33846b7daaf9a0558617aede2fb0d656a5c9f7d",
-  "comparison_report": "compression-costs.json"
+  "comparison_report": "compression-costs.json",
+  "profile_report": "compression-costs-profile.json"
 }

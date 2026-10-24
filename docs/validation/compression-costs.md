@@ -63,4 +63,4 @@ All 48 Cargo commands, 32 artifact-graph comparisons, freshness/executable check
 
 Implementation: `a33846b7daaf9a0558617aede2fb0d656a5c9f7d`.
 
-[HTML tables](compression-costs.html) · [JSON measurements](compression-costs.json) · [Validation](compression-validation.json)
+[HTML tables](compression-costs.html) · [JSON measurements](compression-costs.json) · [Validation](compression-validation.json) · [CPU profiles](compression-costs-profile.md)

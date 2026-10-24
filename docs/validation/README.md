@@ -8,6 +8,8 @@ All 48 Cargo commands, 32 artifact-graph comparisons, and four integrity checks
 passed. Compression overlapped, but it did not consistently shorten builds or
 settling; it remains opt-in. [Correctness validation](compression-validation.json)
 includes exact pack parity and mounted novel/duplicate/edited-artifact tests.
+The [CPU profiles](compression-costs-profile.md) verify execution on compression
+threads and show hashing remains a much larger userspace cost during edits.
 
 An earlier [native-state cache comparison](native-state-costs.md) and
 [HTML tables](native-state-costs.html) show clean-build medians of 149.52s native,
