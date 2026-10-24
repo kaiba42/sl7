@@ -21,7 +21,7 @@ from mount_helpers import is_mounted, isolated_test_directory
 spec = importlib.util.spec_from_file_location('benchmark_synkro', Path(__file__).with_name('benchmark-synkro.py'))
 benchmark = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(benchmark)
-daemon_cpu, settle = benchmark.daemon_cpu, benchmark.settle
+settle = benchmark.settle
 
 ROOT = Path(os.environ.get('SL7_PROFILE_RESULTS', '/bench/results'))
 SOURCE = Path('/bench/source')
@@ -30,6 +30,13 @@ REVISION = 'ec6d4c53b8fdf4321de220a922f7efce67788d40'
 SYSCALLS = ['openat', 'close', 'read', 'pread64', 'write', 'pwrite64',
             'lseek', 'fsync', 'fdatasync', 'getxattr', 'ftruncate', 'futex',
             'link', 'linkat', 'unlink', 'unlinkat', 'rename', 'renameat', 'renameat2']
+
+
+def daemon_cpu_breakdown(pid):
+    """Process-wide CPU ticks include all daemon threads, split by execution mode."""
+    fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
+    ticks = os.sysconf('SC_CLK_TCK')
+    return dict(user=int(fields[11])/ticks, system=int(fields[12])/ticks)
 
 
 def main():
@@ -54,7 +61,9 @@ def main():
                   kernel=subprocess.check_output(['uname', '-r'], text=True).strip(),
                   perf=subprocess.check_output(['perf', '--version'], text=True).strip(),
                   sl7_sha256=hashlib.sha256(BINARY.read_bytes()).hexdigest(),
+                  profiler_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   seal_workers=os.environ.get('SL7_SEAL_WORKERS', 'binary default'),
+                  daemon_cpu_scope='Cargo plus post-build idle observation; excludes profiler shutdown and unmount',
                   lock_sha256=hashlib.sha256((SOURCE/'Cargo.lock').read_bytes()).hexdigest(),
                   cpu_quota=8, memory_limit_gib=12, cpu_max=cpu_max, memory_max=memory_max,
                   nofile_limit=resource.getrlimit(resource.RLIMIT_NOFILE),
@@ -124,7 +133,7 @@ def main():
                         time.sleep(.3)
                         assert all(p.poll() is None for _, p in profilers), 'profiler failed to attach'
                     before = resource.getrusage(resource.RUSAGE_CHILDREN)
-                    cpu_before = daemon_cpu(daemon.pid)
+                    cpu_before = daemon_cpu_breakdown(daemon.pid)
                     start = time.monotonic()
                     with (ROOT/f'{stage}.jsonl').open('w') as out, (ROOT/f'{stage}.stderr').open('w') as err:
                         result = subprocess.run(command, cwd=SOURCE, env=env, stdout=out, stderr=err)
@@ -132,7 +141,8 @@ def main():
                     after = resource.getrusage(resource.RUSAGE_CHILDREN)
                     assert result.returncode == 0, (ROOT/f'{stage}.stderr').read_text()[-6000:]
                     idle = settle(daemon, mount)
-                    cpu = daemon_cpu(daemon.pid)-cpu_before
+                    cpu_after = daemon_cpu_breakdown(daemon.pid)
+                    cpu = {kind:cpu_after[kind]-cpu_before[kind] for kind in ('user', 'system')}
                 finally:
                     stop_started = time.monotonic()
                     failures = []
@@ -175,7 +185,8 @@ def main():
                 if description or stage=='clean':
                     help_text = subprocess.check_output([str(mount/'target/debug/synkro'), '--help'], env=env, text=True)
                     assert (description or 'Synkro AI rule and control enforcement CLI') in help_text
-                row = dict(stage=stage, wall_seconds=wall, daemon_cpu_seconds=cpu,
+                row = dict(stage=stage, wall_seconds=wall, daemon_cpu_seconds=sum(cpu.values()),
+                           daemon_user_seconds=cpu['user'], daemon_system_seconds=cpu['system'],
                            cargo_cpu_seconds=after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
                            idle_seconds=idle, artifacts=len(records), fresh_artifacts=sum(a['fresh'] for a in records),
                            cpu_sampling=sample, fuse_tracing=trace and fuse_trace_available,

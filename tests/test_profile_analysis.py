@@ -3,11 +3,22 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import sys
 
 spec = importlib.util.spec_from_file_location(
     "profile_analysis", Path(__file__).resolve().parents[1] / "scripts/analyze-profile.py")
 analysis = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(analysis)
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+try:
+    spec = importlib.util.spec_from_file_location(
+        "profile_synkro", Path(__file__).resolve().parents[1] / "scripts/profile-synkro.py")
+    profiler = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(profiler)
+finally:
+    sys.path.pop(0)
 
 
 class IoTraceTests(unittest.TestCase):
@@ -51,6 +62,18 @@ class IoTraceTests(unittest.TestCase):
         ])
         self.assertEqual(result["incomplete"], {"missing_enter": 1, "missing_exit": 1})
         self.assertEqual(result["errors"], {"foreground/fsync": 1})
+
+
+class CpuCounterTests(unittest.TestCase):
+    def test_process_name_parentheses_do_not_shift_cpu_fields(self):
+        # /proc/PID/stat field 2 can contain spaces and parentheses. Fields
+        # 14/15 are process-wide user/system ticks; neither is child CPU time.
+        fields = ['S'] + ['0'] * 10 + ['250', '75', '900', '800']
+        record = '123 (sl7 (worker)) ' + ' '.join(fields)
+        with patch.object(profiler.Path, 'read_text', return_value=record), \
+             patch.object(profiler.os, 'sysconf', return_value=100):
+            self.assertEqual(profiler.daemon_cpu_breakdown(123),
+                             {'user': 2.5, 'system': 0.75})
 
 
 if __name__ == "__main__":
