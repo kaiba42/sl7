@@ -1,6 +1,9 @@
 # Initial implementation validation
 
-For the latest concurrent-read implementation and matched before/after debug builds,
+For the latest kernel-cache retention improvement and matched native/before/after
+debug builds, see the [results](keep-cache.md) or [HTML tables](keep-cache.html).
+
+For the previous concurrent-read implementation and matched before/after debug builds,
 see the [parallel-read results](parallel-reads.md) or [HTML tables](parallel-reads.html).
 
 For the native-versus-SL7 debug and release comparison before concurrent reads, see the

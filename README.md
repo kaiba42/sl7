@@ -5,7 +5,7 @@ build artifacts. Cargo writes ordinary files; SL7 shares repeated chunks and
 reconstructs them on reads. Worktrees keep independent output directories.
 
 **Prototype:** native macOS mounting is unsupported. SL7 trades build time for
-storage savings. See the [concurrent-read results](docs/validation/parallel-reads.md)
+storage savings. See the [latest build results](docs/validation/keep-cache.md)
 and the [native-versus-SL7 baseline](docs/validation/native-latest.md).
 
 ## Try it with Docker

@@ -40,5 +40,8 @@
     "reconstructed_bytes": 8388608
   },
   "baseline_retention_assertion": "failed as expected",
-  "whole_build_benchmark": "pending"
+  "whole_build_benchmark": "passed",
+  "whole_build_report": "keep-cache.json",
+  "verified_cargo_commands": 48,
+  "verified_copied_files": 104
 }
