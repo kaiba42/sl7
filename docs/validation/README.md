@@ -1,5 +1,15 @@
 # Validation and performance
 
+The [concurrent primitives and Turso comparison](primitives-comparison.md)
+([HTML](primitives-comparison.html), [JSON](primitives-comparison.json)) tests
+DashMap, SCC, Moka, sharded LRU, DashMap/FIFO and embedded Turso. Concurrent
+primitives improve isolated throughput, and Turso MVCC improves concurrent
+catalog publication while slowing range queries. The integrated sharded-cache
+prototype was 13.5% slower on clean builds **versus pre-sharding SL7**, not native
+Cargo (193.92s versus 220.06s in this run); production defaults remain unchanged.
+The report includes 423 primitive samples, two reversed-order build rounds,
+correctness gates and the rejected experimental patch.
+
 The latest [parallel chunk hashing comparison](parallel-hashing-costs.md) and
 [HTML tables](parallel-hashing-costs.html) compare native Cargo with one SL7 binary
 using serial hashing or two shared hash workers. Clean medians were 149.09s,

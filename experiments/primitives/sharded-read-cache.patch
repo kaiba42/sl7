@@ -1,0 +1,223 @@
+--- a/src/read_cache.rs
++++ b/src/read_cache.rs
+@@ -192,25 +192,24 @@
+         self.stats.map_bytes += charge;
+         self.maps.insert(key, MapWindow { extents, charge });
+     }
+-    pub fn request(&mut self, bytes: u64) {
+-        self.stats.requested_bytes += bytes;
+-    }
+ }
+
+ /// One mount-wide budget. Only cache bookkeeping holds this mutex; pack I/O,
+ /// decompression, verification, and copying run with owned Arc references.
+-pub(crate) struct ReadCache {
++struct CacheShard {
++    activity: Arc<Activity>,
+     state: Mutex<CacheState>,
+ }
+-impl Default for ReadCache {
++impl Default for CacheShard {
+     fn default() -> Self {
+         Self::new(128 * 1024 * 1024, 64)
+     }
+ }
+-impl ReadCache {
++impl CacheShard {
+     fn new(byte_limit: usize, pack_limit: usize) -> Self {
+         Self {
+             state: Mutex::new(CacheState::new(byte_limit, pack_limit)),
++            activity: Arc::new(Activity::default()),
+         }
+     }
+     pub fn stats(&self) -> CacheStats {
+@@ -230,9 +229,6 @@
+     }
+     pub fn remember_map(&self, key: MapKey, extents: Arc<[Extent]>) {
+         self.state.lock().unwrap().remember_map(key, extents);
+-    }
+-    pub fn request(&self, bytes: u64) {
+-        self.state.lock().unwrap().request(bytes);
+     }
+     pub fn read(&self, root: &Path, loc: &pack::Location) -> Result<Arc<Vec<u8>>> {
+         self.read_with(root, loc, pack::read_from)
+@@ -294,11 +290,20 @@
+ }
+
+ struct Loading<'a> {
+-    cache: &'a ReadCache,
++    cache: &'a CacheShard,
+     started: Instant,
+ }
+ impl<'a> Loading<'a> {
+-    fn start(cache: &'a ReadCache) -> Self {
++    fn start(cache: &'a CacheShard) -> Self {
++        let active = cache
++            .activity
++            .active
++            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
++            + 1;
++        cache
++            .activity
++            .peak
++            .fetch_max(active, std::sync::atomic::Ordering::Relaxed);
+         let mut state = cache.state.lock().unwrap();
+         state.stats.active_loads += 1;
+         state.stats.max_parallel_loads =
+@@ -311,15 +316,156 @@
+ }
+ impl Drop for Loading<'_> {
+     fn drop(&mut self) {
++        self.cache
++            .activity
++            .active
++            .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+         let mut state = self.cache.state.lock().unwrap();
+         state.stats.active_loads -= 1;
+         state.stats.load_seconds += self.started.elapsed().as_secs_f64();
+     }
+ }
+
++// Experimental strict-budget cache sharding, evaluated separately from main.
++#[derive(Default)]
++struct Activity {
++    active: std::sync::atomic::AtomicUsize,
++    peak: std::sync::atomic::AtomicUsize,
++    requested: std::sync::atomic::AtomicU64,
++}
++pub(crate) struct ReadCache {
++    shards: Vec<CacheShard>,
++    activity: Arc<Activity>,
++}
++impl Default for ReadCache {
++    fn default() -> Self {
++        Self::sharded(128 * 1024 * 1024, 64, 16)
++    }
++}
++impl ReadCache {
++    #[cfg(test)]
++    fn new(bytes: usize, packs: usize) -> Self {
++        Self::sharded(bytes, packs, 1)
++    }
++    fn sharded(bytes: usize, packs: usize, n: usize) -> Self {
++        assert!(n > 0 && packs >= n);
++        let activity = Arc::new(Activity::default());
++        let shards = (0..n)
++            .map(|_| {
++                let mut shard = CacheShard::new(bytes / n, packs / n);
++                shard.activity = activity.clone();
++                let state = shard.state.get_mut().unwrap();
++                state.map_limit /= n;
++                state.map_entry_limit /= n;
++                shard
++            })
++            .collect();
++        Self { shards, activity }
++    }
++    fn map_shard(&self, key: &MapKey) -> &CacheShard {
++        use std::hash::{Hash, Hasher};
++        let mut h = std::collections::hash_map::DefaultHasher::new();
++        key.hash(&mut h);
++        &self.shards[h.finish() as usize % self.shards.len()]
++    }
++    pub fn map(&self, key: &MapKey) -> Option<Arc<[Extent]>> {
++        self.map_shard(key).map(key)
++    }
++    pub fn remember_map(&self, key: MapKey, extents: Arc<[Extent]>) {
++        self.map_shard(&key).remember_map(key, extents)
++    }
++    pub fn map_query(&self) {
++        self.shards[0].map_query()
++    }
++    pub fn map_fallback(&self) {
++        self.shards[0].map_fallback()
++    }
++    pub fn request(&self, bytes: u64) {
++        self.activity
++            .requested
++            .fetch_add(bytes, std::sync::atomic::Ordering::Relaxed);
++    }
++    pub fn read(&self, root: &Path, loc: &pack::Location) -> Result<Arc<Vec<u8>>> {
++        self.shards[loc.hash[0] as usize % self.shards.len()].read(root, loc)
++    }
++    #[cfg(test)]
++    fn read_with(
++        &self,
++        root: &Path,
++        loc: &pack::Location,
++        load: impl FnOnce(&File, &pack::Location) -> Result<Vec<u8>>,
++    ) -> Result<Arc<Vec<u8>>> {
++        self.shards[loc.hash[0] as usize % self.shards.len()].read_with(root, loc, load)
++    }
++    pub fn clear(&self) {
++        for shard in &self.shards {
++            shard.clear();
++        }
++    }
++    pub fn stats(&self) -> CacheStats {
++        let mut total = CacheStats::default();
++        for shard in &self.shards {
++            let s = shard.stats();
++            total.chunk_hits += s.chunk_hits;
++            total.chunk_misses += s.chunk_misses;
++            total.pack_opens += s.pack_opens;
++            total.decoded_bytes += s.decoded_bytes;
++            total.cached_bytes += s.cached_bytes;
++            total.open_packs += s.open_packs;
++            total.map_hits += s.map_hits;
++            total.map_misses += s.map_misses;
++            total.map_queries += s.map_queries;
++            total.map_fallbacks += s.map_fallbacks;
++            total.map_bytes += s.map_bytes;
++            total.map_windows += s.map_windows;
++            total.duplicate_loads += s.duplicate_loads;
++            total.load_seconds += s.load_seconds;
++        }
++        total.active_loads = self
++            .activity
++            .active
++            .load(std::sync::atomic::Ordering::Relaxed);
++        total.max_parallel_loads = self
++            .activity
++            .peak
++            .load(std::sync::atomic::Ordering::Relaxed);
++        total.requested_bytes = self
++            .activity
++            .requested
++            .load(std::sync::atomic::Ordering::Relaxed);
++        total
++    }
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    #[test]
++    fn sharded_cache_enforces_total_limits_and_clears() -> Result<()> {
++        let temp = tempfile::tempdir()?;
++        let root = temp.path().join("store");
++        let _store = crate::Store::init(&root)?;
++        let mut writer = pack::Writer::new(&root)?;
++        for k in 0..64_u8 {
++            let bytes = vec![k; 32768];
++            writer.add(crate::chunk::identity(&bytes), &bytes)?;
++        }
++        let (_, _, locations) = writer.finish(&root)?;
++        let cache = ReadCache::sharded(65536, 2, 2);
++        for (k, loc) in locations.iter().enumerate() {
++            assert_eq!(*cache.read(&root, loc)?, vec![k as u8; 32768]);
++            assert!(cache.stats().cached_bytes <= 65536);
++            assert!(cache.stats().open_packs <= 2);
++        }
++        assert_eq!(cache.stats().active_loads, 0);
++        assert_eq!(cache.stats().max_parallel_loads, 1);
++        cache.clear();
++        assert_eq!(cache.stats().cached_bytes, 0);
++        assert_eq!(cache.stats().open_packs, 0);
++        assert_eq!(cache.stats().map_bytes, 0);
++        Ok(())
++    }
++
+     #[test]
+     fn cold_loads_overlap_and_racing_duplicates_stay_within_budget() -> Result<()> {
+         use std::{sync::mpsc, thread, time::Duration};
