@@ -11,9 +11,10 @@ impl Drop for Reservation<'_> {
         if let Ok(mut state) = self.fs.state.lock() {
             let started = Instant::now();
             for &ino in &self.inodes {
-                let node = state.nodes.get_mut(&ino).unwrap();
+                let mut node = state.nodes.get_mut(&ino).unwrap();
                 node.readers -= 1;
                 node.opens -= 1;
+                drop(node);
                 state.schedule_seal(ino);
                 state.reclaim(ino);
             }
@@ -50,9 +51,10 @@ impl StagingFs {
             let mut updates = Vec::new();
             for &ino in &inodes {
                 state.invalidate(ino)?;
+                let pin = state.inode(ino)?;
                 if let Some(live) = &state.live {
                     if let Some(update) = live
-                        .prepare_metadata_change(&state.nodes[&ino].pin, false, false)
+                        .prepare_metadata_change(&pin, false, false)
                         .map_err(storage)?
                     {
                         updates.push(update);
@@ -63,7 +65,7 @@ impl StagingFs {
             // Content is unchanged: read leases may still overlap this metadata
             // commit, while the activity count excludes same-inode mutations.
             for &ino in &inodes {
-                let node = state.nodes.get_mut(&ino).unwrap();
+                let mut node = state.nodes.get_mut(&ino).unwrap();
                 node.opens += 1;
                 node.readers += 1;
             }
@@ -127,7 +129,7 @@ mod tests {
                         s.live
                             .as_mut()
                             .unwrap()
-                            .seal(&s.nodes[&ino].pin)
+                            .seal(&s.nodes.get(&ino).unwrap().pin)
                             .map_err(storage)?;
                     }
                     handles.push((
@@ -186,7 +188,7 @@ mod tests {
             });
             let deadline = Instant::now() + Duration::from_secs(5);
             while !fs
-                .with_read(|s| Ok(s.nodes[&a].waiting_mutations > 0))
+                .with_read(|s| Ok(s.nodes.get(&a).unwrap().waiting_mutations > 0))
                 .unwrap()
             {
                 assert!(Instant::now() < deadline);
@@ -218,7 +220,7 @@ mod tests {
             );
             assert_eq!(attr.nlink, 2);
             fs.with_read(|s| {
-                let metadata = s.nodes[&a].pin.metadata()?;
+                let metadata = s.nodes.get(&a).unwrap().pin.metadata()?;
                 assert_eq!(
                     attr.ctime,
                     timestamp(metadata.ctime(), metadata.ctime_nsec())

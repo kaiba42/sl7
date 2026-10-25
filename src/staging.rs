@@ -2,8 +2,10 @@
 //! All namespace access is anchored to pinned O_PATH descriptors. The backing
 //! tree must be exclusively owned by this process while mounted. Kernel-local
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
+use dashmap::DashMap;
 use fuser::*;
 mod background;
+mod indexes;
 mod namespace;
 mod operations;
 mod prepared;
@@ -49,6 +51,8 @@ struct Inode {
     // Proven native with no logical metadata override. Only publication can
     // invalidate this fact; it clears the bit under state before committing.
     native_unoverridden: bool,
+    // Multi-syscall metadata mutations must not expose partial attributes.
+    metadata_busy: bool,
 }
 struct DirectoryEntry {
     ino: INodeNo,
@@ -62,8 +66,9 @@ struct Handle {
 }
 struct State {
     live: Option<crate::live::Live>,
-    nodes: HashMap<INodeNo, Inode>,
-    identities: HashMap<(u64, u64), INodeNo>,
+    nodes: Arc<DashMap<INodeNo, Inode>>,
+    identities: Arc<DashMap<(u64, u64), INodeNo>>,
+    metadata_requests: Arc<indexes::Requests>,
     handles: HashMap<FileHandle, Handle>,
     next_inode: u64,
     next_handle: u64,
@@ -84,6 +89,9 @@ struct State {
     retire_pause: Option<(SyncSender<()>, std::sync::mpsc::Receiver<()>)>,
 }
 pub struct StagingFs {
+    nodes: Arc<DashMap<INodeNo, Inode>>,
+    identities: Arc<DashMap<(u64, u64), INodeNo>>,
+    metadata_requests: Arc<indexes::Requests>,
     state: Arc<Mutex<State>>,
     catalog_writer: Arc<Mutex<()>>,
     publication_done: Arc<Condvar>,
@@ -225,31 +233,31 @@ impl State {
     }
     fn truncate_zero(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
+        let pin = self.inode(ino)?;
         if let Some(live) = &mut self.live {
-            live.truncate_zero(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
-                .map_err(storage)?;
+            live.truncate_zero(&pin).map_err(storage)?;
         }
         Ok(())
     }
     fn hydrate(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
-        if self.nodes[&ino].native_unoverridden {
+        if self.nodes.get(&ino).unwrap().native_unoverridden {
             return Ok(());
         }
+        let pin = self.inode(ino)?;
         if let Some(live) = &mut self.live {
-            live.hydrate(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
-                .map_err(storage)?;
+            live.hydrate(&pin).map_err(storage)?;
         }
         Ok(())
     }
     fn mutated(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
-        if self.nodes[&ino].native_unoverridden {
+        if self.nodes.get(&ino).unwrap().native_unoverridden {
             return Ok(());
         }
+        let pin = self.inode(ino)?;
         if let Some(live) = &mut self.live {
-            live.mutated(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
-                .map_err(storage)?;
+            live.mutated(&pin).map_err(storage)?;
         }
         self.nodes.get_mut(&ino).unwrap().native_unoverridden = true;
         Ok(())
@@ -257,21 +265,21 @@ impl State {
     #[cfg(test)]
     fn namespace_changed(&mut self, ino: INodeNo) -> io::Result<()> {
         self.invalidate(ino)?;
+        let pin = self.inode(ino)?;
         if let Some(live) = &mut self.live {
-            live.namespace_changed(&self.nodes.get(&ino).ok_or_else(|| error(libc::ENOENT))?.pin)
-                .map_err(storage)?;
+            live.namespace_changed(&pin).map_err(storage)?;
         }
         self.schedule_seal(ino);
         Ok(())
     }
-    fn inode(&self, ino: INodeNo) -> io::Result<&File> {
+    fn inode(&self, ino: INodeNo) -> io::Result<Arc<File>> {
         self.nodes
             .get(&ino)
-            .map(|n| n.pin.as_ref())
+            .map(|n| Arc::clone(&n.pin))
             .ok_or_else(|| error(libc::ENOENT))
     }
     fn path(&self, ino: INodeNo) -> io::Result<PathBuf> {
-        Ok(fd_path(self.inode(ino)?))
+        Ok(fd_path(self.inode(ino)?.as_ref()))
     }
     fn child(&self, parent: INodeNo, name: &OsStr) -> io::Result<PathBuf> {
         if name.is_empty()
@@ -291,8 +299,8 @@ impl State {
         let meta = file.metadata()?;
         kind(&meta)?;
         let key = (meta.dev(), meta.ino());
-        if let Some(&ino) = self.identities.get(&key) {
-            return Ok(ino);
+        if let Some(ino) = self.identities.get(&key) {
+            return Ok(*ino);
         }
         let ino = INodeNo(self.next_inode);
         self.next_inode = self
@@ -315,7 +323,8 @@ impl State {
                 packing: false,
                 publishing: false,
                 seal_checked: false,
-                native_unoverridden: !meta.is_file(),
+                native_unoverridden: self.live.is_none() || !meta.is_file(),
+                metadata_busy: false,
             },
         );
         Ok(ino)
@@ -335,45 +344,26 @@ impl State {
         self.register(pin(&path)?)
     }
     fn attr(&self, ino: INodeNo) -> io::Result<FileAttr> {
-        let m = self.inode(ino)?.metadata()?;
-        let logical = if self.nodes[&ino].native_unoverridden {
+        let pin = self.inode(ino)?;
+        let m = pin.metadata()?;
+        let native = self.nodes.get(&ino).unwrap().native_unoverridden;
+        let logical = if native {
             None
         } else {
             self.live
                 .as_ref()
-                .map(|l| l.metadata(self.inode(ino).unwrap()).map_err(storage))
+                .map(|live| live.metadata(&pin).map_err(storage))
                 .transpose()?
                 .flatten()
         };
-        Ok(FileAttr {
-            ino,
-            size: logical.as_ref().map_or(m.size(), |m| m.size),
-            blocks: m.blocks(),
-            atime: logical
-                .as_ref()
-                .map_or(timestamp(m.atime(), m.atime_nsec()), |m| {
-                    timestamp(m.atime, m.atime_ns)
-                }),
-            mtime: logical
-                .as_ref()
-                .map_or(timestamp(m.mtime(), m.mtime_nsec()), |m| {
-                    timestamp(m.mtime, m.mtime_ns)
-                }),
-            ctime: logical
-                .as_ref()
-                .map_or(timestamp(m.ctime(), m.ctime_nsec()), |m| {
-                    timestamp(m.ctime, m.ctime_ns)
-                }),
-            crtime: UNIX_EPOCH,
-            kind: kind(&m)?,
-            perm: (m.mode() & 0o7777) as u16,
-            nlink: m.nlink().try_into().map_err(|_| error(libc::EOVERFLOW))?,
-            uid: m.uid(),
-            gid: m.gid(),
-            rdev: 0,
-            blksize: m.blksize() as u32,
-            flags: 0,
-        })
+        let mut attr = indexes::native_attr(ino, &m)?;
+        if let Some(logical) = logical {
+            attr.size = logical.size;
+            attr.atime = timestamp(logical.atime, logical.atime_ns);
+            attr.mtime = timestamp(logical.mtime, logical.mtime_ns);
+            attr.ctime = timestamp(logical.ctime, logical.ctime_ns);
+        }
+        Ok(attr)
     }
     fn add_handle(
         &mut self,
@@ -462,23 +452,21 @@ impl State {
         Ok(attr)
     }
     fn forget(&mut self, ino: INodeNo, count: u64) {
-        if let Some(node) = self.nodes.get_mut(&ino) {
+        if let Some(mut node) = self.nodes.get_mut(&ino) {
             node.references = node.references.saturating_sub(count);
         }
         self.reclaim(ino);
     }
     fn reclaim(&mut self, ino: INodeNo) {
-        if ino != INodeNo::ROOT
-            && !self.prepared_cache.contains(ino)
-            && self.nodes.get(&ino).is_some_and(|n| {
-                n.references == 0
-                    && n.opens == 0
-                    && n.waiting_mutations == 0
-                    && !n.queued
-                    && !n.packing
-            })
-        {
-            let node = self.nodes.remove(&ino).unwrap();
+        if ino == INodeNo::ROOT || self.prepared_cache.contains(ino) {
+            return;
+        }
+        // A LOOKUP may acquire a reference without State. Check and remove
+        // under the same DashMap shard write lock, so it cannot revive a node
+        // between the reference check and removal.
+        if let Some((_, node)) = self.nodes.remove_if(&ino, |_, n| {
+            n.references == 0 && n.opens == 0 && n.waiting_mutations == 0 && !n.queued && !n.packing
+        }) {
             self.identities.remove(&node.identity);
         }
     }
@@ -514,8 +502,9 @@ impl StagingFs {
         fs2::FileExt::try_lock_exclusive(&owner)?;
         let mut state = State {
             live: None,
-            nodes: HashMap::new(),
-            identities: HashMap::new(),
+            nodes: Arc::new(DashMap::new()),
+            identities: Arc::new(DashMap::new()),
+            metadata_requests: Arc::new(indexes::Requests::default()),
             handles: HashMap::new(),
             next_inode: 1,
             next_handle: 1,
@@ -537,6 +526,9 @@ impl StagingFs {
         };
         assert_eq!(state.register(pin(backing)?)?, INodeNo::ROOT);
         Ok(Self {
+            nodes: Arc::clone(&state.nodes),
+            identities: Arc::clone(&state.identities),
+            metadata_requests: Arc::clone(&state.metadata_requests),
             state: Arc::new(Mutex::new(state)),
             catalog_writer: Arc::new(Mutex::new(())),
             publication_done: Arc::new(Condvar::new()),
@@ -647,7 +639,9 @@ impl StagingFs {
             if inodes.iter().any(|ino| !state.nodes.contains_key(ino)) {
                 return Err(Errno::ENOENT);
             }
-            let publishing = inodes.iter().any(|ino| state.nodes[ino].publishing);
+            let publishing = inodes
+                .iter()
+                .any(|ino| state.nodes.get(ino).unwrap().publishing);
             if publishing
                 || inodes
                     .iter()
@@ -687,18 +681,16 @@ impl StagingFs {
             }
             let mut needs_catalog = false;
             for ino in &inodes {
-                if state.nodes[ino].native_unoverridden {
+                if state.nodes.get(ino).unwrap().native_unoverridden {
                     state.seal_stats.native_state_cache_hits += 1;
                     continue;
                 }
                 state.seal_stats.native_state_checks += 1;
+                let pin = state.inode(*ino).map_err(Errno::from)?;
                 let needed = state
                     .live
                     .as_ref()
-                    .map(|live| {
-                        live.mutation_needs_catalog(&state.nodes[ino].pin)
-                            .map_err(storage)
-                    })
+                    .map(|live| live.mutation_needs_catalog(&pin).map_err(storage))
                     .transpose()
                     .map_err(Errno::from)?
                     .unwrap_or(false);
@@ -718,7 +710,15 @@ impl StagingFs {
                 state.seal_stats.catalog_wait_seconds += seconds;
                 continue;
             }
+            for ino in &inodes {
+                state.nodes.get_mut(ino).unwrap().metadata_busy = true;
+            }
             let result = op(&mut state).map_err(Errno::from);
+            for ino in &inodes {
+                if let Some(mut node) = state.nodes.get_mut(ino) {
+                    node.metadata_busy = false;
+                }
+            }
             let seconds = started.elapsed().as_secs_f64();
             state.seal_stats.request_state_seconds += seconds;
             state.seal_stats.max_request_state_seconds =
@@ -792,20 +792,13 @@ impl Filesystem for StagingFs {
         });
     }
     fn lookup(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEntry) {
-        match self.with_read(|s| {
-            s.seal_stats.lookup_operations += 1;
-            let ino = s.lookup(parent, name)?;
-            s.entry_attr(ino)
-        }) {
+        match self.lookup_indexed(parent, name) {
             Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
             Err(e) => reply.error(e),
         }
     }
     fn getattr(&self, _req: &Request, ino: INodeNo, _fh: Option<FileHandle>, reply: ReplyAttr) {
-        match self.with_read(|s| {
-            s.seal_stats.getattr_operations += 1;
-            s.attr(ino)
-        }) {
+        match self.getattr_indexed(ino) {
             Ok(a) => reply.attr(&self.metadata_ttl(), &a),
             Err(e) => reply.error(e),
         }
@@ -888,8 +881,9 @@ impl Filesystem for StagingFs {
                         libc::utimensat(libc::AT_FDCWD, path.as_ptr(), times.as_ptr(), 0)
                     })?;
                 }
+                let pin = s.inode(ino)?;
                 if let Some(live) = &mut s.live {
-                    live.metadata_changed(&s.nodes[&ino].pin, atime.is_some(), mtime.is_some())
+                    live.metadata_changed(&pin, atime.is_some(), mtime.is_some())
                         .map_err(storage)?;
                 }
                 s.schedule_seal(ino);

@@ -26,7 +26,7 @@ pub(super) fn worker_count(value: Option<&str>) -> crate::Result<usize> {
 
 pub(super) struct Workers(Vec<JoinHandle<()>>);
 
-#[derive(Default, Serialize)]
+#[derive(Clone, Default, Serialize)]
 pub(super) struct Stats {
     import_pipeline: bool,
     hash_workers: usize,
@@ -81,6 +81,9 @@ pub(super) struct Stats {
     pub(super) publication_open_wait_seconds: f64,
     pub(super) lookup_operations: u64,
     pub(super) getattr_operations: u64,
+    pub(super) indexed_lookups: u64,
+    pub(super) indexed_getattrs: u64,
+    pub(super) indexed_lookup_misses: u64,
     pub(super) catalog_syncs: u64,
     pub(super) catalog_sync_seconds: f64,
     pub(super) namespace_commits: u64,
@@ -144,7 +147,7 @@ impl State {
     pub(super) fn runtime_status(&self) -> serde_json::Value {
         // Queue overflow is stored on the inode, not in seal_queue. A worker
         // blocked on I/O is still active even if it consumes no CPU ticks.
-        let queued = self.nodes.values().filter(|node| node.queued).count();
+        let queued = self.nodes.iter().filter(|node| node.queued).count();
         let drained = queued == 0
             && self.seal_queue.is_empty()
             && self.seal_stats.active_seals == 0
@@ -159,7 +162,7 @@ impl State {
             "quiescent": drained && self.handles.is_empty() && !self.worker_failed && !self.stopping,
             "worker_failed": self.worker_failed,
             "stopping": self.stopping,
-            "sealing": self.seal_stats,
+            "sealing": self.stats_snapshot(),
         })
     }
 
@@ -185,7 +188,7 @@ impl State {
         if self.live.is_none() {
             return;
         }
-        let Some(node) = self.nodes.get_mut(&ino) else {
+        let Some(node) = self.nodes.get(&ino) else {
             return;
         };
         if node.opens != 0 || node.queued {
@@ -195,7 +198,9 @@ impl State {
             self.seal_stats.unchanged_seals_avoided += 1;
             return;
         }
-        let Ok(meta) = node.pin.metadata() else {
+        let pin = Arc::clone(&node.pin);
+        drop(node);
+        let Ok(meta) = pin.metadata() else {
             return;
         };
         if !meta.is_file()
@@ -205,7 +210,7 @@ impl State {
         {
             return;
         }
-        node.queued = true;
+        self.nodes.get_mut(&ino).unwrap().queued = true;
         // Overflow stays as a bit on the already-pinned inode, not a second job
         // allocation. The worker scans those bits after draining the hot queue.
         if self.seal_queue.len() < QUEUE_LIMIT {
@@ -222,9 +227,9 @@ impl State {
             let ino = self.seal_queue.pop_front().or_else(|| {
                 self.nodes
                     .iter()
-                    .find_map(|(&ino, node)| (node.queued && !node.packing).then_some(ino))
+                    .find_map(|node| (node.queued && !node.packing).then_some(*node.key()))
             })?;
-            let Some(node) = self.nodes.get_mut(&ino) else {
+            let Some(mut node) = self.nodes.get_mut(&ino) else {
                 continue;
             };
             if !node.queued || node.packing {
@@ -236,9 +241,11 @@ impl State {
             }
             let epoch = Arc::clone(&node.epoch);
             let version = epoch.load(Ordering::Relaxed);
-            match node.pin.try_clone() {
+            let pin = Arc::clone(&node.pin);
+            drop(node);
+            match pin.try_clone() {
                 Ok(pin) => {
-                    node.packing = true;
+                    self.nodes.get_mut(&ino).unwrap().packing = true;
                     self.seal_stats.active_seals += 1;
                     self.seal_stats.max_parallel_seals = self
                         .seal_stats
@@ -273,7 +280,7 @@ impl State {
     }
 
     fn checked_seal(&mut self, ino: INodeNo, version: u64) {
-        if let Some(node) = self.nodes.get_mut(&ino) {
+        if let Some(mut node) = self.nodes.get_mut(&ino) {
             if node.epoch.load(Ordering::Relaxed) == version {
                 node.seal_checked = true;
                 // Read-only closes during preparation may have queued another
@@ -337,7 +344,7 @@ impl Drop for Publication {
     fn drop(&mut self) {
         if let Ok(mut state) = self.state.lock() {
             let started = Instant::now();
-            if let Some(node) = state.nodes.get_mut(&self.ino) {
+            if let Some(mut node) = state.nodes.get_mut(&self.ino) {
                 node.publishing = false;
                 node.packing = false;
             }
@@ -555,7 +562,7 @@ fn run(
                 }
             };
             if prepared.is_some() {
-                let node = state.nodes.get_mut(&job.ino).unwrap();
+                let mut node = state.nodes.get_mut(&job.ino).unwrap();
                 node.publishing = true;
                 // Attribute callbacks can still run during publication. They
                 // must consult the catalog before native retirement can begin.
@@ -659,7 +666,7 @@ pub(super) fn stop(state: &Mutex<State>, workers: Workers) {
     drop(discarded);
     if std::env::var_os("SL7_CACHE_STATS").is_some() {
         if let Ok(state) = state.lock() {
-            if let Ok(stats) = serde_json::to_string(&state.seal_stats) {
+            if let Ok(stats) = serde_json::to_string(&state.stats_snapshot()) {
                 eprintln!("sl7: sealing_stats {stats}");
             }
         }
@@ -727,7 +734,7 @@ mod tests {
         let fh = fs.open_handle(ino, libc::O_RDWR).unwrap();
         let checks = fs
             .with_read(|s| {
-                assert!(s.nodes[&ino].native_unoverridden);
+                assert!(s.nodes.get(&ino).unwrap().native_unoverridden);
                 Ok(s.seal_stats.native_state_checks)
             })
             .unwrap();
@@ -754,7 +761,7 @@ mod tests {
         .unwrap();
         publishing.recv_timeout(Duration::from_secs(10)).unwrap();
         let revoked = fs
-            .with_read(|s| Ok(!s.nodes[&ino].native_unoverridden))
+            .with_read(|s| Ok(!s.nodes.get(&ino).unwrap().native_unoverridden))
             .unwrap();
         resume.send(()).unwrap();
         assert!(revoked, "native fast path survived publication gate");
@@ -764,12 +771,12 @@ mod tests {
         let writer = fs.open_handle(ino, libc::O_RDWR).unwrap();
         fs.with_read(|s| {
             // Hydration keeps the logical timestamp override until mutation.
-            assert!(!s.nodes[&ino].native_unoverridden);
+            assert!(!s.nodes.get(&ino).unwrap().native_unoverridden);
             assert!(
                 s.live
                     .as_ref()
                     .unwrap()
-                    .metadata(s.inode(ino)?)
+                    .metadata(s.inode(ino)?.as_ref())
                     .unwrap()
                     .is_some()
             );
@@ -782,12 +789,12 @@ mod tests {
         .unwrap();
         bytes.extend_from_slice(b"new");
         fs.with_read(|s| {
-            assert!(s.nodes[&ino].native_unoverridden);
+            assert!(s.nodes.get(&ino).unwrap().native_unoverridden);
             assert!(
                 s.live
                     .as_ref()
                     .unwrap()
-                    .metadata(s.inode(ino)?)
+                    .metadata(s.inode(ino)?.as_ref())
                     .unwrap()
                     .is_none()
             );
@@ -861,10 +868,10 @@ mod tests {
                     Ok(s.live
                         .as_ref()
                         .unwrap()
-                        .sealed(s.inode(second)?)
+                        .sealed(s.inode(second)?.as_ref())
                         .map_err(storage)?
                         .is_some()
-                        && !s.nodes[&second].packing)
+                        && !s.nodes.get(&second).unwrap().packing)
                 })
                 .unwrap();
             if complete || Instant::now() >= deadline {
@@ -904,7 +911,7 @@ mod tests {
         let deadline = Instant::now() + Duration::from_secs(10);
         loop {
             if fs
-                .with(|s| Ok(s.nodes.values().all(|n| !n.queued && !n.packing)))
+                .with(|s| Ok(s.nodes.iter().all(|n| !n.queued && !n.packing)))
                 .unwrap()
             {
                 return;
@@ -940,7 +947,7 @@ mod tests {
             idle(&fs);
             let before = fs
                 .with_read(|s| {
-                    assert!(s.nodes[&ino].seal_checked);
+                    assert!(s.nodes.get(&ino).unwrap().seal_checked);
                     Ok((s.seal_stats.completed, s.seal_stats.skipped))
                 })
                 .unwrap();
@@ -958,7 +965,7 @@ mod tests {
             .unwrap();
             let fh = fs.open_handle(ino, libc::O_RDWR).unwrap();
             fs.with_read(|s| {
-                assert!(!s.nodes[&ino].seal_checked);
+                assert!(!s.nodes.get(&ino).unwrap().seal_checked);
                 Ok(())
             })
             .unwrap();
@@ -968,7 +975,7 @@ mod tests {
             idle(&fs);
             fs.with_read(|s| {
                 assert_eq!(s.seal_stats.completed, before.0 + 1);
-                assert!(s.nodes[&ino].seal_checked);
+                assert!(s.nodes.get(&ino).unwrap().seal_checked);
                 Ok(())
             })
             .unwrap();
@@ -1006,7 +1013,7 @@ mod tests {
         fs.with(|s| {
             let fh = s.open(ino, libc::O_RDONLY)?;
             s.release(ino, fh)?;
-            assert!(s.nodes[&ino].queued);
+            assert!(s.nodes.get(&ino).unwrap().queued);
             Ok(())
         })
         .unwrap();
@@ -1015,7 +1022,7 @@ mod tests {
         fs.with_read(|s| {
             assert_eq!(s.seal_stats.completed, 1);
             assert_eq!(s.seal_stats.skipped, 0);
-            assert!(s.nodes[&ino].seal_checked);
+            assert!(s.nodes.get(&ino).unwrap().seal_checked);
             Ok(())
         })
         .unwrap();
@@ -1065,7 +1072,7 @@ mod tests {
                         s.live
                             .as_ref()
                             .unwrap()
-                            .read(s.inode(a)?, 0, first.len())
+                            .read(s.inode(a)?.as_ref(), 0, first.len())
                             .unwrap()
                             .unwrap(),
                         *first
@@ -1091,7 +1098,7 @@ mod tests {
                         s.live
                             .as_ref()
                             .unwrap()
-                            .read(s.inode(b)?, 0, second.len())
+                            .read(s.inode(b)?.as_ref(), 0, second.len())
                             .unwrap()
                             .unwrap(),
                         *second
@@ -1221,7 +1228,7 @@ mod tests {
                     s.live
                         .as_ref()
                         .unwrap()
-                        .sealed(s.inode(a)?)
+                        .sealed(s.inode(a)?.as_ref())
                         .map_err(storage)?
                         .is_some(),
                     s.attr(a)?.size,
@@ -1285,13 +1292,13 @@ mod tests {
         resume.send(()).unwrap();
         idle(&fs);
         fs.with(|s| {
-            assert!(!s.nodes[&ino].publishing);
+            assert!(!s.nodes.get(&ino).unwrap().publishing);
             assert_eq!(s.seal_stats.errors, 1);
             assert!(
                 s.live
                     .as_ref()
                     .unwrap()
-                    .sealed(s.inode(ino)?)
+                    .sealed(s.inode(ino)?.as_ref())
                     .unwrap()
                     .is_none()
             );
@@ -1318,7 +1325,7 @@ mod tests {
                 s.live
                     .as_ref()
                     .unwrap()
-                    .read(s.inode(ino)?, 0, bytes.len())
+                    .read(s.inode(ino)?.as_ref(), 0, bytes.len())
                     .unwrap()
                     .unwrap(),
                 bytes
@@ -1430,7 +1437,7 @@ mod tests {
                 s.live
                     .as_ref()
                     .unwrap()
-                    .sealed(s.inode(ino)?)
+                    .sealed(s.inode(ino)?.as_ref())
                     .unwrap()
                     .is_none()
             );
@@ -1452,7 +1459,7 @@ mod tests {
                 s.live
                     .as_ref()
                     .unwrap()
-                    .sealed(s.inode(ino)?)
+                    .sealed(s.inode(ino)?.as_ref())
                     .unwrap()
                     .is_some()
             );
@@ -1507,7 +1514,7 @@ mod tests {
                 s.live
                     .as_ref()
                     .unwrap()
-                    .sealed(s.inode(ino)?)
+                    .sealed(s.inode(ino)?.as_ref())
                     .unwrap()
                     .is_none()
             );

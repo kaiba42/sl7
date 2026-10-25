@@ -67,9 +67,10 @@ impl Drop for ReadLease<'_> {
     fn drop(&mut self) {
         if let Ok(mut state) = self.fs.state.lock() {
             let locked = Instant::now();
-            let node = state.nodes.get_mut(&self.ino).unwrap();
+            let mut node = state.nodes.get_mut(&self.ino).unwrap();
             node.readers -= 1;
             node.opens -= 1;
+            drop(node);
             state.seal_stats.active_reads -= 1;
             state.seal_stats.read_seconds += self.started.elapsed().as_secs_f64();
             state.schedule_seal(self.ino);
@@ -122,11 +123,12 @@ impl StagingFs {
             }
             let locked = Instant::now();
             let file = Arc::clone(&state.handle(ino, fh).map_err(Errno::from)?.file);
-            let node = state.nodes.get_mut(&ino).ok_or(Errno::ENOENT)?;
+            let mut node = state.nodes.get_mut(&ino).ok_or(Errno::ENOENT)?;
             let pin = Arc::clone(&node.pin);
             let native = node.native_unoverridden;
             node.readers += 1;
             node.opens += 1;
+            drop(node);
             state.seal_stats.read_operations += 1;
             state.seal_stats.active_reads += 1;
             state.seal_stats.max_parallel_reads = state
@@ -199,7 +201,7 @@ mod tests {
                     let ino = s.lookup(INodeNo::ROOT, OsStr::new(name))?;
                     s.entry_attr(ino)?;
                     if sealed {
-                        let pin = Arc::clone(&s.nodes[&ino].pin);
+                        let pin = Arc::clone(&s.nodes.get(&ino).unwrap().pin);
                         s.live.as_mut().unwrap().seal(&pin).map_err(storage)?;
                     }
                     handles.push((ino, s.open(ino, libc::O_RDONLY)?));
@@ -233,7 +235,7 @@ mod tests {
                 let deadline = Instant::now() + Duration::from_secs(5);
                 let waiting = loop {
                     if fs
-                        .with_read(|s| Ok(s.nodes[&a].waiting_mutations > 0))
+                        .with_read(|s| Ok(s.nodes.get(&a).unwrap().waiting_mutations > 0))
                         .unwrap()
                     {
                         break true;
@@ -287,9 +289,9 @@ mod tests {
                 fs.with_read(|s| {
                     s.release(a, ah)?;
                     s.forget(a, 1);
-                    assert_eq!(s.nodes[&a].opens, 1);
-                    assert_eq!(s.nodes[&a].readers, 1);
-                    assert!(!s.nodes[&a].publishing);
+                    assert_eq!(s.nodes.get(&a).unwrap().opens, 1);
+                    assert_eq!(s.nodes.get(&a).unwrap().readers, 1);
+                    assert!(!s.nodes.get(&a).unwrap().publishing);
                     Ok(())
                 })
                 .unwrap();
@@ -320,7 +322,7 @@ mod tests {
             let deadline = Instant::now() + Duration::from_secs(5);
             loop {
                 if fs
-                    .with_read(|s| Ok(s.nodes[&ino].waiting_mutations > 0))
+                    .with_read(|s| Ok(s.nodes.get(&ino).unwrap().waiting_mutations > 0))
                     .unwrap()
                 {
                     return true;
@@ -424,7 +426,7 @@ mod tests {
         }
         assert_eq!(fs.read_handle(a, ah, 0, 128 * 1024), Err(Errno::EIO));
         fs.with_read(|s| {
-            assert_eq!(s.nodes[&a].readers, 0);
+            assert_eq!(s.nodes.get(&a).unwrap().readers, 0);
             assert_eq!(s.seal_stats.active_reads, 0);
             Ok(())
         })

@@ -11,10 +11,11 @@ impl Drop for NativeIo<'_> {
     fn drop(&mut self) {
         if let Ok(mut state) = self.fs.state.lock() {
             let locked = Instant::now();
-            let node = state.nodes.get_mut(&self.ino).unwrap();
+            let mut node = state.nodes.get_mut(&self.ino).unwrap();
             node.exclusive_io = false;
             node.readers -= 1;
             node.opens -= 1;
+            drop(node);
             state.seal_stats.active_native_io -= 1;
             state.seal_stats.native_io_seconds += self.started.elapsed().as_secs_f64();
             state.schedule_seal(self.ino);
@@ -45,13 +46,14 @@ impl StagingFs {
                     state.hydrate(ino)?;
                     state.mutated(ino)?;
                 }
-                let node = state.nodes.get_mut(&ino).unwrap();
+                let mut node = state.nodes.get_mut(&ino).unwrap();
                 // with_mutation has excluded all reads and native operations.
                 // The virtual open also protects release/forget and background
                 // publication while this request runs outside filesystem state.
                 node.readers += 1;
                 node.opens += 1;
                 node.exclusive_io = true;
+                drop(node);
                 if writing {
                     state.seal_stats.write_operations += 1;
                 } else {
@@ -188,8 +190,8 @@ mod tests {
             assert_eq!(fs.sync_handle(ino, fh, false), Err(Errno::EIO));
             fs.with_read(|s| {
                 assert_eq!(s.seal_stats.active_native_io, 0);
-                assert!(!s.nodes[&ino].exclusive_io);
-                assert_eq!(s.nodes[&ino].readers, 0);
+                assert!(!s.nodes.get(&ino).unwrap().exclusive_io);
+                assert_eq!(s.nodes.get(&ino).unwrap().readers, 0);
                 Ok(())
             })
             .unwrap();
@@ -246,7 +248,7 @@ mod tests {
                 });
                 let deadline = Instant::now() + Duration::from_secs(5);
                 while !fs
-                    .with_read(|s| Ok(s.nodes[&a].waiting_mutations > 0))
+                    .with_read(|s| Ok(s.nodes.get(&a).unwrap().waiting_mutations > 0))
                     .unwrap()
                 {
                     assert!(Instant::now() < deadline, "same-inode writer did not wait");
@@ -345,7 +347,7 @@ mod tests {
             });
             let deadline = Instant::now() + Duration::from_secs(5);
             while !fs
-                .with_read(|s| Ok(s.nodes[&a].waiting_mutations > 0))
+                .with_read(|s| Ok(s.nodes.get(&a).unwrap().waiting_mutations > 0))
                 .unwrap()
             {
                 assert!(Instant::now() < deadline);
