@@ -207,6 +207,23 @@ a userspace descriptor does not permit sealing while its mmap remains. Cached I/
 provides same-inode coherence; writeback-cache is not negotiated. Hydration occurs
 before mutable access; sealing requires zero open handles and in-flight read leases.
 
+The inode and native `(device, inode)` indexes use DashMap. Registered native
+`LOOKUP` and `GETATTR` requests and absent-name probes run without the global
+filesystem-state mutex. Each request clones a pinned descriptor, drops its map
+guard before native I/O, and validates the inode epoch and representation before
+replying. Lookup reference acquisition and conditional reclamation use the same
+shard write lock. Inode IDs remain monotonic, so a reclaimed snapshot cannot
+attach to a replacement inode. Multi-syscall mutations mark only their selected
+inodes busy; error cleanup restores their eligibility. Publication revokes the
+native shortcut before committing or retiring bytes.
+
+Cold registration and sealed or logically overridden attributes retain the
+coordinated state/catalog path. Handle bookkeeping, mutations and publication
+also retain their existing coordination. A DashMap guard must never span native
+I/O, another map operation, or acquisition of the state mutex. Counters
+`indexed_lookups`, `indexed_getattrs` and `indexed_lookup_misses` count requests
+served by the concurrent path; total lookup/getattr counters include both paths.
+
 Live-mount file opens return `FOPEN_KEEP_CACHE`: reopening an artifact preserves
 its kernel page-cache contents. All logical writes, truncations, and namespace
 changes go through this mount; the kernel maintains their cache coherence.
@@ -289,6 +306,6 @@ writable backend. Native metadata
 is not a complete virtual POSIX layer: arbitrary ownership and restrictive
 permission transitions remain outside qualification. Catalog-writing foreground transitions still serialize with publication through
 the writer permit. Hydration, truncation, and chmod/utime still hold filesystem
-state; reads, native writes, synchronization, and link/unlink/rename catalog commits
+state; eligible native metadata, reads, native writes, synchronization, and link/unlink/rename catalog commits
 run outside it. SQLite catalog writes remain serialized. The four-request-worker limit
 can still constrain progress when several mutations are waiting.

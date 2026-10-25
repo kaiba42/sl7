@@ -1,5 +1,18 @@
 # Validation and performance
 
+The [integrated DashMap comparison](dashmap-indexes.md)
+([HTML](dashmap-indexes.html), [JSON](dashmap-indexes.json)) measures the focused
+inode/identity-index implementation in `b5ab793` against pre-DashMap SL7.
+Registered native metadata requests now bypass the global state mutex; this
+accounted for 88–89% of metadata requests across the measured sequences.
+Clean-build medians improved from 213.90s to 199.27s (6.8%), with both paired
+cleans faster. Edit medians rose from 7.07s to 7.32s (3.6%); including settling,
+they rose from 8.75s to 10.15s (16.0%). This is a measured clean-build benefit,
+with no demonstrated edit benefit; two reversed-order rounds are descriptive,
+not a statistical-significance claim. All 32 Cargo commands, 16 graph comparisons,
+four integrity scans, 99 Linux tests, 51 host tests and five mounted suites passed.
+The cache policy and SQLite implementation are unchanged.
+
 The [concurrent primitives and Turso comparison](primitives-comparison.md)
 ([HTML](primitives-comparison.html), [JSON](primitives-comparison.json)) tests
 DashMap, SCC, Moka, sharded LRU, DashMap/FIFO and embedded Turso. Concurrent
