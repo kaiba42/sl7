@@ -5,6 +5,7 @@
 use dashmap::DashMap;
 use fuser::*;
 mod background;
+mod directories;
 mod indexes;
 mod namespace;
 mod operations;
@@ -300,7 +301,11 @@ impl State {
     }
     fn register(&mut self, file: File) -> io::Result<INodeNo> {
         let meta = file.metadata()?;
-        kind(&meta)?;
+        self.register_metadata(Arc::new(file), &meta)
+    }
+    // The caller keeps the descriptor pinned while using this metadata.
+    fn register_metadata(&mut self, file: Arc<File>, meta: &Metadata) -> io::Result<INodeNo> {
+        kind(meta)?;
         let key = (meta.dev(), meta.ino());
         if let Some(ino) = self.identities.get(&key) {
             return Ok(*ino);
@@ -314,7 +319,7 @@ impl State {
         self.nodes.insert(
             ino,
             Inode {
-                pin: Arc::new(file),
+                pin: file,
                 readers: 0,
                 exclusive_io: false,
                 waiting_mutations: 0,
@@ -1223,45 +1228,7 @@ impl Filesystem for StagingFs {
     }
     fn opendir(&self, _req: &Request, ino: INodeNo, _flags: OpenFlags, reply: ReplyOpen) {
         let _request = profile::request("OPENDIR");
-        let result = self.with_read(|s| {
-            let opened = profile::span("directory_open");
-            let file = open_native(&s.path(ino)?, libc::O_RDONLY | libc::O_DIRECTORY, 0)?;
-            let parent = s.lookup(ino, OsStr::new(".."))?;
-            drop(opened);
-            let mut entries = vec![
-                DirectoryEntry {
-                    ino,
-                    kind: FileType::Directory,
-                    name: ".".into(),
-                },
-                DirectoryEntry {
-                    ino: parent,
-                    kind: FileType::Directory,
-                    name: "..".into(),
-                },
-            ];
-            let enumerate = profile::span("directory_enumerate");
-            let mut names: Vec<_> = fs::read_dir(fd_path(&file))?
-                .map(|e| e.map(|e| e.file_name()))
-                .collect::<io::Result<_>>()?;
-            drop(enumerate);
-            let sorted = profile::span("directory_sort");
-            names.sort();
-            drop(sorted);
-            for name in names {
-                let lookup = profile::span("directory_child_lookup");
-                let child = s.lookup(ino, &name)?;
-                drop(lookup);
-                let _attr = profile::span("directory_child_attr");
-                entries.push(DirectoryEntry {
-                    ino: child,
-                    kind: s.attr(child)?.kind,
-                    name,
-                });
-            }
-            let _handle = profile::span("directory_handle");
-            s.add_handle(ino, file, Some(entries))
-        });
+        let result = self.open_directory(ino, || {});
         let _reply = profile::span("reply");
         match result {
             Ok(fh) => reply.opened(fh, FopenFlags::empty()),
