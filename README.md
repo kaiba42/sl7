@@ -3,28 +3,35 @@
 SL7 is an experimental Linux filesystem that deduplicates and compresses Rust
 build artifacts. Cargo writes ordinary files; SL7 shares repeated chunks and
 reconstructs them on reads. Worktrees keep independent output directories.
+SL7 shares stored bytes; Cargo still decides which compilations to run.
 
 **Prototype:** native macOS mounting is unsupported. SL7 trades build time for
-storage savings. See the [measured build results](docs/validation/parallel-hashing-costs.md)
-and the [native-versus-SL7 baseline](docs/validation/native-latest.md).
+storage savings. See the [latest native-versus-SL7 results](docs/validation/opendir-parking-lot.md).
+
+Clone the repository, then choose a path below:
+
+```sh
+git clone https://github.com/kaiba42/sl7.git
+cd sl7
+```
 
 ## Try it with Docker
 
 Requires Docker with `/dev/fuse` support; tested with OrbStack on macOS.
 
 ```sh
-git clone https://github.com/kaiba42/sl7.git
-cd sl7
 bash scripts/docker-test.sh
 ```
 
 This builds SL7 and runs filesystem, Cargo, and recovery tests in a disposable
 container. It defaults to the `orbstack` context; for another Docker setup use
 `SL7_DOCKER_CONTEXT=default bash scripts/docker-test.sh`.
+This is a test drive; it does not configure your project's build directories.
 
 ## Use it for builds on Linux
 
 Requires Rust (tested with 1.97.1), a C compiler, `fuse3`, and `/dev/fuse`.
+On macOS, run these commands and your Cargo builds inside a Linux VM/container.
 From the SL7 checkout, create a fresh store and empty mountpoint:
 
 ```sh
@@ -44,7 +51,8 @@ cargo build
 ```
 
 Use another prefix, such as `/tmp/sl7-mount/branch/`, for another worktree. Keep
-both Cargo variables set for builds, tests, checks, and cleaning.
+both Cargo variables set for builds, tests, checks, and cleaning. Worktrees can
+build concurrently through the same running daemon and store.
 
 After stopping builds, unmount and wait for the mount process to exit. From the
 SL7 checkout, inspect storage or reclaim unreferenced chunks:
