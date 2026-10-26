@@ -1,0 +1,101 @@
+// Render @CGROUP@ with the target cgroup's numeric ID before loading.
+// Record only Cargo descendants and SL7, never unrelated host workloads.
+#include "trace-types.h"
+BEGIN { printf("READY\t%llu\tpointer-v3\n", nsecs(monotonic)); }
+
+tracepoint:sched:sched_process_exec
+/cgroup == @CGROUP@/
+{
+  if (comm == "cargo") { @role[tid(init)] = 1; }
+  if (comm == "sl7") { @role[tid(init)] = 2; }
+  if (@role[tid(init)]) {
+    printf("E\t%llu\t%d\t%d\t%d\t%s\t%s\n", nsecs(monotonic), @role[tid(init)], tid(init), pid(init), comm, str(args->filename));
+  }
+}
+
+tracepoint:sched:sched_process_fork
+/@role[tid(init)]/
+{
+  @role[args->child_pid] = @role[tid(init)];
+  printf("F\t%llu\t%d\t%d\t%d\n", nsecs(monotonic), @role[tid(init)], args->child_pid, args->parent_pid);
+}
+
+tracepoint:task:task_rename
+/@role[tid(init)]/
+{
+  printf("M\t%llu\t%d\t%d\t%d\t%s\n", nsecs(monotonic), @role[tid(init)], tid(init), pid(init), args->newcomm);
+}
+
+tracepoint:raw_syscalls:sys_enter
+/@role[tid(init)]/
+{
+  @syscall[tid(init)] = args->id + 1;
+}
+tracepoint:raw_syscalls:sys_exit
+/@role[tid(init)]/
+{
+  $ignored = delete(@syscall[tid(init)]);
+}
+
+kprobe:request_wait_answer
+/@role[tid(init)] == 1/
+{
+  @fusewait[tid(init)] = 1;
+}
+kretprobe:request_wait_answer
+/@role[tid(init)] == 1/
+{
+  $ignored = delete(@fusewait[tid(init)]);
+}
+
+tracepoint:sched:sched_switch
+{
+  $now = nsecs(monotonic);
+  $prev = args->prev_pid;
+  $next = args->next_pid;
+  if (@role[$prev]) {
+    printf("O\t%llu\t%d\t%d\t%ld\t%ld\t%d\n", $now, @role[$prev], $prev, args->prev_state, @syscall[$prev] - 1, @fusewait[$prev]);
+  }
+  if (@role[$next]) {
+    printf("I\t%llu\t%d\t%d\n", $now, @role[$next], $next);
+  }
+}
+
+tracepoint:sched:sched_wakeup,
+tracepoint:sched:sched_wakeup_new
+/@role[args->pid]/
+{
+  printf("W\t%llu\t%d\t%d\t%d\n", nsecs(monotonic), @role[args->pid], args->pid, tid(init));
+}
+
+rawtracepoint:fuse_request_send
+/@role[tid(init)] == 1/
+{
+  @request[arg0] = 1;
+  printf("P\t%llu\t%d\t%d\t%llu\n", nsecs(monotonic), tid(init), pid(init), arg0);
+}
+tracepoint:fuse:fuse_request_send
+/@role[tid(init)] == 1/
+{
+  printf("S\t%llu\t%d\t%d\t%llu\t%d\t%d\n", nsecs(monotonic), tid(init), pid(init), args->unique, args->opcode, args->connection);
+}
+rawtracepoint:fuse_request_end
+/@request[arg0]/
+{
+  printf("D\t%llu\t%llu\t%d\t%d\n", nsecs(monotonic), arg0, 0, 0);
+  $ignored = delete(@request[arg0]);
+}
+
+tracepoint:sched:sched_process_exit
+/@role[tid(init)]/
+{
+  printf("X\t%llu\t%d\t%d\n", nsecs(monotonic), @role[tid(init)], tid(init));
+  $ignored = delete(@role[tid(init)]);
+  $ignored = delete(@syscall[tid(init)]);
+  $ignored = delete(@fusewait[tid(init)]);
+}
+
+END {
+  printf("END\t%llu\n", nsecs(monotonic));
+  clear(@role); clear(@syscall); clear(@fusewait); clear(@request);
+}

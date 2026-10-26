@@ -1,5 +1,15 @@
 # Validation and performance
 
+The [clean-build wall-time profile](clean-build-walltime.md)
+([HTML](clean-build-walltime.html), [JSON](clean-build-walltime.json)) records
+Cargo dependency timing, scheduler states, exact FUSE request lifetimes and CPU
+samples for native Cargo and the fixed DashMap implementation. In the 189.92s
+SL7 profile, some build thread ran for 183.52s; global FUSE-wait stalls occupied
+4.00s, while selected completion-chain units showed 20.28s of local FUSE-wait
+stalls. Those are observed occupancy measures, not recoverable-time estimates.
+The controls vary substantially, so this run does not establish a reliable
+native-to-SL7 speed delta. All four builds and both integrity checks passed.
+
 The [integrated DashMap comparison](dashmap-indexes.md)
 ([HTML](dashmap-indexes.html), [JSON](dashmap-indexes.json)) measures the focused
 inode/identity-index implementation in `b5ab793` against pre-DashMap SL7.
