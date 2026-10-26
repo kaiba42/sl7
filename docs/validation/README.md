@@ -1,5 +1,15 @@
 # Validation and performance
 
+The [code-level request and kernel profile](code-profile.md)
+([HTML](code-profile.html), [JSON](code-profile.json)) maps handler latency to
+SL7 source functions. The directory-open loop spends 5.66 accumulated seconds
+looking up 472,857 children and fetching their attributes under `State`.
+86% of measured write-side `State` acquisition time overlaps directory-open
+ownership. Kernel stacks identify backing writes, FUSE replies, identity syncs
+and native retirement. Both 99-test Linux configurations, strict Clippy,
+ten analyzer tests, two full builds and both integrity scans passed. The new
+`code-profile` feature is opt-in instrumentation, not a storage optimization.
+
 The [clean-build wall-time profile](clean-build-walltime.md)
 ([HTML](clean-build-walltime.html), [JSON](clean-build-walltime.json)) records
 Cargo dependency timing, scheduler states, exact FUSE request lifetimes and CPU

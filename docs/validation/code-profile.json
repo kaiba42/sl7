@@ -1,0 +1,3572 @@
+{
+  "binary_sha256": "1b2c3b6ef39617457734ad8de9bc7b167fbcd17042524154968fd4f349e4cc59",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+  "kernel": "6.12.58",
+  "perf": "perf version 6.1.190",
+  "jobs": 8,
+  "cpu_max": "800000 100000",
+  "memory_max": "12884901888",
+  "collector_hashes": {
+    "cpu.py": "1c2a69cd1e75d79fcd06b55df91b22892b5a3d035118b3990564a3c50c69c85b",
+    "events.py": "b99d35c7036901c3b0d12eef20b9261c3dd6941d4bd7817e5c98c83dda0e63a6",
+    "rustc-wrapper.c": "94d80f9394fd00d59afa85aa49aad32c4b56d52fdaa13ab3482a0175207a33a3",
+    "trace.bt": "bb66caabb9407fb0f1abed3a6fbc851fda5742ae278d2c8d113b6f50977e2bb1",
+    "code_analysis.py": "7ff76fdac812df729517133c58a56366f7ff41853d8ed08a3b1428eb58b3736b",
+    "report.py": "e1c60a199b9df72696862900c6f2362fe6c109094d315b62b3d4dd950f18054e",
+    "analyze.py": "9a7ae998ed97ca6952b4caf69de737411f8e0d0129b25ae224a7d7ad88f203da",
+    "trace-types.h": "93c26911cb546d50aaf904ee546203f0c5e252f1154cc32ab663d9f5069524b9",
+    "collect.py": "e89d3a83f1a667382b4e5b638e0aa198974eb352c05fcdef473767b9bbc0852f",
+    "test_events.py": "1d87386fc1d618b55eff49c21fd2de10c8ae1da7d5bdd2ad34184be03fcd694f"
+  },
+  "cases": [
+    {
+      "label": "sl7-control",
+      "wall_seconds": 166.401149111,
+      "cargo_cpu": {
+        "user": 975.6101199999999,
+        "system": 79.43512700000001
+      },
+      "daemon_build_cpu": {
+        "user": 29.59,
+        "system": 30.84
+      },
+      "daemon_settling_cpu": {
+        "user": 7.529999999999998,
+        "system": 1.8300000000000018
+      },
+      "artifact_count": 601,
+      "settling_seconds": 18.969619786
+    },
+    {
+      "label": "sl7-profile",
+      "wall_seconds": 165.91408177,
+      "cargo_cpu": {
+        "user": 979.7534989999999,
+        "system": 80.97002199999999
+      },
+      "daemon_build_cpu": {
+        "user": 34.93,
+        "system": 35.47
+      },
+      "daemon_settling_cpu": {
+        "user": 5.109999999999999,
+        "system": 1.2000000000000028
+      },
+      "artifact_count": 601,
+      "settling_seconds": 10.095792045,
+      "phases": {
+        "operations": {
+          "WRITE": {
+            "count": 258634,
+            "total_seconds": 12.760678521,
+            "p50_seconds": 1.1071e-05,
+            "p99_seconds": 0.000634664,
+            "maximum_seconds": 0.460886531,
+            "phases_seconds": {
+              "state_lock_wait": 2.932466385,
+              "hydrate": 0.048048591,
+              "mutation_metadata": 0.028117931,
+              "state_locked_work": 0.424245525,
+              "native_payload": 6.802947326,
+              "cleanup_state_lock_wait": 0.384674695,
+              "cleanup_locked_work": 0.22415358,
+              "reply": 1.349553951,
+              "WRITE": 0.170884775,
+              "inode_gate_wait": 0.395585762
+            },
+            "phase_calls": {
+              "state_lock_wait": 258634,
+              "hydrate": 258634,
+              "mutation_metadata": 258634,
+              "state_locked_work": 278545,
+              "native_payload": 258634,
+              "cleanup_state_lock_wait": 258634,
+              "cleanup_locked_work": 258634,
+              "reply": 258634,
+              "WRITE": 258634,
+              "inode_gate_wait": 19911
+            },
+            "state_wait_overlapping_opendir_hold_seconds": {
+              "state_lock_wait": 2.5479143380000027,
+              "cleanup_state_lock_wait": 0.30580016700000007
+            },
+            "longest_requests": [
+              {
+                "start_seconds": 164.327423283,
+                "seconds": 0.460886531,
+                "phases_seconds": {
+                  "state_lock_wait": 1.5e-07,
+                  "inode_gate_wait": 3.8333e-05,
+                  "state_locked_work": 4.91e-06,
+                  "hydrate": 8.92e-07,
+                  "mutation_metadata": 1.9e-07,
+                  "native_payload": 0.460677441,
+                  "cleanup_state_lock_wait": 7.01e-07,
+                  "cleanup_locked_work": 7.203e-06,
+                  "reply": 0.000153183,
+                  "WRITE": 3.528e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "inode_gate_wait": 1,
+                  "state_locked_work": 2,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 85.213959338,
+                "seconds": 0.1094589,
+                "phases_seconds": {
+                  "state_lock_wait": 0.108505156,
+                  "hydrate": 8.72e-07,
+                  "mutation_metadata": 3.41e-07,
+                  "state_locked_work": 2.2232e-05,
+                  "native_payload": 0.000907245,
+                  "cleanup_state_lock_wait": 1.1e-07,
+                  "cleanup_locked_work": 1.973e-06,
+                  "reply": 1.587e-05,
+                  "WRITE": 5.101e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 85.253204461,
+                "seconds": 0.069711005,
+                "phases_seconds": {
+                  "state_lock_wait": 0.069309567,
+                  "hydrate": 6.12e-07,
+                  "mutation_metadata": 2.1e-07,
+                  "state_locked_work": 2.096e-05,
+                  "native_payload": 0.000359488,
+                  "cleanup_state_lock_wait": 1.4e-07,
+                  "cleanup_locked_work": 1.883e-06,
+                  "reply": 1.4478e-05,
+                  "WRITE": 3.667e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 38.213235026,
+                "seconds": 0.046571035,
+                "phases_seconds": {
+                  "state_lock_wait": 6.52e-07,
+                  "hydrate": 6.72e-07,
+                  "mutation_metadata": 2.3e-07,
+                  "state_locked_work": 3.3644e-05,
+                  "native_payload": 0.046446657,
+                  "cleanup_state_lock_wait": 7.9923e-05,
+                  "cleanup_locked_work": 1.573e-06,
+                  "reply": 5.4e-06,
+                  "WRITE": 2.284e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 38.219198152,
+                "seconds": 0.040465318,
+                "phases_seconds": {
+                  "state_lock_wait": 6.51e-07,
+                  "hydrate": 4.51e-07,
+                  "mutation_metadata": 1.7e-07,
+                  "state_locked_work": 3.1099e-05,
+                  "native_payload": 0.04040966,
+                  "cleanup_state_lock_wait": 2.91e-07,
+                  "cleanup_locked_work": 3.857e-06,
+                  "reply": 1.6381e-05,
+                  "WRITE": 2.758e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 84.589151559,
+                "seconds": 0.032367409,
+                "phases_seconds": {
+                  "state_lock_wait": 0.014711438,
+                  "hydrate": 2e-07,
+                  "mutation_metadata": 1e-07,
+                  "state_locked_work": 1.7404e-05,
+                  "native_payload": 4.0207e-05,
+                  "cleanup_state_lock_wait": 0.017567632,
+                  "cleanup_locked_work": 2.755e-06,
+                  "reply": 1.8746e-05,
+                  "WRITE": 8.927e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 113.058073721,
+                "seconds": 0.031213652,
+                "phases_seconds": {
+                  "state_lock_wait": 0.03118662,
+                  "hydrate": 4.11e-07,
+                  "mutation_metadata": 1.1e-07,
+                  "state_locked_work": 2.395e-06,
+                  "native_payload": 8.567e-06,
+                  "cleanup_state_lock_wait": 1.5e-07,
+                  "cleanup_locked_work": 1.633e-06,
+                  "reply": 1.0099e-05,
+                  "WRITE": 3.667e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 120.755968543,
+                "seconds": 0.025323727,
+                "phases_seconds": {
+                  "state_lock_wait": 0.02520022,
+                  "hydrate": 8.61e-07,
+                  "mutation_metadata": 2.3e-07,
+                  "state_locked_work": 1.4749e-05,
+                  "native_payload": 9.6625e-05,
+                  "cleanup_state_lock_wait": 1.3e-07,
+                  "cleanup_locked_work": 8.92e-07,
+                  "reply": 7.615e-06,
+                  "WRITE": 2.405e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 118.878026325,
+                "seconds": 0.025118925,
+                "phases_seconds": {
+                  "state_lock_wait": 0.007512449,
+                  "hydrate": 5.21e-07,
+                  "mutation_metadata": 1.61e-07,
+                  "state_locked_work": 3.065e-06,
+                  "native_payload": 2.4226e-05,
+                  "cleanup_state_lock_wait": 0.017551941,
+                  "cleanup_locked_work": 3.166e-06,
+                  "reply": 1.569e-05,
+                  "WRITE": 7.706e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 120.756768944,
+                "seconds": 0.02450477,
+                "phases_seconds": {
+                  "state_lock_wait": 0.024452119,
+                  "hydrate": 3.71e-07,
+                  "mutation_metadata": 8e-08,
+                  "state_locked_work": 2.756e-06,
+                  "native_payload": 1.1632e-05,
+                  "cleanup_state_lock_wait": 1.8726e-05,
+                  "cleanup_locked_work": 1.373e-06,
+                  "reply": 8.887e-06,
+                  "WRITE": 8.826e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 117.487619698,
+                "seconds": 0.023713076,
+                "phases_seconds": {
+                  "state_lock_wait": 0.023583218,
+                  "hydrate": 4.81e-07,
+                  "mutation_metadata": 1.7e-07,
+                  "state_locked_work": 2.1592e-05,
+                  "native_payload": 3.0668e-05,
+                  "cleanup_state_lock_wait": 5.6057e-05,
+                  "cleanup_locked_work": 1.953e-06,
+                  "reply": 1.1251e-05,
+                  "WRITE": 7.686e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 117.488078706,
+                "seconds": 0.02324473,
+                "phases_seconds": {
+                  "state_lock_wait": 0.02317144,
+                  "hydrate": 3.51e-07,
+                  "mutation_metadata": 8e-08,
+                  "state_locked_work": 1.814e-06,
+                  "native_payload": 7.424e-06,
+                  "cleanup_state_lock_wait": 3.7201e-05,
+                  "cleanup_locked_work": 2.094e-06,
+                  "reply": 1.568e-05,
+                  "WRITE": 8.646e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 112.708080014,
+                "seconds": 0.021683665,
+                "phases_seconds": {
+                  "state_lock_wait": 0.02164513,
+                  "hydrate": 8.92e-07,
+                  "mutation_metadata": 2.01e-07,
+                  "state_locked_work": 3.135e-06,
+                  "native_payload": 1.8044e-05,
+                  "cleanup_state_lock_wait": 8.92e-07,
+                  "cleanup_locked_work": 1.082e-06,
+                  "reply": 1.083e-05,
+                  "WRITE": 3.459e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 116.128440719,
+                "seconds": 0.020911357,
+                "phases_seconds": {
+                  "state_lock_wait": 0.020861672,
+                  "hydrate": 4.21e-07,
+                  "mutation_metadata": 3.3e-07,
+                  "state_locked_work": 3.647e-06,
+                  "native_payload": 2.3214e-05,
+                  "cleanup_state_lock_wait": 2.1e-07,
+                  "cleanup_locked_work": 1.894e-06,
+                  "reply": 1.5119e-05,
+                  "WRITE": 4.85e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 74.390527469,
+                "seconds": 0.020612235,
+                "phases_seconds": {
+                  "state_lock_wait": 0.020536309,
+                  "hydrate": 7.32e-07,
+                  "mutation_metadata": 1.4e-07,
+                  "state_locked_work": 2.805e-06,
+                  "native_payload": 2.4687e-05,
+                  "cleanup_state_lock_wait": 3.131e-05,
+                  "cleanup_locked_work": 1.222e-06,
+                  "reply": 1.092e-05,
+                  "WRITE": 4.11e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 116.128929124,
+                "seconds": 0.020557219,
+                "phases_seconds": {
+                  "state_lock_wait": 0.020456898,
+                  "hydrate": 1.11e-07,
+                  "mutation_metadata": 9e-08,
+                  "state_locked_work": 1.3024e-05,
+                  "native_payload": 7.4383e-05,
+                  "cleanup_state_lock_wait": 1.3e-07,
+                  "cleanup_locked_work": 1.402e-06,
+                  "reply": 9.718e-06,
+                  "WRITE": 1.463e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 84.543706136,
+                "seconds": 0.020110474,
+                "phases_seconds": {
+                  "state_lock_wait": 0.019700781,
+                  "hydrate": 7.32e-07,
+                  "mutation_metadata": 1.71e-07,
+                  "state_locked_work": 3.155e-06,
+                  "native_payload": 0.000374016,
+                  "cleanup_state_lock_wait": 1.7163e-05,
+                  "cleanup_locked_work": 1.082e-06,
+                  "reply": 8.386e-06,
+                  "WRITE": 4.988e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 78.787627601,
+                "seconds": 0.019521509,
+                "phases_seconds": {
+                  "state_lock_wait": 8.1e-08,
+                  "hydrate": 1.9e-07,
+                  "mutation_metadata": 1e-07,
+                  "state_locked_work": 1.253e-06,
+                  "native_payload": 1.0801e-05,
+                  "cleanup_state_lock_wait": 0.01949118,
+                  "cleanup_locked_work": 2.836e-06,
+                  "reply": 1.1361e-05,
+                  "WRITE": 3.707e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 108.981209664,
+                "seconds": 0.01946474,
+                "phases_seconds": {
+                  "state_lock_wait": 0.018972228,
+                  "hydrate": 5.21e-07,
+                  "mutation_metadata": 1.6e-07,
+                  "state_locked_work": 3.286e-06,
+                  "native_payload": 0.000465731,
+                  "cleanup_state_lock_wait": 1.71e-07,
+                  "cleanup_locked_work": 2.335e-06,
+                  "reply": 1.563e-05,
+                  "WRITE": 4.678e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              },
+              {
+                "start_seconds": 117.890930784,
+                "seconds": 0.019080445,
+                "phases_seconds": {
+                  "state_lock_wait": 0.018974082,
+                  "hydrate": 7.01e-07,
+                  "mutation_metadata": 1.5e-07,
+                  "state_locked_work": 2.876e-06,
+                  "native_payload": 1.9698e-05,
+                  "cleanup_state_lock_wait": 5.5346e-05,
+                  "cleanup_locked_work": 1.833e-06,
+                  "reply": 1.9838e-05,
+                  "WRITE": 5.921e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "hydrate": 1,
+                  "mutation_metadata": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "WRITE": 1
+                }
+              }
+            ]
+          },
+          "OPENDIR": {
+            "count": 2583,
+            "total_seconds": 6.280561126,
+            "p50_seconds": 5.8412e-05,
+            "p99_seconds": 0.020116626,
+            "maximum_seconds": 0.043023501,
+            "phases_seconds": {
+              "state_lock_wait": 0.079884157,
+              "directory_open": 0.049441974,
+              "directory_enumerate": 0.339735913,
+              "directory_sort": 0.045730301,
+              "directory_handle": 0.034489557,
+              "state_locked_work": 0.04787586,
+              "reply": 0.020811738,
+              "OPENDIR": 0.003234995,
+              "directory_child_lookup": 3.036843465,
+              "directory_child_attr": 2.622513166
+            },
+            "phase_calls": {
+              "state_lock_wait": 2583,
+              "directory_open": 2583,
+              "directory_enumerate": 2583,
+              "directory_sort": 2583,
+              "directory_handle": 2583,
+              "state_locked_work": 2583,
+              "reply": 2583,
+              "OPENDIR": 2583,
+              "directory_child_lookup": 472857,
+              "directory_child_attr": 472857
+            },
+            "state_wait_overlapping_opendir_hold_seconds": {
+              "state_lock_wait": 0.067926382
+            },
+            "longest_requests": [
+              {
+                "start_seconds": 37.901259897,
+                "seconds": 0.043023501,
+                "phases_seconds": {
+                  "state_lock_wait": 3e-07,
+                  "directory_open": 2.1972e-05,
+                  "directory_enumerate": 0.033221412,
+                  "directory_sort": 4.686e-05,
+                  "directory_child_lookup": 0.005079377,
+                  "directory_child_attr": 0.004475405,
+                  "directory_handle": 7.6747e-05,
+                  "state_locked_work": 7.701e-05,
+                  "reply": 1.9127e-05,
+                  "OPENDIR": 5.291e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 688,
+                  "directory_child_attr": 688,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 102.036729319,
+                "seconds": 0.034554882,
+                "phases_seconds": {
+                  "state_lock_wait": 2.41e-07,
+                  "directory_open": 2.2243e-05,
+                  "directory_enumerate": 0.000673147,
+                  "directory_sort": 0.000159676,
+                  "directory_child_lookup": 0.011083344,
+                  "directory_child_attr": 0.022247981,
+                  "directory_handle": 0.000179373,
+                  "state_locked_work": 0.000166726,
+                  "reply": 1.8846e-05,
+                  "OPENDIR": 3.305e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1384,
+                  "directory_child_attr": 1384,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 117.354674235,
+                "seconds": 0.032455067,
+                "phases_seconds": {
+                  "state_lock_wait": 6e-08,
+                  "directory_open": 1.575e-05,
+                  "directory_enumerate": 0.000667838,
+                  "directory_sort": 0.013258871,
+                  "directory_child_lookup": 0.010134631,
+                  "directory_child_attr": 0.008104362,
+                  "directory_handle": 9.7587e-05,
+                  "state_locked_work": 0.000153353,
+                  "reply": 1.9147e-05,
+                  "OPENDIR": 3.468e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1469,
+                  "directory_child_attr": 1469,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 113.057959342,
+                "seconds": 0.031305828,
+                "phases_seconds": {
+                  "state_lock_wait": 6.31e-07,
+                  "directory_open": 3.6019e-05,
+                  "directory_enumerate": 0.000741398,
+                  "directory_sort": 0.000108257,
+                  "directory_child_lookup": 0.011287739,
+                  "directory_child_attr": 0.018753035,
+                  "directory_handle": 0.000185325,
+                  "state_locked_work": 0.000169288,
+                  "reply": 1.9187e-05,
+                  "OPENDIR": 4.949e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1463,
+                  "directory_child_attr": 1463,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 104.841582432,
+                "seconds": 0.030440814,
+                "phases_seconds": {
+                  "state_lock_wait": 1.91e-07,
+                  "directory_open": 2.5589e-05,
+                  "directory_enumerate": 0.000651997,
+                  "directory_sort": 9.3819e-05,
+                  "directory_child_lookup": 0.010695344,
+                  "directory_child_attr": 0.018699096,
+                  "directory_handle": 9.7777e-05,
+                  "state_locked_work": 0.000161101,
+                  "reply": 1.3196e-05,
+                  "OPENDIR": 2.704e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1372,
+                  "directory_child_attr": 1372,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 120.752650587,
+                "seconds": 0.028519369,
+                "phases_seconds": {
+                  "state_lock_wait": 2.1e-07,
+                  "directory_open": 1.6411e-05,
+                  "directory_enumerate": 0.000750275,
+                  "directory_sort": 0.000161779,
+                  "directory_child_lookup": 0.009683588,
+                  "directory_child_attr": 0.017595296,
+                  "directory_handle": 0.000129197,
+                  "state_locked_work": 0.000160049,
+                  "reply": 1.9277e-05,
+                  "OPENDIR": 3.287e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1574,
+                  "directory_child_attr": 1574,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 62.443979731,
+                "seconds": 0.028438153,
+                "phases_seconds": {
+                  "state_lock_wait": 3.11e-07,
+                  "directory_open": 2.9697e-05,
+                  "directory_enumerate": 0.000520726,
+                  "directory_sort": 7.3711e-05,
+                  "directory_child_lookup": 0.020003368,
+                  "directory_child_attr": 0.007543459,
+                  "directory_handle": 0.000130129,
+                  "state_locked_work": 0.00011998,
+                  "reply": 1.2554e-05,
+                  "OPENDIR": 4.218e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 987,
+                  "directory_child_attr": 987,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 81.051309383,
+                "seconds": 0.027430024,
+                "phases_seconds": {
+                  "state_lock_wait": 3.91e-07,
+                  "directory_open": 3.3123e-05,
+                  "directory_enumerate": 0.000643701,
+                  "directory_sort": 8.9602e-05,
+                  "directory_child_lookup": 0.008425641,
+                  "directory_child_attr": 0.018019163,
+                  "directory_handle": 7.82e-05,
+                  "state_locked_work": 0.000120857,
+                  "reply": 1.5941e-05,
+                  "OPENDIR": 3.405e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1217,
+                  "directory_child_attr": 1217,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 84.594353188,
+                "seconds": 0.026961509,
+                "phases_seconds": {
+                  "state_lock_wait": 0.009552772,
+                  "directory_open": 2.4386e-05,
+                  "directory_enumerate": 0.000592794,
+                  "directory_sort": 8.8339e-05,
+                  "directory_child_lookup": 0.008759446,
+                  "directory_child_attr": 0.007728402,
+                  "directory_handle": 6.5054e-05,
+                  "state_locked_work": 0.000132323,
+                  "reply": 1.4187e-05,
+                  "OPENDIR": 3.806e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1260,
+                  "directory_child_attr": 1260,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 112.399983804,
+                "seconds": 0.026809188,
+                "phases_seconds": {
+                  "state_lock_wait": 0.011080673,
+                  "directory_open": 2.2443e-05,
+                  "directory_enumerate": 0.000568327,
+                  "directory_sort": 8.5193e-05,
+                  "directory_child_lookup": 0.008264624,
+                  "directory_child_attr": 0.0065577,
+                  "directory_handle": 8.914e-05,
+                  "state_locked_work": 0.00012176,
+                  "reply": 1.5269e-05,
+                  "OPENDIR": 4.059e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1457,
+                  "directory_child_attr": 1457,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 85.571754075,
+                "seconds": 0.026551795,
+                "phases_seconds": {
+                  "state_lock_wait": 0.012489237,
+                  "directory_open": 2.588e-05,
+                  "directory_enumerate": 0.000586663,
+                  "directory_sort": 7.4482e-05,
+                  "directory_child_lookup": 0.007194835,
+                  "directory_child_attr": 0.005973976,
+                  "directory_handle": 7.308e-05,
+                  "state_locked_work": 0.000111779,
+                  "reply": 1.8235e-05,
+                  "OPENDIR": 3.628e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1281,
+                  "directory_child_attr": 1281,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 118.877310987,
+                "seconds": 0.02578052,
+                "phases_seconds": {
+                  "state_lock_wait": 0.008250982,
+                  "directory_open": 2.1582e-05,
+                  "directory_enumerate": 0.000552638,
+                  "directory_sort": 9.0122e-05,
+                  "directory_child_lookup": 0.008901147,
+                  "directory_child_attr": 0.007732989,
+                  "directory_handle": 8.93e-05,
+                  "state_locked_work": 0.000123456,
+                  "reply": 1.4368e-05,
+                  "OPENDIR": 3.936e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1495,
+                  "directory_child_attr": 1495,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 102.752246616,
+                "seconds": 0.024984708,
+                "phases_seconds": {
+                  "state_lock_wait": 1.3e-07,
+                  "directory_open": 1.2835e-05,
+                  "directory_enumerate": 0.000525265,
+                  "directory_sort": 8.1666e-05,
+                  "directory_child_lookup": 0.008105949,
+                  "directory_child_attr": 0.01601642,
+                  "directory_handle": 9.2147e-05,
+                  "state_locked_work": 0.000124486,
+                  "reply": 2.2603e-05,
+                  "OPENDIR": 3.207e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1374,
+                  "directory_child_attr": 1374,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 117.487604589,
+                "seconds": 0.02359473,
+                "phases_seconds": {
+                  "state_lock_wait": 8.1e-08,
+                  "directory_open": 2.3675e-05,
+                  "directory_enumerate": 0.000634583,
+                  "directory_sort": 8.4541e-05,
+                  "directory_child_lookup": 0.014991196,
+                  "directory_child_attr": 0.007612873,
+                  "directory_handle": 8.337e-05,
+                  "state_locked_work": 0.000145956,
+                  "reply": 1.562e-05,
+                  "OPENDIR": 2.835e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1477,
+                  "directory_child_attr": 1477,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 106.960251152,
+                "seconds": 0.023535837,
+                "phases_seconds": {
+                  "state_lock_wait": 2.21e-07,
+                  "directory_open": 1.2524e-05,
+                  "directory_enumerate": 0.000536666,
+                  "directory_sort": 8.0674e-05,
+                  "directory_child_lookup": 0.015379517,
+                  "directory_child_attr": 0.007305017,
+                  "directory_handle": 7.6426e-05,
+                  "state_locked_work": 0.000126557,
+                  "reply": 1.5029e-05,
+                  "OPENDIR": 3.206e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1375,
+                  "directory_child_attr": 1375,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 112.388093161,
+                "seconds": 0.022948233,
+                "phases_seconds": {
+                  "state_lock_wait": 3.31e-07,
+                  "directory_open": 2.1531e-05,
+                  "directory_enumerate": 0.000729876,
+                  "directory_sort": 0.00011512,
+                  "directory_child_lookup": 0.012818199,
+                  "directory_child_attr": 0.00902384,
+                  "directory_handle": 8.5333e-05,
+                  "state_locked_work": 0.000139996,
+                  "reply": 1.0299e-05,
+                  "OPENDIR": 3.708e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1457,
+                  "directory_child_attr": 1457,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 65.380873672,
+                "seconds": 0.022824656,
+                "phases_seconds": {
+                  "state_lock_wait": 1.4e-07,
+                  "directory_open": 1.4598e-05,
+                  "directory_enumerate": 0.00051272,
+                  "directory_sort": 0.000100612,
+                  "directory_child_lookup": 0.007923168,
+                  "directory_child_attr": 0.013995756,
+                  "directory_handle": 0.000132553,
+                  "state_locked_work": 0.000121534,
+                  "reply": 1.9677e-05,
+                  "OPENDIR": 3.898e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1037,
+                  "directory_child_attr": 1037,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 95.047915869,
+                "seconds": 0.022511067,
+                "phases_seconds": {
+                  "state_lock_wait": 1.7e-07,
+                  "directory_open": 2.1822e-05,
+                  "directory_enumerate": 0.000686754,
+                  "directory_sort": 9.3378e-05,
+                  "directory_child_lookup": 0.008415064,
+                  "directory_child_attr": 0.013049576,
+                  "directory_handle": 8.3149e-05,
+                  "state_locked_work": 0.000136165,
+                  "reply": 1.9848e-05,
+                  "OPENDIR": 5.141e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1341,
+                  "directory_child_attr": 1341,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 133.378316957,
+                "seconds": 0.022443728,
+                "phases_seconds": {
+                  "state_lock_wait": 2.01e-07,
+                  "directory_open": 1.8896e-05,
+                  "directory_enumerate": 0.000782587,
+                  "directory_sort": 0.000119248,
+                  "directory_child_lookup": 0.009799783,
+                  "directory_child_attr": 0.011470341,
+                  "directory_handle": 9.2337e-05,
+                  "state_locked_work": 0.000142521,
+                  "reply": 1.4288e-05,
+                  "OPENDIR": 3.526e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1545,
+                  "directory_child_attr": 1545,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              },
+              {
+                "start_seconds": 112.707504784,
+                "seconds": 0.022215721,
+                "phases_seconds": {
+                  "state_lock_wait": 1.7e-07,
+                  "directory_open": 3.3514e-05,
+                  "directory_enumerate": 0.000739444,
+                  "directory_sort": 0.000112205,
+                  "directory_child_lookup": 0.011311076,
+                  "directory_child_attr": 0.009740287,
+                  "directory_handle": 9.912e-05,
+                  "state_locked_work": 0.000160317,
+                  "reply": 1.545e-05,
+                  "OPENDIR": 4.138e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "directory_open": 1,
+                  "directory_enumerate": 1,
+                  "directory_sort": 1,
+                  "directory_child_lookup": 1469,
+                  "directory_child_attr": 1469,
+                  "directory_handle": 1,
+                  "state_locked_work": 1,
+                  "reply": 1,
+                  "OPENDIR": 1
+                }
+              }
+            ]
+          },
+          "READ": {
+            "count": 108750,
+            "total_seconds": 5.041479755,
+            "p50_seconds": 7.845e-06,
+            "p99_seconds": 0.000343878,
+            "maximum_seconds": 0.460902722,
+            "phases_seconds": {
+              "state_lock_wait": 0.234183493,
+              "state_locked_work": 0.047253422,
+              "native_payload": 1.131079303,
+              "cleanup_state_lock_wait": 0.04145551,
+              "cleanup_locked_work": 0.083910052,
+              "reply": 0.835672163,
+              "READ": 0.058301722,
+              "reader_pool_wait": 0.000972449,
+              "reconstruct": 0.78339318,
+              "inode_gate_wait": 1.825258461
+            },
+            "phase_calls": {
+              "state_lock_wait": 108750,
+              "state_locked_work": 108750,
+              "native_payload": 102450,
+              "cleanup_state_lock_wait": 108750,
+              "cleanup_locked_work": 108750,
+              "reply": 108750,
+              "READ": 108750,
+              "reader_pool_wait": 6300,
+              "reconstruct": 6300,
+              "inode_gate_wait": 3553
+            },
+            "state_wait_overlapping_opendir_hold_seconds": {
+              "state_lock_wait": 0.171210684,
+              "cleanup_state_lock_wait": 0.015154603999999999
+            },
+            "longest_requests": [
+              {
+                "start_seconds": 164.327450415,
+                "seconds": 0.460902722,
+                "phases_seconds": {
+                  "state_lock_wait": 5e-08,
+                  "inode_gate_wait": 0.460751953,
+                  "state_locked_work": 2.726e-06,
+                  "native_payload": 9.0574e-05,
+                  "cleanup_state_lock_wait": 1.4e-07,
+                  "cleanup_locked_work": 1.914e-06,
+                  "reply": 5.4103e-05,
+                  "READ": 1.262e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "inode_gate_wait": 2,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 164.327463029,
+                "seconds": 0.460860241,
+                "phases_seconds": {
+                  "state_lock_wait": 1.4127e-05,
+                  "inode_gate_wait": 0.460697259,
+                  "state_locked_work": 2.264e-06,
+                  "native_payload": 0.000100121,
+                  "cleanup_state_lock_wait": 1.4e-07,
+                  "cleanup_locked_work": 1.683e-06,
+                  "reply": 4.3443e-05,
+                  "READ": 1.204e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "inode_gate_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 164.327687729,
+                "seconds": 0.460584393,
+                "phases_seconds": {
+                  "state_lock_wait": 1.2e-07,
+                  "inode_gate_wait": 0.460497366,
+                  "state_locked_work": 1.743e-06,
+                  "native_payload": 5.5856e-05,
+                  "cleanup_state_lock_wait": 5e-08,
+                  "cleanup_locked_work": 9.32e-07,
+                  "reply": 2.7313e-05,
+                  "READ": 1.013e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "inode_gate_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 164.890323734,
+                "seconds": 0.021641794,
+                "phases_seconds": {
+                  "state_lock_wait": 6e-08,
+                  "inode_gate_wait": 0.000331433,
+                  "state_locked_work": 1.113e-06,
+                  "native_payload": 0.021256807,
+                  "cleanup_state_lock_wait": 2.5e-07,
+                  "cleanup_locked_work": 5.31e-06,
+                  "reply": 4.4756e-05,
+                  "READ": 2.065e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "inode_gate_wait": 3,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 80.905652878,
+                "seconds": 0.017596065,
+                "phases_seconds": {
+                  "state_lock_wait": 0.017570256,
+                  "state_locked_work": 1.613e-06,
+                  "native_payload": 7.133e-06,
+                  "cleanup_state_lock_wait": 1.5e-07,
+                  "cleanup_locked_work": 1.523e-06,
+                  "reply": 1.2013e-05,
+                  "READ": 3.377e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 113.54594825,
+                "seconds": 0.014367671,
+                "phases_seconds": {
+                  "state_lock_wait": 0.014333165,
+                  "state_locked_work": 1.553e-06,
+                  "native_payload": 9.058e-06,
+                  "cleanup_state_lock_wait": 1.91e-07,
+                  "cleanup_locked_work": 1.804e-06,
+                  "reply": 1.6953e-05,
+                  "READ": 4.947e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 75.503956434,
+                "seconds": 0.01418459,
+                "phases_seconds": {
+                  "state_lock_wait": 0.014160665,
+                  "state_locked_work": 1.232e-06,
+                  "native_payload": 7.023e-06,
+                  "cleanup_state_lock_wait": 1.3e-07,
+                  "cleanup_locked_work": 1.443e-06,
+                  "reply": 9.758e-06,
+                  "READ": 4.339e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 80.946273603,
+                "seconds": 0.013930494,
+                "phases_seconds": {
+                  "state_lock_wait": 0.013904735,
+                  "state_locked_work": 1.603e-06,
+                  "native_payload": 7.174e-06,
+                  "cleanup_state_lock_wait": 8e-08,
+                  "cleanup_locked_work": 1.433e-06,
+                  "reply": 1.08e-05,
+                  "READ": 4.669e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 78.546995799,
+                "seconds": 0.013843178,
+                "phases_seconds": {
+                  "state_lock_wait": 0.013714912,
+                  "state_locked_work": 1.102e-06,
+                  "native_payload": 1.4237e-05,
+                  "cleanup_state_lock_wait": 9.8498e-05,
+                  "cleanup_locked_work": 9.42e-07,
+                  "reply": 1.007e-05,
+                  "READ": 3.417e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 81.505844103,
+                "seconds": 0.013307804,
+                "phases_seconds": {
+                  "state_lock_wait": 2.21e-07,
+                  "state_locked_work": 1.904e-06,
+                  "reader_pool_wait": 4.51e-07,
+                  "reconstruct": 0.000181427,
+                  "cleanup_state_lock_wait": 0.013094376,
+                  "cleanup_locked_work": 2.465e-06,
+                  "reply": 1.8426e-05,
+                  "READ": 8.534e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "reader_pool_wait": 1,
+                  "reconstruct": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 75.926265326,
+                "seconds": 0.011388162,
+                "phases_seconds": {
+                  "state_lock_wait": 0.011342334,
+                  "state_locked_work": 1.403e-06,
+                  "native_payload": 1.8545e-05,
+                  "cleanup_state_lock_wait": 1.51e-07,
+                  "cleanup_locked_work": 2.174e-06,
+                  "reply": 1.8084e-05,
+                  "READ": 5.471e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 64.681650051,
+                "seconds": 0.011358756,
+                "phases_seconds": {
+                  "state_lock_wait": 0.011332836,
+                  "state_locked_work": 1.794e-06,
+                  "native_payload": 6.402e-06,
+                  "cleanup_state_lock_wait": 1.6e-07,
+                  "cleanup_locked_work": 1.663e-06,
+                  "reply": 1.2304e-05,
+                  "READ": 3.597e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 43.141785006,
+                "seconds": 0.009454855,
+                "phases_seconds": {
+                  "state_lock_wait": 0.009284168,
+                  "state_locked_work": 1.744e-06,
+                  "native_payload": 0.000118397,
+                  "cleanup_state_lock_wait": 1e-07,
+                  "cleanup_locked_work": 1.062e-06,
+                  "reply": 4.209e-05,
+                  "READ": 7.294e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 164.986140121,
+                "seconds": 0.009193203,
+                "phases_seconds": {
+                  "state_lock_wait": 7.034e-06,
+                  "inode_gate_wait": 2.8104e-05,
+                  "state_locked_work": 9.21e-07,
+                  "native_payload": 0.009120785,
+                  "cleanup_state_lock_wait": 9.568e-06,
+                  "cleanup_locked_work": 1.112e-06,
+                  "reply": 2.4006e-05,
+                  "READ": 1.673e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "inode_gate_wait": 3,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 133.486973372,
+                "seconds": 0.008611782,
+                "phases_seconds": {
+                  "state_lock_wait": 5e-08,
+                  "state_locked_work": 4.41e-07,
+                  "reader_pool_wait": 2.51e-07,
+                  "reconstruct": 0.000247804,
+                  "cleanup_state_lock_wait": 8.1e-08,
+                  "cleanup_locked_work": 1.202e-06,
+                  "reply": 0.00835958,
+                  "READ": 2.373e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "reader_pool_wait": 1,
+                  "reconstruct": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 43.142611127,
+                "seconds": 0.008554832,
+                "phases_seconds": {
+                  "state_lock_wait": 0.008511339,
+                  "state_locked_work": 1.263e-06,
+                  "native_payload": 1.1081e-05,
+                  "cleanup_state_lock_wait": 1.1e-07,
+                  "cleanup_locked_work": 1.914e-06,
+                  "reply": 2.4858e-05,
+                  "READ": 4.267e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 33.722189743,
+                "seconds": 0.008477645,
+                "phases_seconds": {
+                  "state_lock_wait": 0.008453919,
+                  "state_locked_work": 1.373e-06,
+                  "native_payload": 6.202e-06,
+                  "cleanup_state_lock_wait": 1.91e-07,
+                  "cleanup_locked_work": 1.854e-06,
+                  "reply": 1.0269e-05,
+                  "READ": 3.837e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 37.999378227,
+                "seconds": 0.007452233,
+                "phases_seconds": {
+                  "state_lock_wait": 0.00743465,
+                  "state_locked_work": 7.71e-07,
+                  "native_payload": 5.951e-06,
+                  "cleanup_state_lock_wait": 5e-08,
+                  "cleanup_locked_work": 1.704e-06,
+                  "reply": 5.781e-06,
+                  "READ": 3.326e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 32.548549295,
+                "seconds": 0.007048481,
+                "phases_seconds": {
+                  "state_lock_wait": 0.006675638,
+                  "state_locked_work": 6.41e-07,
+                  "native_payload": 1.5901e-05,
+                  "cleanup_state_lock_wait": 6e-08,
+                  "cleanup_locked_work": 7.21e-07,
+                  "reply": 1.1472e-05,
+                  "READ": 0.000344048
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              },
+              {
+                "start_seconds": 29.453962741,
+                "seconds": 0.006904456,
+                "phases_seconds": {
+                  "state_lock_wait": 0.006877354,
+                  "state_locked_work": 1.383e-06,
+                  "native_payload": 7.935e-06,
+                  "cleanup_state_lock_wait": 2.4e-07,
+                  "cleanup_locked_work": 2.064e-06,
+                  "reply": 1.0871e-05,
+                  "READ": 4.609e-06
+                },
+                "phase_calls": {
+                  "state_lock_wait": 1,
+                  "state_locked_work": 1,
+                  "native_payload": 1,
+                  "cleanup_state_lock_wait": 1,
+                  "cleanup_locked_work": 1,
+                  "reply": 1,
+                  "READ": 1
+                }
+              }
+            ]
+          }
+        },
+        "validated_requests": 370959,
+        "excluded_outside_build": 992,
+        "daemon_operation_counts_match": true,
+        "note": "Per-request phases are exclusive and sum exactly to handler time. Requests overlap across workers. Pre-dispatch FUSE queueing is outside these spans. Lock-wait intervals include scheduling; overlapping OPENDIR ownership is measured directly."
+      },
+      "cpu": {
+        "groups": {
+          "k": {
+            "samples": 3328,
+            "leaf": [
+              {
+                "symbol": "_raw_spin_unlock_irqrestore",
+                "samples": 297,
+                "percent": 8.924278846153847
+              },
+              {
+                "symbol": "_copy_to_iter",
+                "samples": 140,
+                "percent": 4.206730769230769
+              },
+              {
+                "symbol": "__memcpy",
+                "samples": 109,
+                "percent": 3.2752403846153846
+              },
+              {
+                "symbol": "gup_fast_fallback",
+                "samples": 87,
+                "percent": 2.6141826923076925
+              },
+              {
+                "symbol": "do_syscall_64",
+                "samples": 76,
+                "percent": 2.2836538461538463
+              },
+              {
+                "symbol": "_raw_spin_unlock_irq",
+                "samples": 76,
+                "percent": 2.2836538461538463
+              },
+              {
+                "symbol": "copy_page_from_iter_atomic",
+                "samples": 70,
+                "percent": 2.1033653846153846
+              },
+              {
+                "symbol": "clear_page_erms",
+                "samples": 67,
+                "percent": 2.0132211538461537
+              },
+              {
+                "symbol": "kmem_cache_alloc_noprof",
+                "samples": 62,
+                "percent": 1.8629807692307692
+              },
+              {
+                "symbol": "srso_alias_safe_ret",
+                "samples": 56,
+                "percent": 1.6826923076923077
+              },
+              {
+                "symbol": "fsnotify",
+                "samples": 40,
+                "percent": 1.2019230769230769
+              },
+              {
+                "symbol": "xas_load",
+                "samples": 40,
+                "percent": 1.2019230769230769
+              },
+              {
+                "symbol": "step_into",
+                "samples": 37,
+                "percent": 1.1117788461538463
+              },
+              {
+                "symbol": "refill_obj_stock",
+                "samples": 32,
+                "percent": 0.9615384615384616
+              },
+              {
+                "symbol": "alloc_tagging_slab_alloc_hook",
+                "samples": 32,
+                "percent": 0.9615384615384616
+              },
+              {
+                "symbol": "filemap_get_read_batch",
+                "samples": 31,
+                "percent": 0.9314903846153846
+              },
+              {
+                "symbol": "lruvec_stat_mod_folio",
+                "samples": 30,
+                "percent": 0.9014423076923077
+              },
+              {
+                "symbol": "__memcg_slab_post_alloc_hook",
+                "samples": 27,
+                "percent": 0.8112980769230769
+              },
+              {
+                "symbol": "sched_balance_update_blocked_averages",
+                "samples": 26,
+                "percent": 0.78125
+              },
+              {
+                "symbol": "__rcu_read_unlock",
+                "samples": 26,
+                "percent": 0.78125
+              },
+              {
+                "symbol": "generic_perform_write",
+                "samples": 24,
+                "percent": 0.7211538461538461
+              },
+              {
+                "symbol": "fdget_raw",
+                "samples": 23,
+                "percent": 0.6911057692307693
+              },
+              {
+                "symbol": "kmem_cache_free",
+                "samples": 23,
+                "percent": 0.6911057692307693
+              },
+              {
+                "symbol": "ext4_block_write_begin",
+                "samples": 22,
+                "percent": 0.6610576923076923
+              },
+              {
+                "symbol": "__rcu_read_lock",
+                "samples": 22,
+                "percent": 0.6610576923076923
+              },
+              {
+                "symbol": "__d_lookup_rcu",
+                "samples": 22,
+                "percent": 0.6610576923076923
+              },
+              {
+                "symbol": "__memset",
+                "samples": 21,
+                "percent": 0.6310096153846154
+              },
+              {
+                "symbol": "mpage_process_page_bufs",
+                "samples": 21,
+                "percent": 0.6310096153846154
+              },
+              {
+                "symbol": "try_charge_memcg",
+                "samples": 21,
+                "percent": 0.6310096153846154
+              },
+              {
+                "symbol": "fdget_pos",
+                "samples": 20,
+                "percent": 0.6009615384615384
+              },
+              {
+                "symbol": "__list_del_entry_valid_or_report",
+                "samples": 20,
+                "percent": 0.6009615384615384
+              },
+              {
+                "symbol": "find_get_block_common",
+                "samples": 19,
+                "percent": 0.5709134615384616
+              },
+              {
+                "symbol": "refill_stock",
+                "samples": 19,
+                "percent": 0.5709134615384616
+              },
+              {
+                "symbol": "balance_dirty_pages_ratelimited_flags",
+                "samples": 19,
+                "percent": 0.5709134615384616
+              },
+              {
+                "symbol": "_raw_spin_lock",
+                "samples": 18,
+                "percent": 0.5408653846153846
+              },
+              {
+                "symbol": "atime_needs_update",
+                "samples": 18,
+                "percent": 0.5408653846153846
+              },
+              {
+                "symbol": "link_path_walk.part.0.constprop.0",
+                "samples": 18,
+                "percent": 0.5408653846153846
+              },
+              {
+                "symbol": "ext4_da_get_block_prep",
+                "samples": 17,
+                "percent": 0.5108173076923077
+              },
+              {
+                "symbol": "__kmalloc_noprof",
+                "samples": 17,
+                "percent": 0.5108173076923077
+              },
+              {
+                "symbol": "__d_lookup",
+                "samples": 17,
+                "percent": 0.5108173076923077
+              }
+            ],
+            "sl7_caller": [
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::write",
+                "samples": 823,
+                "percent": 24.729567307692307
+              },
+              {
+                "symbol": "[no SL7 frame]",
+                "samples": 323,
+                "percent": 9.705528846153847
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+                "samples": 250,
+                "percent": 7.512019230769231
+              },
+              {
+                "symbol": "<sl7::live::Live>::publish_seal",
+                "samples": 195,
+                "percent": 5.859375
+              },
+              {
+                "symbol": "<sl7::staging::State>::lookup",
+                "samples": 193,
+                "percent": 5.799278846153846
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+                "samples": 165,
+                "percent": 4.9579326923076925
+              },
+              {
+                "symbol": "<sl7::live::Live>::attach_identity",
+                "samples": 164,
+                "percent": 4.927884615384615
+              },
+              {
+                "symbol": "sl7::live::id",
+                "samples": 148,
+                "percent": 4.447115384615385
+              },
+              {
+                "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#2}>",
+                "samples": 123,
+                "percent": 3.6959134615384617
+              },
+              {
+                "symbol": "<sl7::live::Live>::retire",
+                "samples": 110,
+                "percent": 3.3052884615384617
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::append",
+                "samples": 103,
+                "percent": 3.094951923076923
+              },
+              {
+                "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+                "samples": 96,
+                "percent": 2.8846153846153846
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::finish",
+                "samples": 68,
+                "percent": 2.043269230769231
+              },
+              {
+                "symbol": "sl7::staging::open_native",
+                "samples": 60,
+                "percent": 1.8028846153846154
+              },
+              {
+                "symbol": "<sl7::live::Live>::record",
+                "samples": 51,
+                "percent": 1.5324519230769231
+              },
+              {
+                "symbol": "<sl7::store::Store>::insert_import",
+                "samples": 48,
+                "percent": 1.4423076923076923
+              },
+              {
+                "symbol": "<sl7::staging::State>::register",
+                "samples": 46,
+                "percent": 1.3822115384615385
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+                "samples": 39,
+                "percent": 1.171875
+              },
+              {
+                "symbol": "<sl7::staging::State>::attr",
+                "samples": 27,
+                "percent": 0.8112980769230769
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::opendir",
+                "samples": 25,
+                "percent": 0.7512019230769231
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+                "samples": 24,
+                "percent": 0.7211538461538461
+              },
+              {
+                "symbol": "sl7::staging::background::run",
+                "samples": 18,
+                "percent": 0.5408653846153846
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::open",
+                "samples": 17,
+                "percent": 0.5108173076923077
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::new",
+                "samples": 16,
+                "percent": 0.4807692307692308
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::readdir",
+                "samples": 15,
+                "percent": 0.45072115384615385
+              },
+              {
+                "symbol": "<sl7::staging::State>::reclaim",
+                "samples": 14,
+                "percent": 0.4206730769230769
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::mkdir",
+                "samples": 14,
+                "percent": 0.4206730769230769
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::unlink",
+                "samples": 14,
+                "percent": 0.4206730769230769
+              },
+              {
+                "symbol": "<sl7::staging::State>::child",
+                "samples": 13,
+                "percent": 0.390625
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::flush",
+                "samples": 12,
+                "percent": 0.3605769230769231
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::create",
+                "samples": 10,
+                "percent": 0.3004807692307692
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::setattr",
+                "samples": 10,
+                "percent": 0.3004807692307692
+              },
+              {
+                "symbol": "<sl7::staging::State>::release",
+                "samples": 9,
+                "percent": 0.2704326923076923
+              },
+              {
+                "symbol": "<sl7::staging::operations::NativeIo as core::ops::drop::Drop>::drop",
+                "samples": 8,
+                "percent": 0.2403846153846154
+              },
+              {
+                "symbol": "<sl7::live::Live>::begin_seal_with::<sl7::staging::background::run::{closure#1}>",
+                "samples": 8,
+                "percent": 0.2403846153846154
+              },
+              {
+                "symbol": "<sl7::store::Store>::read_file_mode",
+                "samples": 7,
+                "percent": 0.21033653846153846
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::rmdir",
+                "samples": 7,
+                "percent": 0.21033653846153846
+              },
+              {
+                "symbol": "<sl7::staging::State>::open",
+                "samples": 7,
+                "percent": 0.21033653846153846
+              },
+              {
+                "symbol": "<sl7::staging::reads::ReadLease as core::ops::drop::Drop>::drop",
+                "samples": 5,
+                "percent": 0.1502403846153846
+              },
+              {
+                "symbol": "sl7::pack::open",
+                "samples": 5,
+                "percent": 0.1502403846153846
+              }
+            ],
+            "threads": {
+              "fuser-0": 571,
+              "sl7-pack-1": 464,
+              "fuser-2": 596,
+              "fuser-3": 593,
+              "fuser-1": 588,
+              "sl7-pack-0": 512,
+              "sl7-hash-1": 3,
+              "sl7-hash-0": 1
+            },
+            "sl7_inclusive": [
+              {
+                "symbol": "sl7::staging::background::run",
+                "samples": 976,
+                "percent": 29.326923076923077
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::write",
+                "samples": 843,
+                "percent": 25.330528846153847
+              },
+              {
+                "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#2}>",
+                "samples": 417,
+                "percent": 12.530048076923077
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::opendir",
+                "samples": 377,
+                "percent": 11.328125
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+                "samples": 269,
+                "percent": 8.082932692307692
+              },
+              {
+                "symbol": "<sl7::staging::State>::lookup",
+                "samples": 246,
+                "percent": 7.391826923076923
+              },
+              {
+                "symbol": "<sl7::live::Live>::publish_seal",
+                "samples": 243,
+                "percent": 7.3016826923076925
+              },
+              {
+                "symbol": "<sl7::live::Live>::record",
+                "samples": 199,
+                "percent": 5.9795673076923075
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+                "samples": 197,
+                "percent": 5.919471153846154
+              },
+              {
+                "symbol": "<sl7::live::Live>::begin_seal_with::<sl7::staging::background::run::{closure#1}>",
+                "samples": 186,
+                "percent": 5.5889423076923075
+              },
+              {
+                "symbol": "<sl7::staging::State>::attr",
+                "samples": 174,
+                "percent": 5.228365384615385
+              },
+              {
+                "symbol": "<sl7::live::Live>::identity_with::<sl7::staging::background::run::{closure#1}>",
+                "samples": 167,
+                "percent": 5.018028846153846
+              },
+              {
+                "symbol": "<sl7::live::Live>::attach_identity",
+                "samples": 164,
+                "percent": 4.927884615384615
+              },
+              {
+                "symbol": "sl7::live::id",
+                "samples": 148,
+                "percent": 4.447115384615385
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::add",
+                "samples": 126,
+                "percent": 3.7860576923076925
+              },
+              {
+                "symbol": "<sl7::live::Live>::retire",
+                "samples": 110,
+                "percent": 3.3052884615384617
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::add_parts",
+                "samples": 104,
+                "percent": 3.125
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::append",
+                "samples": 103,
+                "percent": 3.094951923076923
+              },
+              {
+                "symbol": "<sl7::hashing::Stream<sl7::import_stream::Serial<std::io::buffered::bufreader::BufReader<&std::fs::File>>>>::next::<sl7::staging::background::run::{closure#2}>",
+                "samples": 103,
+                "percent": 3.094951923076923
+              },
+              {
+                "symbol": "<sl7::import_stream::Serial<std::io::buffered::bufreader::BufReader<&std::fs::File>> as sl7::import_stream::Chunks>::next_chunk",
+                "samples": 99,
+                "percent": 2.9747596153846154
+              },
+              {
+                "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+                "samples": 96,
+                "percent": 2.8846153846153846
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::create",
+                "samples": 69,
+                "percent": 2.0733173076923075
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::finish_writer",
+                "samples": 68,
+                "percent": 2.043269230769231
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::finish",
+                "samples": 68,
+                "percent": 2.043269230769231
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::finish",
+                "samples": 65,
+                "percent": 1.953125
+              },
+              {
+                "symbol": "sl7::staging::open_native",
+                "samples": 60,
+                "percent": 1.8028846153846154
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::open",
+                "samples": 55,
+                "percent": 1.6526442307692308
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+                "samples": 50,
+                "percent": 1.5024038461538463
+              },
+              {
+                "symbol": "<sl7::store::Store>::insert_import",
+                "samples": 48,
+                "percent": 1.4423076923076923
+              },
+              {
+                "symbol": "<sl7::staging::State>::register",
+                "samples": 46,
+                "percent": 1.3822115384615385
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::unlink",
+                "samples": 39,
+                "percent": 1.171875
+              },
+              {
+                "symbol": "<sl7::staging::State>::open",
+                "samples": 38,
+                "percent": 1.1418269230769231
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+                "samples": 28,
+                "percent": 0.8413461538461539
+              },
+              {
+                "symbol": "<sl7::live::Live>::read",
+                "samples": 27,
+                "percent": 0.8112980769230769
+              },
+              {
+                "symbol": "<sl7::live::Live>::sealed",
+                "samples": 22,
+                "percent": 0.6610576923076923
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::rollover",
+                "samples": 19,
+                "percent": 0.5709134615384616
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs>::with_read::<fuser::FileAttr, <sl7::staging::StagingFs>::lookup_indexed::{closure#5}>",
+                "samples": 19,
+                "percent": 0.5709134615384616
+              },
+              {
+                "symbol": "<sl7::staging::State>::release",
+                "samples": 18,
+                "percent": 0.5408653846153846
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::new",
+                "samples": 16,
+                "percent": 0.4807692307692308
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::readdir",
+                "samples": 15,
+                "percent": 0.45072115384615385
+              }
+            ],
+            "kernel_inclusive": [
+              {
+                "symbol": "entry_SYSCALL_64_after_hwframe",
+                "samples": 3309,
+                "percent": 99.42908653846153
+              },
+              {
+                "symbol": "do_syscall_64",
+                "samples": 3309,
+                "percent": 99.42908653846153
+              },
+              {
+                "symbol": "vfs_write",
+                "samples": 808,
+                "percent": 24.278846153846153
+              },
+              {
+                "symbol": "ext4_buffered_write_iter",
+                "samples": 790,
+                "percent": 23.73798076923077
+              },
+              {
+                "symbol": "generic_perform_write",
+                "samples": 741,
+                "percent": 22.265625
+              },
+              {
+                "symbol": "__x64_sys_pwrite64",
+                "samples": 708,
+                "percent": 21.27403846153846
+              },
+              {
+                "symbol": "vfs_read",
+                "samples": 563,
+                "percent": 16.917067307692307
+              },
+              {
+                "symbol": "do_writev",
+                "samples": 554,
+                "percent": 16.646634615384617
+              },
+              {
+                "symbol": "vfs_writev",
+                "samples": 531,
+                "percent": 15.955528846153847
+              },
+              {
+                "symbol": "ext4_da_write_begin",
+                "samples": 520,
+                "percent": 15.625
+              },
+              {
+                "symbol": "__x64_sys_openat",
+                "samples": 383,
+                "percent": 11.508413461538462
+              },
+              {
+                "symbol": "do_sys_openat2",
+                "samples": 382,
+                "percent": 11.478365384615385
+              },
+              {
+                "symbol": "ksys_read",
+                "samples": 363,
+                "percent": 10.907451923076923
+              },
+              {
+                "symbol": "do_filp_open",
+                "samples": 347,
+                "percent": 10.426682692307692
+              },
+              {
+                "symbol": "path_openat",
+                "samples": 343,
+                "percent": 10.306490384615385
+              },
+              {
+                "symbol": "__fsnotify_parent",
+                "samples": 324,
+                "percent": 9.735576923076923
+              },
+              {
+                "symbol": "__filemap_get_folio",
+                "samples": 310,
+                "percent": 9.314903846153847
+              },
+              {
+                "symbol": "_raw_spin_unlock_irqrestore",
+                "samples": 297,
+                "percent": 8.924278846153847
+              },
+              {
+                "symbol": "fsnotify",
+                "samples": 290,
+                "percent": 8.713942307692308
+              },
+              {
+                "symbol": "filemap_read",
+                "samples": 287,
+                "percent": 8.623798076923077
+              },
+              {
+                "symbol": "path_lookupat",
+                "samples": 286,
+                "percent": 8.59375
+              },
+              {
+                "symbol": "__x64_sys_fsync",
+                "samples": 258,
+                "percent": 7.752403846153846
+              },
+              {
+                "symbol": "ext4_sync_file",
+                "samples": 258,
+                "percent": 7.752403846153846
+              },
+              {
+                "symbol": "do_fsync",
+                "samples": 258,
+                "percent": 7.752403846153846
+              },
+              {
+                "symbol": "file_write_and_wait_range",
+                "samples": 256,
+                "percent": 7.6923076923076925
+              },
+              {
+                "symbol": "do_writepages",
+                "samples": 249,
+                "percent": 7.481971153846154
+              },
+              {
+                "symbol": "__filemap_fdatawrite_range",
+                "samples": 249,
+                "percent": 7.481971153846154
+              },
+              {
+                "symbol": "filemap_fdatawrite_wbc",
+                "samples": 249,
+                "percent": 7.481971153846154
+              },
+              {
+                "symbol": "ext4_writepages",
+                "samples": 248,
+                "percent": 7.451923076923077
+              },
+              {
+                "symbol": "ext4_do_writepages",
+                "samples": 247,
+                "percent": 7.421875
+              },
+              {
+                "symbol": "inotify_handle_inode_event",
+                "samples": 242,
+                "percent": 7.271634615384615
+              },
+              {
+                "symbol": "fuse_dev_read",
+                "samples": 233,
+                "percent": 7.001201923076923
+              },
+              {
+                "symbol": "fuse_dev_do_read",
+                "samples": 231,
+                "percent": 6.941105769230769
+              },
+              {
+                "symbol": "link_path_walk.part.0.constprop.0",
+                "samples": 228,
+                "percent": 6.850961538461538
+              },
+              {
+                "symbol": "fuse_copy_args",
+                "samples": 223,
+                "percent": 6.700721153846154
+              },
+              {
+                "symbol": "__x64_sys_pread64",
+                "samples": 217,
+                "percent": 6.5204326923076925
+              },
+              {
+                "symbol": "ext4_block_write_begin",
+                "samples": 211,
+                "percent": 6.340144230769231
+              },
+              {
+                "symbol": "fuse_copy_page",
+                "samples": 202,
+                "percent": 6.069711538461538
+              },
+              {
+                "symbol": "do_iter_readv_writev",
+                "samples": 190,
+                "percent": 5.709134615384615
+              },
+              {
+                "symbol": "fuse_dev_write",
+                "samples": 188,
+                "percent": 5.649038461538462
+              }
+            ]
+          },
+          "u": {
+            "samples": 3518,
+            "leaf": [
+              {
+                "symbol": "sha2::sha256::x86::digest_blocks",
+                "samples": 732,
+                "percent": 20.807276861853325
+              },
+              {
+                "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+                "samples": 394,
+                "percent": 11.199545196134167
+              },
+              {
+                "symbol": "[unknown]",
+                "samples": 335,
+                "percent": 9.522455940875497
+              },
+              {
+                "symbol": "ZSTD_compressBlock_fast",
+                "samples": 242,
+                "percent": 6.878908470722001
+              },
+              {
+                "symbol": "ZSTD_compressBlock_fast_noDict_5_1",
+                "samples": 191,
+                "percent": 5.429221148379761
+              },
+              {
+                "symbol": "ZSTD_encodeSequences_bmi2",
+                "samples": 155,
+                "percent": 4.405912450255827
+              },
+              {
+                "symbol": "HUF_buildCTable_wksp",
+                "samples": 77,
+                "percent": 2.1887436043206367
+              },
+              {
+                "symbol": "writev",
+                "samples": 54,
+                "percent": 1.534963047185901
+              },
+              {
+                "symbol": "HUF_compress1X_usingCTable_internal_bmi2",
+                "samples": 52,
+                "percent": 1.4781125639567936
+              },
+              {
+                "symbol": "statx",
+                "samples": 50,
+                "percent": 1.4212620807276861
+              },
+              {
+                "symbol": "sqlite3BtreeIndexMoveto",
+                "samples": 50,
+                "percent": 1.4212620807276861
+              },
+              {
+                "symbol": "HIST_count_parallel_wksp",
+                "samples": 39,
+                "percent": 1.1085844229675952
+              },
+              {
+                "symbol": "FSE_buildCTable_wksp",
+                "samples": 38,
+                "percent": 1.0801591813530416
+              },
+              {
+                "symbol": "sqlite3VdbeExec",
+                "samples": 34,
+                "percent": 0.9664582148948266
+              },
+              {
+                "symbol": "pcache1Fetch",
+                "samples": 29,
+                "percent": 0.824332006822058
+              },
+              {
+                "symbol": "ZSTD_seqToCodes",
+                "samples": 28,
+                "percent": 0.7959067652075043
+              },
+              {
+                "symbol": "HIST_countFast_wksp",
+                "samples": 27,
+                "percent": 0.7674815235929505
+              },
+              {
+                "symbol": "__libc_pread",
+                "samples": 26,
+                "percent": 0.7390562819783968
+              },
+              {
+                "symbol": "<dashmap::DashMap<fuser::ll::request::INodeNo, sl7::staging::Inode> as dashmap::t::Map<fuser::ll::request::INodeNo, sl7::staging::Inode, std::hash::random::RandomState>>::_get::<fuser::ll::request::INodeNo>",
+                "samples": 26,
+                "percent": 0.7390562819783968
+              },
+              {
+                "symbol": "open64",
+                "samples": 25,
+                "percent": 0.7106310403638431
+              },
+              {
+                "symbol": "__libc_pwrite",
+                "samples": 24,
+                "percent": 0.6822057987492893
+              },
+              {
+                "symbol": "walChecksumBytes",
+                "samples": 21,
+                "percent": 0.5969300739056282
+              },
+              {
+                "symbol": "<std::io::default_write_fmt::Adapter<std::io::buffered::bufwriter::BufWriter<std::fs::File>> as core::fmt::Write>::write_str",
+                "samples": 20,
+                "percent": 0.5685048322910745
+              },
+              {
+                "symbol": "<sl7::staging::State>::take_job",
+                "samples": 19,
+                "percent": 0.5400795906765208
+              },
+              {
+                "symbol": "malloc",
+                "samples": 18,
+                "percent": 0.511654349061967
+              },
+              {
+                "symbol": "read",
+                "samples": 17,
+                "percent": 0.4832291074474133
+              },
+              {
+                "symbol": "FSE_writeNCount_generic",
+                "samples": 17,
+                "percent": 0.4832291074474133
+              },
+              {
+                "symbol": "syscall",
+                "samples": 17,
+                "percent": 0.4832291074474133
+              },
+              {
+                "symbol": "pcache1TruncateUnsafe",
+                "samples": 16,
+                "percent": 0.4548038658328596
+              },
+              {
+                "symbol": "core::fmt::write",
+                "samples": 16,
+                "percent": 0.4548038658328596
+              },
+              {
+                "symbol": "<u64>::_fmt_inner",
+                "samples": 16,
+                "percent": 0.4548038658328596
+              },
+              {
+                "symbol": "__close",
+                "samples": 15,
+                "percent": 0.42637862421830586
+              },
+              {
+                "symbol": "FSE_normalizeCount",
+                "samples": 15,
+                "percent": 0.42637862421830586
+              },
+              {
+                "symbol": "pthread_mutex_lock",
+                "samples": 15,
+                "percent": 0.42637862421830586
+              },
+              {
+                "symbol": "FSE_compress_usingCTable_generic",
+                "samples": 14,
+                "percent": 0.3979533826037521
+              },
+              {
+                "symbol": "<std::thread::local::LocalKey<core::cell::RefCell<sl7::staging::profile::enabled::Trace>>>::with::<<sl7::staging::profile::enabled::Span as core::ops::drop::Drop>::drop::{closure#0}, ()>",
+                "samples": 14,
+                "percent": 0.3979533826037521
+              },
+              {
+                "symbol": "<sl7::staging::State>::attr",
+                "samples": 14,
+                "percent": 0.3979533826037521
+              },
+              {
+                "symbol": "<fuser::session::SessionEventLoop<sl7::staging::StagingFs>>::event_loop",
+                "samples": 13,
+                "percent": 0.3695281409891984
+              },
+              {
+                "symbol": "sqlite3BtreeTableMoveto",
+                "samples": 13,
+                "percent": 0.3695281409891984
+              },
+              {
+                "symbol": "sqlite3RunParser",
+                "samples": 11,
+                "percent": 0.312677657760091
+              }
+            ],
+            "sl7_caller": [
+              {
+                "symbol": "<sl7::compression::Packs>::add",
+                "samples": 1015,
+                "percent": 28.85162023877203
+              },
+              {
+                "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+                "samples": 457,
+                "percent": 12.990335417851052
+              },
+              {
+                "symbol": "sl7::chunk::identity",
+                "samples": 363,
+                "percent": 10.318362706083002
+              },
+              {
+                "symbol": "<sl7::import_stream::Serial<std::io::buffered::bufreader::BufReader<&std::fs::File>> as sl7::import_stream::Chunks>::next_chunk",
+                "samples": 305,
+                "percent": 8.669698692438885
+              },
+              {
+                "symbol": "<sl7::store::Store>::insert_import",
+                "samples": 194,
+                "percent": 5.514496873223423
+              },
+              {
+                "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#2}>",
+                "samples": 163,
+                "percent": 4.633314383172257
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::write",
+                "samples": 116,
+                "percent": 3.297328027288232
+              },
+              {
+                "symbol": "[no SL7 frame]",
+                "samples": 98,
+                "percent": 2.785673678226265
+              },
+              {
+                "symbol": "<sl7::live::Live>::publish_seal",
+                "samples": 85,
+                "percent": 2.4161455372370666
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::append",
+                "samples": 78,
+                "percent": 2.2171688459351904
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+                "samples": 74,
+                "percent": 2.1034678794769754
+              },
+              {
+                "symbol": "<sl7::live::Live>::record",
+                "samples": 71,
+                "percent": 2.0181921546333146
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+                "samples": 44,
+                "percent": 1.250710631040364
+              },
+              {
+                "symbol": "<sl7::staging::State>::attr",
+                "samples": 42,
+                "percent": 1.1938601478112565
+              },
+              {
+                "symbol": "<sl7::live::Live>::begin_seal_with::<sl7::staging::background::run::{closure#1}>",
+                "samples": 39,
+                "percent": 1.1085844229675952
+              },
+              {
+                "symbol": "<sl7::staging::State>::register",
+                "samples": 39,
+                "percent": 1.1085844229675952
+              },
+              {
+                "symbol": "<sl7::staging::State>::lookup",
+                "samples": 37,
+                "percent": 1.0517339397384877
+              },
+              {
+                "symbol": "<sl7::staging::State>::child",
+                "samples": 33,
+                "percent": 0.9380329732802729
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::finish",
+                "samples": 25,
+                "percent": 0.7106310403638431
+              },
+              {
+                "symbol": "<sl7::staging::State>::take_job",
+                "samples": 22,
+                "percent": 0.625355315520182
+              },
+              {
+                "symbol": "sl7::live::id",
+                "samples": 20,
+                "percent": 0.5685048322910745
+              },
+              {
+                "symbol": "<sl7::staging::operations::NativeIo as core::ops::drop::Drop>::drop",
+                "samples": 17,
+                "percent": 0.4832291074474133
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::readdir",
+                "samples": 13,
+                "percent": 0.3695281409891984
+              },
+              {
+                "symbol": "sl7::staging::background::run",
+                "samples": 13,
+                "percent": 0.3695281409891984
+              },
+              {
+                "symbol": "<sl7::store::Store>::read_file_mode",
+                "samples": 11,
+                "percent": 0.312677657760091
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+                "samples": 10,
+                "percent": 0.28425241614553726
+              },
+              {
+                "symbol": "sl7::pack::read_from",
+                "samples": 10,
+                "percent": 0.28425241614553726
+              },
+              {
+                "symbol": "<sl7::staging::State>::reclaim",
+                "samples": 9,
+                "percent": 0.2558271745309835
+              },
+              {
+                "symbol": "sl7::live::decode",
+                "samples": 9,
+                "percent": 0.2558271745309835
+              },
+              {
+                "symbol": "<sl7::staging::State>::release",
+                "samples": 9,
+                "percent": 0.2558271745309835
+              },
+              {
+                "symbol": "<sl7::live::Live>::commit_metadata_changes",
+                "samples": 7,
+                "percent": 0.19897669130187606
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::opendir",
+                "samples": 7,
+                "percent": 0.19897669130187606
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+                "samples": 6,
+                "percent": 0.17055144968732233
+              },
+              {
+                "symbol": "<sl7::staging::State>::path",
+                "samples": 6,
+                "percent": 0.17055144968732233
+              },
+              {
+                "symbol": "sl7::staging::open_native",
+                "samples": 4,
+                "percent": 0.1137009664582149
+              },
+              {
+                "symbol": "<sl7::staging::reads::ReadLease as core::ops::drop::Drop>::drop",
+                "samples": 4,
+                "percent": 0.1137009664582149
+              },
+              {
+                "symbol": "<sl7::hashing::Stream<sl7::import_stream::Serial<std::io::buffered::bufreader::BufReader<&std::fs::File>>>>::next::<sl7::staging::background::run::{closure#2}>",
+                "samples": 4,
+                "percent": 0.1137009664582149
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs>::indexed_native_attr::<<sl7::staging::StagingFs>::lookup_indexed::{closure#4}>",
+                "samples": 4,
+                "percent": 0.1137009664582149
+              },
+              {
+                "symbol": "<sl7::hashing::Pool>::submit",
+                "samples": 4,
+                "percent": 0.1137009664582149
+              },
+              {
+                "symbol": "<sl7::live::Live>::attach_identity",
+                "samples": 4,
+                "percent": 0.1137009664582149
+              }
+            ],
+            "threads": {
+              "sl7-pack-1": 1209,
+              "sl7-pack-0": 1254,
+              "fuser-2": 193,
+              "fuser-3": 171,
+              "fuser-1": 194,
+              "fuser-0": 170,
+              "sl7-hash-0": 165,
+              "sl7-hash-1": 162
+            },
+            "sl7_inclusive": [
+              {
+                "symbol": "sl7::staging::background::run",
+                "samples": 2457,
+                "percent": 69.8408186469585
+              },
+              {
+                "symbol": "<sl7::store::Packer>::prepare::<sl7::staging::background::run::{closure#2}>",
+                "samples": 2091,
+                "percent": 59.437180216031834
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::add",
+                "samples": 1094,
+                "percent": 31.097214326321772
+              },
+              {
+                "symbol": "<sl7::hashing::Stream<sl7::import_stream::Serial<std::io::buffered::bufreader::BufReader<&std::fs::File>>>>::next::<sl7::staging::background::run::{closure#2}>",
+                "samples": 806,
+                "percent": 22.9107447413303
+              },
+              {
+                "symbol": "<sl7::import_stream::Serial<std::io::buffered::bufreader::BufReader<&std::fs::File>> as sl7::import_stream::Chunks>::next_chunk",
+                "samples": 762,
+                "percent": 21.66003411028994
+              },
+              {
+                "symbol": "<sl7::chunk::Chunker<std::io::buffered::bufreader::BufReader<&std::fs::File>>>::next_chunk",
+                "samples": 457,
+                "percent": 12.990335417851052
+              },
+              {
+                "symbol": "sl7::chunk::identity",
+                "samples": 363,
+                "percent": 10.318362706083002
+              },
+              {
+                "symbol": "<sl7::live::Live>::publish_seal",
+                "samples": 280,
+                "percent": 7.959067652075043
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::opendir",
+                "samples": 198,
+                "percent": 5.628197839681637
+              },
+              {
+                "symbol": "<sl7::store::Store>::insert_import",
+                "samples": 194,
+                "percent": 5.514496873223423
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::write",
+                "samples": 145,
+                "percent": 4.12166003411029
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::read",
+                "samples": 128,
+                "percent": 3.6384309266628767
+              },
+              {
+                "symbol": "<sl7::staging::State>::attr",
+                "samples": 122,
+                "percent": 3.467879476975554
+              },
+              {
+                "symbol": "<sl7::staging::State>::lookup",
+                "samples": 108,
+                "percent": 3.069926094371802
+              },
+              {
+                "symbol": "<sl7::live::Live>::record",
+                "samples": 92,
+                "percent": 2.6151222285389424
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::add_parts",
+                "samples": 79,
+                "percent": 2.245594087549744
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::append",
+                "samples": 78,
+                "percent": 2.2171688459351904
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::lookup",
+                "samples": 62,
+                "percent": 1.762364980102331
+              },
+              {
+                "symbol": "<sl7::live::Live>::begin_seal_with::<sl7::staging::background::run::{closure#1}>",
+                "samples": 50,
+                "percent": 1.4212620807276861
+              },
+              {
+                "symbol": "<sl7::live::Live>::read",
+                "samples": 47,
+                "percent": 1.335986355884025
+              },
+              {
+                "symbol": "<sl7::staging::State>::register",
+                "samples": 39,
+                "percent": 1.1085844229675952
+              },
+              {
+                "symbol": "<sl7::staging::State>::child",
+                "samples": 37,
+                "percent": 1.0517339397384877
+              },
+              {
+                "symbol": "<sl7::store::Store>::read_file_mode",
+                "samples": 35,
+                "percent": 0.9948834565093804
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::finish",
+                "samples": 26,
+                "percent": 0.7390562819783968
+              },
+              {
+                "symbol": "<sl7::compression::Packs>::finish_writer",
+                "samples": 26,
+                "percent": 0.7390562819783968
+              },
+              {
+                "symbol": "<sl7::pack::Writer>::finish",
+                "samples": 25,
+                "percent": 0.7106310403638431
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::create",
+                "samples": 23,
+                "percent": 0.6537805571347356
+              },
+              {
+                "symbol": "<sl7::store::Store>::append_extent",
+                "samples": 23,
+                "percent": 0.6537805571347356
+              },
+              {
+                "symbol": "<sl7::read_cache::ReadCache>::read",
+                "samples": 23,
+                "percent": 0.6537805571347356
+              },
+              {
+                "symbol": "<sl7::staging::operations::NativeIo as core::ops::drop::Drop>::drop",
+                "samples": 23,
+                "percent": 0.6537805571347356
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::unlink",
+                "samples": 22,
+                "percent": 0.625355315520182
+              },
+              {
+                "symbol": "<sl7::staging::State>::take_job",
+                "samples": 22,
+                "percent": 0.625355315520182
+              },
+              {
+                "symbol": "sl7::live::id",
+                "samples": 21,
+                "percent": 0.5969300739056282
+              },
+              {
+                "symbol": "sl7::pack::read_from",
+                "samples": 21,
+                "percent": 0.5969300739056282
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs>::with_read::<fuser::FileAttr, <sl7::staging::StagingFs>::lookup_indexed::{closure#5}>",
+                "samples": 14,
+                "percent": 0.3979533826037521
+              },
+              {
+                "symbol": "<sl7::live::Live>::sealed",
+                "samples": 14,
+                "percent": 0.3979533826037521
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::readdir",
+                "samples": 13,
+                "percent": 0.3695281409891984
+              },
+              {
+                "symbol": "<sl7::staging::State>::release",
+                "samples": 11,
+                "percent": 0.312677657760091
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::release",
+                "samples": 11,
+                "percent": 0.312677657760091
+              },
+              {
+                "symbol": "<sl7::staging::StagingFs as fuser::Filesystem>::getattr",
+                "samples": 10,
+                "percent": 0.28425241614553726
+              }
+            ],
+            "kernel_inclusive": []
+          }
+        },
+        "excluded_outside_build": 623,
+        "kernel_callsite_syscalls": [
+          {
+            "site": "StagingFs::write",
+            "syscall": "pwrite64",
+            "samples": 618,
+            "percent": 18.56971153846154
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "writev",
+            "samples": 276,
+            "percent": 8.29326923076923
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "read",
+            "samples": 272,
+            "percent": 8.173076923076923
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "openat",
+            "samples": 216,
+            "percent": 6.490384615384615
+          },
+          {
+            "site": "StagingFs::write",
+            "syscall": "writev",
+            "samples": 195,
+            "percent": 5.859375
+          },
+          {
+            "site": "Live::attach_identity",
+            "syscall": "fsync",
+            "samples": 148,
+            "percent": 4.447115384615385
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "openat",
+            "samples": 140,
+            "percent": 4.206730769230769
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "write",
+            "samples": 107,
+            "percent": 3.215144230769231
+          },
+          {
+            "site": "Live::retire",
+            "syscall": "ftruncate",
+            "samples": 105,
+            "percent": 3.155048076923077
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "other / unresolved syscall",
+            "samples": 102,
+            "percent": 3.0649038461538463
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "read",
+            "samples": 93,
+            "percent": 2.7944711538461537
+          },
+          {
+            "site": "Live::publish_seal",
+            "syscall": "pwrite64",
+            "samples": 89,
+            "percent": 2.6742788461538463
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "pread64",
+            "samples": 87,
+            "percent": 2.6141826923076925
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "writev",
+            "samples": 82,
+            "percent": 2.4639423076923075
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "statx",
+            "samples": 73,
+            "percent": 2.1935096153846154
+          },
+          {
+            "site": "Live::publish_seal",
+            "syscall": "fsync",
+            "samples": 72,
+            "percent": 2.1634615384615383
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "other / unresolved syscall",
+            "samples": 69,
+            "percent": 2.0733173076923075
+          },
+          {
+            "site": "Live::publish_seal",
+            "syscall": "pread64",
+            "samples": 64,
+            "percent": 1.9230769230769231
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "pread64",
+            "samples": 54,
+            "percent": 1.6225961538461537
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "fcntl",
+            "samples": 52,
+            "percent": 1.5625
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "close",
+            "samples": 39,
+            "percent": 1.171875
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "fsync",
+            "samples": 36,
+            "percent": 1.0817307692307692
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "statx",
+            "samples": 33,
+            "percent": 0.9915865384615384
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "fcntl",
+            "samples": 24,
+            "percent": 0.7211538461538461
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "renameat2",
+            "samples": 22,
+            "percent": 0.6610576923076923
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "openat",
+            "samples": 22,
+            "percent": 0.6610576923076923
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "getdents64",
+            "samples": 20,
+            "percent": 0.6009615384615384
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "other / unresolved syscall",
+            "samples": 19,
+            "percent": 0.5709134615384616
+          },
+          {
+            "site": "StagingFs::write",
+            "syscall": "other / unresolved syscall",
+            "samples": 17,
+            "percent": 0.5108173076923077
+          },
+          {
+            "site": "Live::publish_seal",
+            "syscall": "other / unresolved syscall",
+            "samples": 14,
+            "percent": 0.4206730769230769
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "other / unresolved syscall",
+            "samples": 13,
+            "percent": 0.390625
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "fcntl",
+            "samples": 13,
+            "percent": 0.390625
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "unlink",
+            "samples": 11,
+            "percent": 0.33052884615384615
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "close",
+            "samples": 11,
+            "percent": 0.33052884615384615
+          },
+          {
+            "site": "StagingFs::write",
+            "syscall": "futex",
+            "samples": 10,
+            "percent": 0.3004807692307692
+          },
+          {
+            "site": "Live::attach_identity",
+            "syscall": "setxattr",
+            "samples": 9,
+            "percent": 0.2704326923076923
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "mkdir",
+            "samples": 9,
+            "percent": 0.2704326923076923
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "futex",
+            "samples": 8,
+            "percent": 0.2403846153846154
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "rmdir",
+            "samples": 7,
+            "percent": 0.21033653846153846
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "pread64",
+            "samples": 7,
+            "percent": 0.21033653846153846
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "futex",
+            "samples": 7,
+            "percent": 0.21033653846153846
+          },
+          {
+            "site": "profiling instrumentation",
+            "syscall": "write",
+            "samples": 6,
+            "percent": 0.18028846153846154
+          },
+          {
+            "site": "Live::attach_identity",
+            "syscall": "close",
+            "samples": 5,
+            "percent": 0.1502403846153846
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "pread64",
+            "samples": 5,
+            "percent": 0.1502403846153846
+          },
+          {
+            "site": "Packer::prepare",
+            "syscall": "close",
+            "samples": 5,
+            "percent": 0.1502403846153846
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "futex",
+            "samples": 5,
+            "percent": 0.1502403846153846
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "ftruncate",
+            "samples": 5,
+            "percent": 0.1502403846153846
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "renameat",
+            "samples": 4,
+            "percent": 0.1201923076923077
+          },
+          {
+            "site": "Live::publish_seal",
+            "syscall": "fcntl",
+            "samples": 4,
+            "percent": 0.1201923076923077
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "fcntl",
+            "samples": 4,
+            "percent": 0.1201923076923077
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "utimensat",
+            "samples": 2,
+            "percent": 0.06009615384615385
+          },
+          {
+            "site": "Live::retire",
+            "syscall": "openat",
+            "samples": 2,
+            "percent": 0.06009615384615385
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "chmod",
+            "samples": 2,
+            "percent": 0.06009615384615385
+          },
+          {
+            "site": "Live::retire",
+            "syscall": "close",
+            "samples": 2,
+            "percent": 0.06009615384615385
+          },
+          {
+            "site": "Live::attach_identity",
+            "syscall": "openat",
+            "samples": 2,
+            "percent": 0.06009615384615385
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "linkat",
+            "samples": 2,
+            "percent": 0.06009615384615385
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "futex",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "Live::retire",
+            "syscall": "fsync",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "mprotect",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "StagingFs::opendir",
+            "syscall": "writev",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "fsync",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "StagingFs::read",
+            "syscall": "openat",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "other / unresolved caller",
+            "syscall": "pwrite64",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          },
+          {
+            "site": "profiling instrumentation",
+            "syscall": "other / unresolved syscall",
+            "samples": 1,
+            "percent": 0.030048076923076924
+          }
+        ],
+        "note": "Daemon only, requested 99 Hz separately for userspace and kernel, bounded 16 KiB DWARF stacks. Inclusive stacks overlap; leaf samples partition each mode. Missing/inlined frames limit caller attribution."
+      }
+    }
+  ],
+  "source_base_commit": "2a660727af978ef21c18966fa55fd9d40a077458",
+  "runtime_source_sha256": {
+    "Cargo.toml": "e25650b1003186b94d607aaf4022a94492284e3c0805e24bceec05e82fdd1c60",
+    "src/staging.rs": "249a6451f2e93f52dd88aac8c3af92a434a355c2f1db74b38fa417956789cd99",
+    "src/staging/reads.rs": "a8ac829d18a0c412e51c27dafab7ff77a74e4e0591f0700c5cc40cc4bcc1a216",
+    "src/staging/operations.rs": "67e066fe4e85e9107dff419206272737c70219f6eac971f96ab64b03d727b229",
+    "src/staging/profile.rs": "c0720b7294b54e4257b6b84bd7a9fc124029fe5a5a49d4ab502b9f34fd6ecb02"
+  },
+  "raw_archive_sha256": "f0fd0a94a034aeabe9cb11a2307847d243cd83627cfe026d73abb8472eaba559",
+  "analysis_sha256": {
+    "code_analysis.py": "b606ce8b3c055b665c10de94735932060ebef7efb902be0fae569eee68b4d0dd",
+    "code_report.py": "d4fb8160d405ba19a2e2721e34352569521e24f9a7eeb631b062237e159efba7",
+    "test_code_analysis.py": "9c8b863c290465c53f9f2125935c0755928b0be6e5d7170666e1419e32b8067a"
+  },
+  "validation": {
+    "linux_tests_each_configuration": 99,
+    "linux_configurations": [
+      "fuse",
+      "fuse,code-profile"
+    ],
+    "strict_clippy_both_configurations": true,
+    "python_tests": 10,
+    "fixture_passed": true,
+    "raw_archive_checksum_verified": true,
+    "runtime_sources_matched_remote": true
+  }
+}

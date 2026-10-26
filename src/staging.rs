@@ -9,6 +9,7 @@ mod indexes;
 mod namespace;
 mod operations;
 mod prepared;
+mod profile;
 mod reads;
 #[cfg(test)]
 use std::sync::mpsc::SyncSender;
@@ -240,6 +241,7 @@ impl State {
         Ok(())
     }
     fn hydrate(&mut self, ino: INodeNo) -> io::Result<()> {
+        let _phase = profile::span("hydrate");
         self.invalidate(ino)?;
         if self.nodes.get(&ino).unwrap().native_unoverridden {
             return Ok(());
@@ -251,6 +253,7 @@ impl State {
         Ok(())
     }
     fn mutated(&mut self, ino: INodeNo) -> io::Result<()> {
+        let _phase = profile::span("mutation_metadata");
         self.invalidate(ino)?;
         if self.nodes.get(&ino).unwrap().native_unoverridden {
             return Ok(());
@@ -612,7 +615,10 @@ impl StagingFs {
         &self,
         op: impl FnOnce(&mut State) -> io::Result<T>,
     ) -> std::result::Result<T, Errno> {
+        let waiting = profile::span("state_lock_wait");
         let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
+        drop(waiting);
+        let locked = profile::span("state_locked_work");
         let started = Instant::now();
         let result = op(&mut state).map_err(Errno::from);
         let seconds = started.elapsed().as_secs_f64();
@@ -620,6 +626,7 @@ impl StagingFs {
         state.seal_stats.max_request_state_seconds =
             state.seal_stats.max_request_state_seconds.max(seconds);
         let discarded = std::mem::take(&mut state.discarded_preparations);
+        drop(locked);
         drop(state);
         drop(discarded);
         result
@@ -630,8 +637,11 @@ impl StagingFs {
         op: impl FnOnce(&mut State) -> io::Result<T>,
     ) -> std::result::Result<T, Errno> {
         let mut writer = None;
+        let waiting = profile::span("state_lock_wait");
         let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
+        drop(waiting);
         loop {
+            let locked = profile::span("state_locked_work");
             let started = Instant::now();
             // Resolve names again after every wait; rename/replacement may have
             // changed which inode this operation will affect.
@@ -661,7 +671,9 @@ impl StagingFs {
                 state.seal_stats.max_request_state_seconds =
                     state.seal_stats.max_request_state_seconds.max(seconds);
                 let started = Instant::now();
+                let gate = profile::span("inode_gate_wait");
                 state = self.publication_done.wait(state).map_err(|_| Errno::EIO)?;
+                drop(gate);
                 if publishing {
                     state.seal_stats.mutation_publication_wait_seconds +=
                         started.elapsed().as_secs_f64();
@@ -704,9 +716,13 @@ impl StagingFs {
                 state.seal_stats.request_state_seconds += seconds;
                 drop(state);
                 let waited = Instant::now();
+                let catalog = profile::span("catalog_lock_wait");
                 writer = Some(self.catalog_writer.lock().map_err(|_| Errno::EIO)?);
+                drop(catalog);
                 let seconds = waited.elapsed().as_secs_f64();
+                let waiting = profile::span("state_lock_wait");
                 state = self.state.lock().map_err(|_| Errno::EIO)?;
+                drop(waiting);
                 state.seal_stats.catalog_wait_seconds += seconds;
                 continue;
             }
@@ -724,6 +740,7 @@ impl StagingFs {
             state.seal_stats.max_request_state_seconds =
                 state.seal_stats.max_request_state_seconds.max(seconds);
             let discarded = std::mem::take(&mut state.discarded_preparations);
+            drop(locked);
             drop(state);
             drop(writer);
             drop(discarded);
@@ -984,7 +1001,10 @@ impl Filesystem for StagingFs {
         _owner: Option<LockOwner>,
         reply: ReplyData,
     ) {
-        match self.read_handle(ino, fh, offset, size as usize) {
+        let _request = profile::request("READ");
+        let result = self.read_handle(ino, fh, offset, size as usize);
+        let _reply = profile::span("reply");
+        match result {
             Ok(b) => reply.data(&b),
             Err(e) => reply.error(e),
         }
@@ -1001,7 +1021,10 @@ impl Filesystem for StagingFs {
         _owner: Option<LockOwner>,
         reply: ReplyWrite,
     ) {
-        match self.write_handle(ino, fh, offset, data) {
+        let _request = profile::request("WRITE");
+        let result = self.write_handle(ino, fh, offset, data);
+        let _reply = profile::span("reply");
+        match result {
             Ok(()) => reply.written(data.len() as u32),
             Err(e) => reply.error(e),
         }
@@ -1199,9 +1222,12 @@ impl Filesystem for StagingFs {
         }
     }
     fn opendir(&self, _req: &Request, ino: INodeNo, _flags: OpenFlags, reply: ReplyOpen) {
-        match self.with_read(|s| {
+        let _request = profile::request("OPENDIR");
+        let result = self.with_read(|s| {
+            let opened = profile::span("directory_open");
             let file = open_native(&s.path(ino)?, libc::O_RDONLY | libc::O_DIRECTORY, 0)?;
             let parent = s.lookup(ino, OsStr::new(".."))?;
+            drop(opened);
             let mut entries = vec![
                 DirectoryEntry {
                     ino,
@@ -1214,20 +1240,30 @@ impl Filesystem for StagingFs {
                     name: "..".into(),
                 },
             ];
+            let enumerate = profile::span("directory_enumerate");
             let mut names: Vec<_> = fs::read_dir(fd_path(&file))?
                 .map(|e| e.map(|e| e.file_name()))
                 .collect::<io::Result<_>>()?;
+            drop(enumerate);
+            let sorted = profile::span("directory_sort");
             names.sort();
+            drop(sorted);
             for name in names {
+                let lookup = profile::span("directory_child_lookup");
                 let child = s.lookup(ino, &name)?;
+                drop(lookup);
+                let _attr = profile::span("directory_child_attr");
                 entries.push(DirectoryEntry {
                     ino: child,
                     kind: s.attr(child)?.kind,
                     name,
                 });
             }
+            let _handle = profile::span("directory_handle");
             s.add_handle(ino, file, Some(entries))
-        }) {
+        });
+        let _reply = profile::span("reply");
+        match result {
             Ok(fh) => reply.opened(fh, FopenFlags::empty()),
             Err(e) => reply.error(e),
         }

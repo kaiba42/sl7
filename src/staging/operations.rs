@@ -9,7 +9,10 @@ struct NativeIo<'a> {
 
 impl Drop for NativeIo<'_> {
     fn drop(&mut self) {
+        let waiting = profile::span("cleanup_state_lock_wait");
         if let Ok(mut state) = self.fs.state.lock() {
+            drop(waiting);
+            let _phase = profile::span("cleanup_locked_work");
             let locked = Instant::now();
             let mut node = state.nodes.get_mut(&self.ino).unwrap();
             node.exclusive_io = false;
@@ -74,7 +77,10 @@ impl StagingFs {
                 ))
             },
         )?;
-        operation(&file).map_err(Errno::from)
+        let payload = profile::span("native_payload");
+        let result = operation(&file).map_err(Errno::from);
+        drop(payload);
+        result
     }
 
     pub(super) fn sync_handle(

@@ -70,8 +70,11 @@ def main():
     parser.add_argument('--results', type=Path, required=True)
     parser.add_argument('--cases', nargs='+', default=['native-control', 'sl7-profile', 'native-profile', 'sl7-control'])
     parser.add_argument('--fixture', action='store_true')
+    parser.add_argument('--code-profile', action='store_true',
+                        help='Collect daemon user/kernel stacks and opt-in code phases instead of scheduler/FUSE BPF')
     args = parser.parse_args()
     assert all(case in ('native-control', 'sl7-control', 'native-profile', 'sl7-profile') for case in args.cases)
+    assert not args.code_profile or all(case.startswith('sl7-') for case in args.cases)
     args.results.mkdir(parents=True, exist_ok=False)
     cgroup = benchmark.process_cgroup()
     wrapper = args.results / 'rustc-wrapper'
@@ -79,14 +82,14 @@ def main():
     trace = args.results / 'trace.bt'
     trace.write_text(Path(__file__).with_name('trace.bt').read_text().replace('@CGROUP@', str(cgroup.stat().st_ino)))
     report = dict(binary_sha256=sha(args.binary), rustc=subprocess.check_output(['rustc', '-Vv'], text=True),
-                  bpftrace=subprocess.check_output(['bpftrace', '--version'], text=True).strip(),
+                  bpftrace=None if args.code_profile else subprocess.check_output(['bpftrace', '--version'], text=True).strip(),
                   perf=subprocess.check_output(['perf', '--version'], text=True).strip(),
                   kernel=subprocess.check_output(['uname', '-r'], text=True).strip(),
                   cgroup_id=cgroup.stat().st_ino, cpu_max=(cgroup / 'cpu.max').read_text().strip(),
                   memory_max=(cgroup / 'memory.max').read_text().strip(), jobs=8,
                   compiler_wrapper_sha256=sha(wrapper), source_lock_sha256=sha(args.source / 'Cargo.lock'),
                   collector_hashes={p.name: sha(p) for p in Path(__file__).parent.iterdir() if p.suffix in ('.py', '.bt', '.c', '.h')},
-                  cases=[])
+                  code_profile=args.code_profile, cases=[])
     assert report['cpu_max'] == '800000 100000'
     assert int(report['memory_max']) == 12 * 2**30
     env = dict(os.environ, CARGO_BUILD_JOBS='8', CARGO_TERM_COLOR='never',
@@ -109,6 +112,8 @@ def main():
             output = args.results / label
             output.mkdir()
             (output / 'units').mkdir()
+            if args.code_profile and mode == 'profile':
+                (output / 'phases').mkdir()
             env['SL7_WALLTIME_UNITS'] = str(output / 'units')
             mount.mkdir()
             daemon = tracer = sampler = build = None
@@ -125,7 +130,7 @@ def main():
                     monitor_stop.wait(.1)
             monitor_thread = threading.Thread(target=monitor)
             try:
-                if mode == 'profile':
+                if mode == 'profile' and not args.code_profile:
                     trace_out = (output / 'events.tsv').open('w')
                     trace_err = (output / 'trace.stderr').open('w')
                     handles.extend([trace_out, trace_err])
@@ -140,11 +145,16 @@ def main():
                     subprocess.run([str(args.binary), '--store', str(store), 'init'], check=True, stdout=subprocess.DEVNULL)
                     daemon_log = (output / 'daemon.log').open('w')
                     handles.append(daemon_log)
+                    daemon_env = dict(os.environ, SL7_CACHE_STATS='1', SL7_MOUNT_STATUS='1',
+                                      SL7_HASH_WORKERS='2', SL7_SEAL_WORKERS='2', SL7_IMPORT_PIPELINE='0',
+                                      SL7_COMPRESS_WORKERS='0', SL7_REUSE_PREPARED='0')
+                    daemon_env.pop('SL7_CODE_PROFILE_DIR', None)
+                    if args.code_profile and mode == 'profile':
+                        daemon_env['SL7_CODE_PROFILE_DIR'] = str(output / 'phases')
                     daemon = subprocess.Popen([str(args.binary), '--store', str(store), 'mount', str(mount)],
                                               stdout=daemon_log, stderr=daemon_log,
-                                              env=dict(os.environ, SL7_CACHE_STATS='1', SL7_MOUNT_STATUS='1',
-                                                       SL7_HASH_WORKERS='2', SL7_SEAL_WORKERS='2', SL7_IMPORT_PIPELINE='0',
-                                                       SL7_COMPRESS_WORKERS='0', SL7_REUSE_PREPARED='0'))
+                                              env=daemon_env)
+                    row['daemon_pid'] = daemon.pid
                     deadline = time.monotonic() + 30
                     while not is_mounted(mount):
                         assert daemon.poll() is None and time.monotonic() < deadline
@@ -160,11 +170,15 @@ def main():
                         perf_log = (output / 'perf.stderr').open('w')
                         handles.append(perf_log)
                         pids = str(build.pid) + (f',{daemon.pid}' if daemon else '')
+                        events = ['-e', 'cpu-clock:u', '-F', '49', '--call-graph', 'dwarf,4096']
+                        if args.code_profile:
+                            pids = str(daemon.pid)
+                            events = ['-e', 'cpu-clock:u', '-e', 'cpu-clock:k', '-F', '99', '--call-graph', 'dwarf,16384']
                         control_read, control_write = os.pipe()
                         ack_read, ack_write = os.pipe()
                         control_fds.extend([control_write, ack_read])
                         sampler = subprocess.Popen(['perf', 'record', '--no-buildid-cache', '--clockid', 'mono',
-                                                    '-e', 'cpu-clock:u', '-F', '49', '--call-graph', 'dwarf,4096',
+                                                    *events,
                                                     '--delay', '-1', '--control', f'fd:{control_read},{ack_write}',
                                                     '-p', pids, '-o', str(output / 'cpu.data')], stdout=perf_log, stderr=perf_log,
                                                    pass_fds=(control_read, ack_write))
@@ -209,10 +223,11 @@ def main():
                 for handle in handles:
                     handle.flush()
                 if mode == 'profile':
-                    error = (output / 'trace.stderr').read_text()
-                    assert not error.strip(), error
                     perf_error = (output / 'perf.stderr').read_text()
                     assert 'lost' not in perf_error.lower(), perf_error
+                if mode == 'profile' and not args.code_profile:
+                    error = (output / 'trace.stderr').read_text()
+                    assert not error.strip(), error
                     events = read_events(output / 'events.tsv')
                     paired, row['request_pairing'] = requests(events)
                     if backend == 'sl7':

@@ -65,7 +65,10 @@ struct ReadLease<'a> {
 }
 impl Drop for ReadLease<'_> {
     fn drop(&mut self) {
+        let waiting = profile::span("cleanup_state_lock_wait");
         if let Ok(mut state) = self.fs.state.lock() {
+            drop(waiting);
+            let _phase = profile::span("cleanup_locked_work");
             let locked = Instant::now();
             let mut node = state.nodes.get_mut(&self.ino).unwrap();
             node.readers -= 1;
@@ -107,7 +110,10 @@ impl StagingFs {
             return Err(Errno::EINVAL);
         }
         let (file, pin, native, _lease) = {
+            let waiting = profile::span("state_lock_wait");
             let mut state = self.state.lock().map_err(|_| Errno::EIO)?;
+            drop(waiting);
+            let _phase = profile::span("state_locked_work");
             let waited = Instant::now();
             let mut blocked = false;
             while state
@@ -116,6 +122,7 @@ impl StagingFs {
                 .is_some_and(|n| n.waiting_mutations != 0 || n.exclusive_io)
             {
                 blocked = true;
+                let _gate = profile::span("inode_gate_wait");
                 state = self.publication_done.wait(state).map_err(|_| Errno::EIO)?;
             }
             if blocked {
@@ -155,7 +162,10 @@ impl StagingFs {
         // is no callback or allocation here in the production instantiation.
         ready();
         if let Some(readers) = self.readers.as_ref().filter(|_| !native) {
+            let waiting = profile::span("reader_pool_wait");
             let reader = readers.take().map_err(Errno::from)?;
+            drop(waiting);
+            let _reconstruct = profile::span("reconstruct");
             if let Some(bytes) = reader
                 .read(&pin, offset, size)
                 .map_err(storage)
@@ -164,6 +174,7 @@ impl StagingFs {
                 return Ok(bytes);
             }
         }
+        let _payload = profile::span("native_payload");
         let mut bytes = vec![0; size];
         let mut read = 0;
         while read < bytes.len() {

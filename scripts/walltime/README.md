@@ -1,5 +1,8 @@
 # Clean-build wall-time measurement
 
+For source-function request phases and daemon kernel stacks, use the opt-in
+[code-level profiling workflow](CODE_PROFILE.md).
+
 This harness collects native-storage and SL7 Cargo builds with matching clean
 output directories, an unchanged SL7 binary, eight Cargo jobs, incremental
 compilation enabled by the workload, and offline locked dependencies. It changes

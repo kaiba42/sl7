@@ -12,6 +12,8 @@ fuse = ["dep:fuser", "dep:libc", "dep:dashmap"]
 # Compile/test the adapter on macOS without linking a system FUSE library.
 # This feature deliberately disables mounting on macOS.
 fuse-check = ["fuse", "fuser/macos-no-mount"]
+# Experimental per-request phase traces; absent from normal builds.
+code-profile = ["fuse"]
 
 [dependencies]
 clap = { version = "4.6", features = ["derive"] }
