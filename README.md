@@ -7,6 +7,7 @@ SL7 shares stored bytes; Cargo still decides which compilations to run.
 
 **Prototype:** native macOS mounting is unsupported. SL7 trades build time for
 storage savings. See the [latest native-versus-SL7 results](docs/validation/opendir-parking-lot.md).
+Native macOS support is [in development](docs/native-macos.md).
 
 Clone the repository, then choose a path below:
 

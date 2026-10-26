@@ -2,6 +2,7 @@
 //! All namespace access is anchored to pinned O_PATH descriptors. The backing
 //! tree must be exclusively owned by this process while mounted. Kernel-local
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
+use crate::native::fd_path;
 use dashmap::DashMap;
 use fuser::*;
 mod background;
@@ -136,9 +137,6 @@ fn native(rc: i32) -> io::Result<()> {
     } else {
         Ok(())
     }
-}
-fn fd_path(file: &File) -> PathBuf {
-    PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd()))
 }
 fn pin(path: &Path) -> io::Result<File> {
     OpenOptions::new()
@@ -1124,18 +1122,15 @@ impl Filesystem for StagingFs {
                     Err(e) if e.kind() == io::ErrorKind::NotFound => None,
                     Err(e) => return Err(e),
                 };
-                let old = cpath(&s.child(parent, name)?)?;
-                let new = cpath(&s.child(newparent, newname)?)?;
-                // SAFETY: both paths are valid C strings anchored at directory fds.
-                native(unsafe {
-                    libc::renameat2(
-                        libc::AT_FDCWD,
-                        old.as_ptr(),
-                        libc::AT_FDCWD,
-                        new.as_ptr(),
-                        flags.bits(),
-                    )
-                })?;
+                let old = cpath(Path::new(name))?;
+                let new = cpath(Path::new(newname))?;
+                crate::native::rename_at(
+                    s.inode(parent)?.as_ref(),
+                    &old,
+                    s.inode(newparent)?.as_ref(),
+                    &new,
+                    flags,
+                )?;
                 let mut inodes = vec![source];
                 if let Some(ino) = replaced {
                     inodes.push(ino);

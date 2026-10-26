@@ -7,6 +7,13 @@ mod import_stream;
 pub use gc::GcReport;
 #[cfg(all(feature = "fuse", target_os = "linux"))]
 pub mod live;
+// macOS primitives are exercised natively in tests before the writable adapter
+// is enabled. fuse-check does not imply writable macOS mount support.
+#[cfg(all(
+    feature = "fuse",
+    any(target_os = "linux", all(target_os = "macos", test))
+))]
+mod native;
 mod pack;
 pub mod probe;
 mod read_cache;
