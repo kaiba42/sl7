@@ -82,6 +82,11 @@ def phases(directory, case):
                     if op == 'OPENDIR' and name == 'state_locked_work':
                         dir_holds.append((start, end))
     overlap = coverage(dir_holds)
+    hold_durations = sorted(end - start for start, end in dir_holds)
+    ownership = dict(intervals=len(hold_durations), total_seconds=sum(hold_durations) / 1e9,
+                     maximum_seconds=max(hold_durations, default=0) / 1e9,
+                     p99_seconds=(hold_durations[min(len(hold_durations) - 1, (99 * len(hold_durations) + 99) // 100 - 1)] / 1e9
+                                  if hold_durations else 0))
     intersections = defaultdict(Counter)
     for op, name, start, end in waits:
         intersections[op][name] += overlap(start, end) / 1e9
@@ -106,6 +111,7 @@ def phases(directory, case):
         assert observed_counts['WRITE'] == stats[0]['write_operations'], 'missing write trace records or failed writes'
         counts_match = True
     return dict(operations=result, validated_requests=validated, excluded_outside_build=excluded,
+                opendir_state_ownership=ownership,
                 daemon_operation_counts_match=counts_match,
                 note='Per-request phases are exclusive and sum exactly to handler time. Requests overlap across workers. Pre-dispatch FUSE queueing is outside these spans. Lock-wait intervals include scheduling; overlapping OPENDIR ownership is measured directly.')
 

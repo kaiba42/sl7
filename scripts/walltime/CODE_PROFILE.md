@@ -41,7 +41,11 @@ not be added to Cargo's elapsed build time.
 
 State acquisition, inode gates, catalog acquisition, native payload I/O,
 reconstruction, cleanup, replies, and directory enumeration/lookup/attribute work
-have separate scopes. `native_payload` on reads includes buffer allocation.
+have separate scopes. The directory snapshot implementation replaces per-child
+lookup/attribute spans with `directory_child_pin` (native I/O outside State) and
+`directory_register` (bounded registration batches under State). The analyzer
+also reports total, p99 and maximum OPENDIR State-ownership interval durations.
+`native_payload` on reads includes buffer allocation.
 `directory_child_attr` includes insertion into the collected entry vector.
 Lock acquisition includes contention and scheduling delay; condition-variable
 waits include reacquiring the mutex. `state_locked_work` excludes nested wait

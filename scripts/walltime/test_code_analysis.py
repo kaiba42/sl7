@@ -34,6 +34,22 @@ class CodeAnalysisTests(unittest.TestCase):
         self.assertEqual(result['excluded_outside_build'], 1)
         self.assertEqual(result['operations']['READ']['state_wait_overlapping_opendir_hold_seconds']['state_lock_wait'], 15e-9)
         self.assertEqual(result['operations']['WRITE']['count'], 1)
+        self.assertEqual(result['opendir_state_ownership'], dict(
+            intervals=1, total_seconds=20e-9, maximum_seconds=20e-9, p99_seconds=20e-9))
+
+    def test_batched_holds_exclude_native_io_between_registrations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'phases').mkdir()
+            (root / 'phases/worker.tsv').write_text(
+                'OPENDIR\t100\t30\tOPENDIR:20:1\tstate_locked_work:10:2\t@state_locked_work:0:5\t@state_locked_work:20:5\n'
+                'READ\t100\t30\tREAD:0:1\tstate_lock_wait:30:1\t@state_lock_wait:0:30\n'
+                'WRITE\t110\t10\tWRITE:0:1\tstate_lock_wait:10:1\t@state_lock_wait:0:10\n')
+            result = phases(root, dict(start_ns=100, end_ns=150))
+        self.assertEqual(result['opendir_state_ownership'], dict(
+            intervals=2, total_seconds=10e-9, maximum_seconds=5e-9, p99_seconds=5e-9))
+        self.assertEqual(result['operations']['READ']['state_wait_overlapping_opendir_hold_seconds']['state_lock_wait'], 10e-9)
+        self.assertEqual(result['operations']['WRITE']['state_wait_overlapping_opendir_hold_seconds']['state_lock_wait'], 0)
 
 
 if __name__ == '__main__':

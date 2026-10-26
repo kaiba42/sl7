@@ -1,5 +1,20 @@
 # Validation and performance
 
+The [directory snapshot and parking_lot comparison](opendir-parking-lot.md)
+([HTML](opendir-parking-lot.html), [JSON](opendir-parking-lot.json)) measures
+`128a19f` against `ec02cba`. Directory I/O now runs outside State with bounded
+registration batches. Profiled OPENDIR State ownership fell 96.8% (6.004s to
+0.192s), and write-side State waits fell 80.7%. Clean-build medians were 149.10s
+native, 166.63s before, 165.28s with directory snapshots, and 165.03s with a
+separate parking_lot 0.13.0 State-lock experiment. Both matched directory-only
+cleans improved, but the gain was 0.8%; edit medians barely changed and settling
+results were mixed. The lock swap showed no material end-to-end lift and remains
+experimental. All 64 Cargo commands, 48 artifact-graph comparisons, six integrity
+scans, both Linux test configurations, and five mounted suites per variant passed.
+The traces also show that total write-handler time did not fall: native payload
+I/O and same-inode coordination remain substantial costs.
+
+
 The [code-level request and kernel profile](code-profile.md)
 ([HTML](code-profile.html), [JSON](code-profile.json)) maps handler latency to
 SL7 source functions. The directory-open loop spends 5.66 accumulated seconds
