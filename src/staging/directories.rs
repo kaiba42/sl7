@@ -86,12 +86,13 @@ impl StagingFs {
         let file = open_native(&fd_path(&pinned), libc::O_RDONLY | libc::O_DIRECTORY, 0)?;
         let path = fd_path(&file);
         // ROOT's parent must never escape the private tree.
-        let parent = if ino == INodeNo::ROOT {
-            pinned
+        let (parent, metadata) = if ino == INodeNo::ROOT {
+            let metadata = pinned.metadata()?;
+            (pinned, metadata)
         } else {
-            Arc::new(pin(&path.join(".."))?)
+            let (parent, metadata) = native::pin_parent(&file)?;
+            (Arc::new(parent), metadata)
         };
-        let metadata = parent.metadata()?;
         self.with_read(|state| {
             snapshot.retain(
                 state,
@@ -125,15 +126,14 @@ impl StagingFs {
             let pinning = profile::span("directory_child_pin");
             let mut children = Vec::with_capacity(names.len());
             for name in names {
-                let file = match pin(&path.join(name)) {
-                    Ok(file) => file,
+                let (child, metadata) = match native::pin_at(&file, &cname(name)?) {
+                    Ok(pinned) => pinned,
                     // Concurrent unlink/rename is allowed during enumeration.
                     Err(e) if e.raw_os_error() == Some(libc::ENOENT) => continue,
                     Err(e) => return Err(e.into()),
                 };
-                let metadata = file.metadata()?;
                 let kind = kind(&metadata)?;
-                children.push((name, Arc::new(file), metadata, kind));
+                children.push((name, Arc::new(child), metadata, kind));
             }
             drop(pinning);
             self.with_read(|state| {

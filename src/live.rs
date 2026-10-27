@@ -1,22 +1,21 @@
 //! Durable native-inode ↔ immutable-manifest transitions for the Linux mount.
 //! A committed manifest always wins over native bytes. Hydration clears that
 //! reference only after verified native bytes and preserved timestamps are synced.
+use crate::native::fd_path;
 use crate::{Error, FileInfo, GcReport, Result, Stats, Store, sync_directory};
 use rusqlite::{OptionalExtension, params};
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
+use std::path::Path;
 use std::{
     collections::HashSet,
-    ffi::CString,
     fs::{self, File, OpenOptions},
     io::{Seek, SeekFrom},
     os::{
         fd::AsRawFd,
-        unix::{
-            ffi::OsStrExt,
-            fs::{MetadataExt, OpenOptionsExt},
-        },
+        unix::fs::{MetadataExt, OpenOptionsExt},
     },
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 const VIEW: &str = ":sl7-live-v1:";
@@ -152,36 +151,15 @@ pub struct LiveStats {
     pub content: Stats,
 }
 
-fn fd_path(file: &File) -> PathBuf {
-    PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd()))
-}
-fn path_c(path: &Path) -> Result<CString> {
-    CString::new(path.as_os_str().as_bytes())
-        .map_err(|_| Error::Invalid("NUL in native path".into()))
-}
 fn id(file: &File) -> Result<Option<i64>> {
     if !file.metadata()?.is_file() {
         return Ok(None);
     }
-    let path = path_c(&fd_path(file))?;
     let mut value = [0_u8; 32];
-    // SAFETY: path/key are C strings and the output buffer has the given size.
-    let n = unsafe {
-        libc::getxattr(
-            path.as_ptr(),
-            XATTR.as_ptr(),
-            value.as_mut_ptr().cast(),
-            value.len(),
-        )
+    let Some(n) = crate::native::read_xattr(file, XATTR, &mut value)? else {
+        return Ok(None);
     };
-    if n < 0 {
-        let e = std::io::Error::last_os_error();
-        if e.raw_os_error() == Some(libc::ENODATA) {
-            return Ok(None);
-        }
-        return Err(e.into());
-    }
-    let value = std::str::from_utf8(&value[..n as usize])
+    let value = std::str::from_utf8(&value[..n])
         .ok()
         .and_then(|s| s.parse::<i64>().ok())
         .filter(|&n| n > 0)
@@ -320,21 +298,7 @@ impl Live {
     }
     fn attach_identity(file: &File, id: i64) -> Result<()> {
         let value = id.to_string();
-        let path = path_c(&fd_path(file))?;
-        // SAFETY: valid C strings and value bytes live for the call. CREATE avoids
-        // overwriting an identity assigned by an unexpected external writer.
-        if unsafe {
-            libc::setxattr(
-                path.as_ptr(),
-                XATTR.as_ptr(),
-                value.as_ptr().cast(),
-                value.len(),
-                libc::XATTR_CREATE,
-            )
-        } != 0
-        {
-            return Err(std::io::Error::last_os_error().into());
-        }
+        crate::native::create_xattr(file, XATTR, value.as_bytes())?;
         File::open(fd_path(file))?.sync_all()?;
         #[cfg(test)]
         crate::crash_at("live-identity-synced");
