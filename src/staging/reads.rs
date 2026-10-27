@@ -196,7 +196,7 @@ impl StagingFs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{sync::mpsc, thread};
+    use std::{fs::OpenOptions, sync::mpsc, thread};
 
     fn fixture(sealed: bool) -> (tempfile::TempDir, StagingFs, [(INodeNo, FileHandle); 2]) {
         let temp = tempfile::tempdir().unwrap();

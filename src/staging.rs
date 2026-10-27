@@ -2,7 +2,7 @@
 //! All namespace access is anchored to pinned O_PATH descriptors. The backing
 //! tree must be exclusively owned by this process while mounted. Kernel-local
 //! locks and cached I/O are used; writeback-cache capability is not negotiated.
-use crate::native::fd_path;
+use crate::native::{self, fd_path};
 use dashmap::DashMap;
 use fuser::*;
 mod background;
@@ -18,13 +18,13 @@ use std::sync::mpsc::SyncSender;
 use std::{
     collections::{HashMap, VecDeque},
     ffi::{CString, OsStr, OsString},
-    fs::{self, File, Metadata, OpenOptions},
+    fs::{self, File, Metadata},
     io,
     os::{
         fd::{AsRawFd, FromRawFd},
         unix::{
             ffi::OsStrExt,
-            fs::{FileExt, MetadataExt, OpenOptionsExt, PermissionsExt},
+            fs::{FileExt, MetadataExt, PermissionsExt},
         },
     },
     path::{Path, PathBuf},
@@ -138,11 +138,8 @@ fn native(rc: i32) -> io::Result<()> {
         Ok(())
     }
 }
-fn pin(path: &Path) -> io::Result<File> {
-    OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_PATH | libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(path)
+fn cname(name: &OsStr) -> io::Result<CString> {
+    CString::new(name.as_bytes()).map_err(|_| error(libc::EINVAL))
 }
 fn open_native(path: &Path, flags: i32, mode: u32) -> io::Result<File> {
     let path = cpath(path)?;
@@ -297,10 +294,6 @@ impl State {
         }
         Ok(self.path(parent)?.join(name))
     }
-    fn register(&mut self, file: File) -> io::Result<INodeNo> {
-        let meta = file.metadata()?;
-        self.register_metadata(Arc::new(file), &meta)
-    }
     // The caller keeps the descriptor pinned while using this metadata.
     fn register_metadata(&mut self, file: Arc<File>, meta: &Metadata) -> io::Result<INodeNo> {
         kind(meta)?;
@@ -335,19 +328,28 @@ impl State {
         );
         Ok(ino)
     }
+    // Pin and register a child relative to the held parent descriptor.
+    fn register_child(&mut self, parent: INodeNo, name: &OsStr) -> io::Result<INodeNo> {
+        let dir = self.inode(parent)?;
+        if !dir.metadata()?.is_dir() {
+            return Err(error(libc::ENOTDIR));
+        }
+        let (file, meta) = native::pin_at(&dir, &cname(name)?)?;
+        self.register_metadata(Arc::new(file), &meta)
+    }
     fn lookup(&mut self, parent: INodeNo, name: &OsStr) -> io::Result<INodeNo> {
-        if !self.inode(parent)?.metadata()?.is_dir() {
+        let dir = self.inode(parent)?;
+        if !dir.metadata()?.is_dir() {
             return Err(error(libc::ENOTDIR));
         }
         if name == "." || (name == ".." && parent == INodeNo::ROOT) {
             return Ok(parent);
         }
-        let path = if name == ".." {
-            self.path(parent)?.join("..")
-        } else {
-            self.child(parent, name)?
-        };
-        self.register(pin(&path)?)
+        if name == ".." {
+            let (file, meta) = native::pin_parent(&dir)?;
+            return self.register_metadata(Arc::new(file), &meta);
+        }
+        self.register_child(parent, name)
     }
     fn attr(&self, ino: INodeNo) -> io::Result<FileAttr> {
         let pin = self.inode(ino)?;
@@ -530,7 +532,11 @@ impl StagingFs {
             #[cfg(test)]
             retire_pause: None,
         };
-        assert_eq!(state.register(pin(backing)?)?, INodeNo::ROOT);
+        let (root, meta) = native::pin_path(backing)?;
+        assert_eq!(
+            state.register_metadata(Arc::new(root), &meta)?,
+            INodeNo::ROOT
+        );
         Ok(Self {
             nodes: Arc::clone(&state.nodes),
             identities: Arc::clone(&state.identities),
@@ -928,7 +934,7 @@ impl Filesystem for StagingFs {
             let c = cpath(&path)?;
             // SAFETY: path is a valid C string.
             native(unsafe { libc::mkdir(c.as_ptr(), mode & !umask) })?;
-            let ino = s.register(pin(&path)?)?;
+            let ino = s.register_child(parent, name)?;
             s.entry_attr(ino)
         }) {
             Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
@@ -972,7 +978,7 @@ impl Filesystem for StagingFs {
                     (flags & !libc::O_APPEND) | libc::O_CREAT | libc::O_NOFOLLOW,
                     mode & !umask,
                 )?;
-                let ino = s.register(pin(&path)?)?;
+                let ino = s.register_child(parent, name)?;
                 let fh = s.add_handle(ino, file, None)?;
                 Ok((s.entry_attr(ino)?, fh))
             },
@@ -1188,7 +1194,7 @@ impl Filesystem for StagingFs {
         match self.with_read(|s| {
             let path = s.child(parent, name)?;
             std::os::unix::fs::symlink(target, &path)?;
-            let ino = s.register(pin(&path)?)?;
+            let ino = s.register_child(parent, name)?;
             s.entry_attr(ino)
         }) {
             Ok(a) => reply.entry(&self.metadata_ttl(), &a, Generation(0)),
@@ -1400,6 +1406,41 @@ mod tests {
             Ok(())
         })
         .unwrap();
+    }
+
+    #[test]
+    fn locked_and_indexed_lookups_resolve_relative_to_held_directories() {
+        let root = tempfile::tempdir().unwrap();
+        fs::create_dir_all(root.path().join("a/b")).unwrap();
+        fs::write(root.path().join("a/b/x"), b"held").unwrap();
+        let fs = StagingFs::new(root.path()).unwrap();
+        let (a, b) = fs
+            .with(|s| {
+                let a = s.lookup(INodeNo::ROOT, OsStr::new("a"))?;
+                Ok((a, s.lookup(a, OsStr::new("b"))?))
+            })
+            .unwrap();
+        // Retarget the old pathname; held descriptors must not follow it.
+        fs::rename(root.path().join("a"), root.path().join("moved")).unwrap();
+        fs::create_dir_all(root.path().join("a/b")).unwrap();
+        fs::write(root.path().join("a/b/x"), b"impostor").unwrap();
+        fs.with(|s| {
+            assert_eq!(s.lookup(b, OsStr::new(".."))?, a);
+            let x = s.lookup(b, OsStr::new("x"))?;
+            assert_eq!(s.attr(x)?.size, 4);
+            for name in ["", "../x", "x/", "x\0"] {
+                let error = s.lookup(b, OsStr::new(name)).unwrap_err();
+                assert_eq!(error.raw_os_error(), Some(libc::EINVAL), "{name:?}");
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(fs.lookup_indexed(b, OsStr::new("..")).unwrap().ino, a);
+        assert_eq!(fs.lookup_indexed(b, OsStr::new("x")).unwrap().size, 4);
+        for name in ["", "../x", "x/", "x\0"] {
+            let result = fs.lookup_indexed(b, OsStr::new(name));
+            assert!(matches!(result, Err(Errno::EINVAL)), "{name:?}");
+        }
     }
 
     #[test]

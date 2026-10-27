@@ -146,11 +146,15 @@ impl StagingFs {
             }
             return self.with_read(|state| state.entry_attr(parent));
         }
-        if name.is_empty() || name.as_bytes().contains(&b'/') || name.as_bytes().contains(&0) {
-            return Err(Errno::EINVAL);
-        }
-        let file = match pin(&fd_path(&parent_pin).join(name)) {
-            Ok(file) => file,
+        // Same descriptor-relative resolution as State::lookup; pin_at rejects
+        // malformed names, and non-root dot-dot pins the held dir's parent.
+        let pinned = if name == ".." {
+            native::pin_parent(&parent_pin)
+        } else {
+            cname(name).and_then(|name| native::pin_at(&parent_pin, &name))
+        };
+        let (file, meta) = match pinned {
+            Ok(pinned) => pinned,
             Err(e) => {
                 if e.raw_os_error() == Some(libc::ENOENT) {
                     self.metadata_requests
@@ -160,7 +164,6 @@ impl StagingFs {
                 return Err(e.into());
             }
         };
-        let meta = file.metadata().map_err(Errno::from)?;
         let ino = self
             .identities
             .get(&(meta.dev(), meta.ino()))
@@ -180,7 +183,7 @@ impl StagingFs {
         // existing authoritative registration/catalog path. The pin preserves
         // the inode resolved above even if its directory name changes.
         self.with_read(move |state| {
-            let ino = state.register(file)?;
+            let ino = state.register_metadata(Arc::new(file), &meta)?;
             state.entry_attr(ino)
         })
     }
